@@ -1,0 +1,33 @@
+; RSTSV7 from SimH software kits for 11/70
+; runs from 2 RL disk drives
+
+;set cpu 11/70 1024K fpp
+set cpu 11/53 512K
+
+set throttle 1M
+show cpu hist=100
+
+;set cons telnet=23
+
+set rq0 rd52
+attach rq0 pdp11-53_ccg_hd0-org.DURD_31
+
+set realcons host=beaglebone
+set realcons panel=11/40
+set realcons connected
+
+; real VT100 locks on 24 newlines?
+echo
+echo
+echo
+echo
+echo
+echo
+echo
+echo
+echo
+echo
+
+boot rl0
+
+; on the "Disk?" prompt, enter "xp(0,0)unix"

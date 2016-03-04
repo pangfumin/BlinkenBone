@@ -1,0 +1,1 @@
+~/beaglebone/projects/020simh.382.jh/bin-linux-x86/pdp11 unixv6.simh_pdp11

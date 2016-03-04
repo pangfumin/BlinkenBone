@@ -1,0 +1,24 @@
+echo on
+
+set cpu 32K
+set cpu idle
+set throttle 1m
+
+attach rk0 advent.rk05
+
+; set realcons host=192.168.1.106  panel=PiDP8
+;set realcons host=raspberrypi panel=PiDP8
+set realcons host=vmubuprog panel=PDP8I
+; set realcons host=localhost panel=PDP8I
+
+set realcons interval=1 connect
+; show realcons
+
+;boot rk0
+
+; To start ADVENTRUE:
+; .R FRTS
+;*ADVENT.LD
+; <hit ESC>
+; *$
+; WELCOME TO ADVENTURE!!  WOULD YOU LIKE INSTRUCTIONS?

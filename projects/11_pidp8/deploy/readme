@@ -1,0 +1,42 @@
+
+Whats this?
+-----------
+Here comes a server for the Blinkenbone architecture, who publishes
+controls and switches of PiDP8.
+
+See http://www.blinkenbone.com/projects/blinkenbone/169-blinkenbone-architecture-overview .
+
+The only client who can work with the PiDP8 panel is the "Blinkenlight API test client",
+there's no SimH at the moment. And there probably never will be one:
+PiDP8 comes with its own SimH, there's no need to build another one.
+
+At the moment, this is just a "proof of concept" for the upcoming PiDP1170
+of Oscar Vermeulen. Oscars's "gpio.c" can be easly compiled into this "blinkenlightd" server,
+and then the functionality of the existing SimH for the PDP-11/70 panel can be used
+for a vill "Blinkenlight simulation".
+
+The server must be copied to the PiDP8-Raspberry and started there.
+
+Installation
+------------
+There are three subdirectories.
+"rpi" stuff must be copied to a Raspberry /home/pi,
+"linux.x86" contains executables for a Desktop Linux
+"win32" contains executables for MS-Windows.
+
+How to run
+----------
+1) copy the "rpi" stuff to Raspberry with scp,
+login with ssh and execute "start.sh"
+This will start the RPC portmapper, the "blinkenlightd" server daemon, who
+controls the GPIOs, and the test client in foreground.
+Play with the menu options, you get feedback of the switches and you can set the LEDs.
+
+2) run "start.sh" from the "linux.x86" directory.
+This will start the testclient, who will connect to your Raspberry from remote.
+hostname "raspberrypi" is assumed.
+
+3) run start.bat from a MS-Windows box.
+This will start another testclient, same as on Linux-x86 and RPi before.
+
+You now have 3 clients connected to one PiDP8 server.

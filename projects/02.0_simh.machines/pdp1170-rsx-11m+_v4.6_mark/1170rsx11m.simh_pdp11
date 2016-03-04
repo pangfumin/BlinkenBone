@@ -1,0 +1,48 @@
+
+set console log=./console.log
+set cpu 11/70, 4M
+
+; under SimH 4, "throttling" results in a disturbed "idle pattern"
+;set throttle 1m
+; set cpu idle
+set nothrottle
+set noidle
+
+;set console telnet=10000
+set rq0 ra81
+attach rq0 rsx11mpbl87.dsk
+;set rq1 rd54
+;attach rq1 yoda.dsk
+;set rq2 rd54
+;attach rq2 rd54ve0.dsk
+;set rq3 rd54
+;attach rq3 rd54user.dsk
+;set rl0 rl02
+;attach rl0 RL02_1.dsk
+set tq0 format=tap
+set tq tu81
+;attach tq0 ./Tapes/MT9.tap
+;set ts enable
+;set ts0 format=tpc
+;set ts ts11
+;attach ts0 ./Tapes/pdp11_c_v1_2.tpc
+set dz enable
+set dz lines=16
+attach dz 10001
+sho dz
+sho clk
+sho dev
+sho cpu
+
+; connect to real panel
+;set realcons host=goe-001-test-04
+set realcons host=vmubuprog
+;set realcons host=localhost
+set realcons panel=11/70
+; We're running on a desktop PC with connection to localhost: max speed!
+set realcons interval=1
+set realcons connected
+;set realcons debug
+show realcons
+
+boot rq0

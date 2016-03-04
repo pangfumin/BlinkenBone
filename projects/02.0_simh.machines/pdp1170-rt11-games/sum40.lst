@@ -1,0 +1,41 @@
+       1                                
+       2                                	.title sum40 - sum up numbers on PDP-11/40
+       3                                
+       4                                	; This program reads n >= 0 from console, sums up the first n nonnegative
+       5                                	; integers, halts and displays the result on console.
+       6                                	; The sum turns out to be n*(n+1)/2, which does not fit in a word for
+       7                                	; n > sqrt(2N).  But, since n < 2^16, the result is < 2^32 and fits in two
+       8                                	; words. Registers R1 and R2 hold the high respective low word of the sum.
+       9                                	; R0 counts from 1 to R3.
+      10                                
+      11                                	; This program is for PDP-11/40, which displays R0 on the console after HALT
+      12                                
+      13 177570                         sr	=	177570	; switch  register
+      14                                
+      15                                	.asect
+      16 001000                         	.=1000		; program loads at 1000
+      17                                
+      18                                start:
+      19 001000 012706  000400          	mov	#400,sp ; no stack is used, but avoid "red stack trap" in SimH
+      20                                
+      21                                			; set up loop invariant:
+      22 001004 013703  177570          	mov	@#sr,r3 ; r3 = n (from switch register)
+      23 001010 005000                  	clr	r0	; r0 = 0
+      24 001012 005001                  	clr	r1	; r1_r2 = 0 ;
+      25 001014 005002                  	clr	r2
+      26                                loop:			; do {
+      27 001016 005200                  	inc	r0	;   r0++ ;
+      28 001020 060002                  	add	r0,r2	;   r1_r2 += r0 ;
+      29 001022 005501                  	adc	r1	;
+      30 001024 020003                  	cmp	r0,r3	; } while  (r0 != r3) ;
+      31 001026 001373                  	bne	loop
+      32                                
+      33                                disphi:
+      34 001030 010100                  	mov	r1,r0	; display high word of sum
+      35 001032 000000                  	halt		; console operator must press continue switch now!
+      36                                displo:
+      37 001034 010200                  	mov	r2,r0	; display low word of sum
+      38 001036 000000                  	halt		; console operator can enter new 'n' now and continue
+      39                                
+      40 001040 000757                  	br	start	; execute program again
+      40                                

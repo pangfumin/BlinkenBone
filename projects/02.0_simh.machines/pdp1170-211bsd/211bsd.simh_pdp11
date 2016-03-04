@@ -1,0 +1,66 @@
+; bsd211 install part afer opening 1144.sim
+; set cpu 11/44 4096K fpp  nocis
+set cpu 11/70 4096K fpp
+set throttle 2M
+show cpu hist=100
+set tm enabled
+attach tm0 211bsd.tap
+
+set tti 7b
+set tto 7b
+; to work with kermit
+;set tti 8b
+;set tto 8b
+
+;set cons telnet=23
+
+; set one DZ11 8 line async mux
+set dz enabled
+set dz lines=8
+set dz 8b
+; set dz vector=300
+; attach 8 DZ11 lines to telnet 4000..4007
+attach dz 4000
+
+; network on UBUNTU
+set xu enabled
+set xu type=delua
+sh xu eth
+att xu0 eth0
+sh xu mac
+
+; rp0 muss ein rm02/3 sein!
+set rl0 rl02
+att rl0 tmp.rl02
+
+; RX02 floppy drive
+set rx disabled
+set ry enabled
+attach ry0 tmp.rx02
+
+
+att rp0 211bsd.rm02
+; mount second disk, get formated with bad sectors
+;att rp1 root1.rm02
+; be sure to create bad block table on last track, if file new!
+
+
+set realcons host=beaglebone
+set realcons panel=11/40
+set realcons connected
+
+; real VT100 locks on 24 newlines?
+echo
+echo
+echo
+echo
+echo
+echo
+echo
+echo
+echo
+echo
+
+boot rp0
+
+; on the "Disk?" prompt, enter "xp(0,0)unix"

@@ -1,0 +1,57 @@
+
+set rp disabled
+set rx disabled
+set lpt disabled
+
+; M7554       KDJ11-DA    Q   J11 CPU 15MHz, 512-Kbyte RAM, 2 SLUs, LTC
+; M7554		Refs: EK-KDJ1D-UG
+set cpu 11/53 512K
+set cpu hist=100
+set throttle 2m
+set clk 50hz
+
+
+; to make gkermit work
+set tti 8b
+set tto 8b
+set cons telnet=23
+
+; M7504       DEQNA-M     Q   Qbus to ethernet adapter, Q22, obsolete
+; M7504                       for VMS 5.x and above (use DELQA).
+; M7504		Refs: MP-01369, EK-H4000-TM, AA-K759A-TK, EK-DEQNA-UG
+; M7504		Refs: EB-22714-18
+;
+set xq type=deqna
+; list all interfaces
+sho xq eth
+; connect to SECONDARY ethernet card!
+; \Device\NPF_{0A1446A0-E585-4961-BD19-73AB3241272F}
+att xq0  \Device\NPF_{4B2D841C-5E7B-42FA-8EBD-C957E43CF312}
+sho xq mac
+; INSTALL WINPCAP on Host! WinPcap_4_0_2.exe
+
+; DLV11 Nachbau MDB
+;M7940       DLV11       Q   Serial Line Unit (SLU, Async)
+;M7940		Refs: MP-00055, EB-20175-20, uNOTE N#033
+
+;set ttix lines=1
+;att ttix 2000
+;
+; M8061       RLV12       Q   RL01/RL02 disk control
+; M8061		Refs: EK-RLV12-UG, EK-RLV12-TD, MP-01282, ZJ285-RZ
+; M8061		Refs: uNOTE N#041
+set rl0 rl02
+
+; M7555       RQDX3       Q   MFM Winchester and floppy disk controller
+; M7555                       (RX50/RX33/RD50-54/RD31/RD32/RD33)
+; M7555		Refs: EK-RQDX3-UG, uNOTEs N#041, N#043
+;
+;       hd: seagate st 225 = rd31-a  (25MB)
+;       floppy: rx33
+set rq0 rd52
+att rq0 ultrix31.rd52
+set rq1 rx33
+set rq2 disabled
+set rq3 disabled
+
+

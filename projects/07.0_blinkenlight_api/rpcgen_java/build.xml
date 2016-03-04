@@ -1,0 +1,46 @@
+
+<!--http://www.roseindia.net/tutorials/ant/Howtogeneratebuildfile.shtml -->
+<project name="rpcgen_blinkenlight_api" default="compile" basedir=".">
+
+<property name="IFNAME" value="../rpc_blinkenlight_api.x" />
+<property name="TARGETPACKAGE" value="blinkenbone.rpcgen" />
+<property name="TARGETDIR" value="../java/blinkenbone/rpcgen" />
+
+<target name="mktargetdir" description="create target dir">
+  <mkdir dir="${TARGETDIR}"/>
+</target>
+
+
+<target name="clean" depends="mktargetdir" description="delete all generated files">
+  <delete> 
+    <fileset dir="${TARGETDIR}" includes="*.java,*.class" /> 
+  </delete>
+</target>
+
+<target name="compile" depends="clean" description="build all class files with jrpcgen">
+
+  <java jar="../../3rdparty/remotetea/classes/jrpcgen.jar" fork="true">
+    <arg line="-p ${TARGETPACKAGE} -d ${TARGETDIR}  ${IFNAME}"/>
+    <classpath>
+<!--
+      <pathelement location="../../3rdparty/remotetea/classes"/>
+-->
+      <pathelement path="${java.class.path}"/>
+    </classpath>
+  </java>
+<!--
+  
+  <javac
+    srcdir="."
+    classpath="../../3rdparty/remotetea/classes/oncrpc.jar"
+    destdir="."
+  />
+  
+  <jar destfile="rpc_blinkenlight_api.jar"  includes="*.class"
+  />
+-->
+</target>
+
+</project>
+
+

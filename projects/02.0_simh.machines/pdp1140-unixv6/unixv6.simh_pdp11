@@ -1,0 +1,24 @@
+
+set cpu 11/40
+
+set rk enabled
+att rk0 rk0
+att rk1 rk1
+att tm0 tm0
+set tm0 locked
+
+set tto 7b
+set realcons host=beaglebone
+set realcons connected
+show realcons
+
+; set switches
+deposit sr 173030
+
+boot rk0
+;
+; @rkunix
+; login: root
+; # ls -l
+; # stty -lcase
+; 2.1.3

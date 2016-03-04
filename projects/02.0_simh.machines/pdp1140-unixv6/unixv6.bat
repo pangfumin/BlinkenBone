@@ -1,0 +1,1 @@
+..\..\bin-win32-x86\debug\pdp11.exe unixv6.simh_pdp11

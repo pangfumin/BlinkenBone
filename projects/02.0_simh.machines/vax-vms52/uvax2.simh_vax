@@ -1,0 +1,58 @@
+
+; See also
+; http://www.wherry.com/gadgets/retrocomputing/vax-simh.html
+
+; simuliert meine uVAX, 3500 (Gehäuseaufdruck: "uVAX II/GPX")
+; eigentlich eine KA655 (ich habe KA650)
+load -r ka655x.bin
+
+; I have 2x 8MB
+set cpu 16m
+set throttle 22m
+
+; save NVR in file
+attach nvr nvram.bin
+
+; I have aTK50
+set TQ0 enable
+set TQ0 WRITEENABLE
+set TQ TK50
+set TQ1 disable
+set TQ2 disable
+set TQ3 disable
+
+sh tq
+sh tq0
+
+
+; I have one RD54
+set RQ0 enable
+set RQ0 writeenable
+set RQ0 RD54
+set RQ1 disable
+set RQ2 disable
+set RQ3 cdrom
+
+attach RQ0 vms5.2-1.durd_54
+#attach RQ3 d:\vintage\vax\os\openvms\openvms-vax-7.3.iso
+
+sh rq
+sh rq0
+
+; no rl01/02
+set rl disable
+
+echo
+echo ### Booting VAX CPU ....
+echo ###
+echo ### Auf die >>> prompt:
+echo ### >>> b dua0 /r5:1
+echo ###
+
+; set console telnet=23
+boot cpu
+
+
+
+
+
