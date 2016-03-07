@@ -90,10 +90,10 @@ OBJECTS = $(SOURCES.c:%.c=%.o)
 #
 # Build everything
 #
-all:    blinkenlightd
+all:    pidp8_blinkenlightd
 
 clean:
-	rm -f core blinkenlightd $(OBJECTS) $(OBJDIR)/blinkenlightd
+	rm -f core pidp8_blinkenlightd $(OBJECTS) $(OBJDIR)/pidp8_blinkenlightd
 	make --directory=$(BLINKENLIGHT_API_DIR)/rpcgen_linux clean
 
 install:
@@ -103,10 +103,10 @@ ifneq ($(MAKE_TARGET_ARCH),RPI)
 	ssh $(SSHTARGET) "date -u `date -u +%m%d%H%M%Y.%S`; echo `cat /etc/timezone` > /etc/timezone"
 endif
 	echo copy module ...
-	scp $(OBJDIR)/blinkenlightd $(SSHTARGET):
+	scp $(OBJDIR)/pidp8_blinkenlightd $(SSHTARGET):
 
 
-blinkenlightd:	$(SOURCES.c) $(SOURCES.h)
+pidp8_blinkenlightd:	$(SOURCES.c) $(SOURCES.h)
 	# printenv | sort >env.make
 	${CC} $^ -o $@ $(CCDEFS) ${LDFLAGS}
 	mkdir -p $(OBJDIR)

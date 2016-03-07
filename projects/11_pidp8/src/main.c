@@ -21,6 +21,7 @@
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+   06-Mar-2016  JH      renamed from "blinkenlightd" to "pidp8_blinkenlightd"
    22-Feb-2016  JH		V 1.1 added panel modes LAMPTEST, POWERLESS
    13-Nov-2015  JH      V 1.0 created
 
@@ -29,7 +30,7 @@
    on the Raspberry based "PiPDP8 replica from Oscar Vermeulen.
 
    Like the generic blinkenlightd,
-     - PiDP8 cobntrols are fix wired in, no config file
+     - PiDP8 controls are fix wired in, no config file
      - Hardware interface to Raspberry is original "gpio.c" from Oscar
 
    DEC names for switches and LEDs : see
@@ -336,7 +337,7 @@ void blinkenlight_api_server(void)
 void info(void)
 {
 	print(LOG_INFO, "\n");
-	print(LOG_NOTICE, "*** blinkenlightd %s - server for PiDP8 ***\n", VERSION);
+	print(LOG_NOTICE, "*** pidp8_blinkenlightd %s - server for PiDP8 ***\n", VERSION);
 	print(LOG_NOTICE, "    Compiled " __DATE__ " " __TIME__ "\n");
 	print(LOG_NOTICE, "    Copyright (C) 2015-2016 Joerg Hoppe, Oscar Vermeulen.\n");
 	print(LOG_NOTICE, "    Contact: j_hoppe@t-online.de, www.retrocmp.com\n");
@@ -349,12 +350,12 @@ void info(void)
 static void help(void)
 {
 	fprintf(stderr, "\n");
-	fprintf(stderr, "blinkenlightd %s - Blinkenlight RPC server for PiDP8 \n",
+	fprintf(stderr, "pidp8_blinkenlightd %s - Blinkenlight RPC server for PiDP8 \n",
 	VERSION);
 	fprintf(stderr, "  (compiled " __DATE__ " " __TIME__ ")\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "Call:\n");
-	fprintf(stderr, "blinkenlightd [-b] [-v]\n");
+	fprintf(stderr, "pidp8_blinkenlightd [-b] [-v]\n");
 	fprintf(stderr, "\n");
 //	fprintf(stderr, "- <port>:               TCP port for RCP access.\n") ;
 	fprintf(stderr, "-b               : background operation: print to syslog (view with dmesg)\n");
@@ -561,7 +562,7 @@ int main(int argc, char *argv[])
 		help();
 		return 1;
 	}
-	sprintf(program_info, "blinkenlightd - Blinkenlight API server daemon for PiDP8 %s", VERSION);
+	sprintf(program_info, "pidp8_blinkenlightd - Blinkenlight API server daemon for PiDP8 %s", VERSION);
 
 	info();
 
