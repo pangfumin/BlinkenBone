@@ -102,11 +102,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\00_common\getopt2.c" />
     <ClCompile Include="..\actions.c" />
     <ClCompile Include="..\..\00_common\bitcalc.c" />
     <ClCompile Include="..\..\07.0_blinkenlight_api\blinkenlight_api_client.c" />
     <ClCompile Include="..\..\07.0_blinkenlight_api\blinkenlight_panels.c" />
-    <ClCompile Include="..\..\00_common\getopt.c" />
     <ClCompile Include="..\..\00_common\inputline.c" />
     <ClCompile Include="..\..\00_common\kbhit.c" />
     <ClCompile Include="..\main.c" />
@@ -117,12 +117,12 @@
     <ClCompile Include="..\..\07.0_blinkenlight_api\rpcgen_linux\rpc_blinkenlight_api_xdr.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\00_common\getopt2.h" />
     <ClInclude Include="..\actions.h" />
     <ClInclude Include="..\..\00_common\bitcalc.h" />
     <ClInclude Include="..\..\07.0_blinkenlight_api\rpcgen_linux\blinkenlight_api.h" />
     <ClInclude Include="..\..\07.0_blinkenlight_api\blinkenlight_api_client.h" />
     <ClInclude Include="..\..\07.0_blinkenlight_api\blinkenlight_panels.h" />
-    <ClInclude Include="..\..\00_common\getopt.h" />
     <ClInclude Include="..\..\00_common\inputline.h" />
     <ClInclude Include="..\..\00_common\kbhit.h" />
     <ClInclude Include="..\main.h" />

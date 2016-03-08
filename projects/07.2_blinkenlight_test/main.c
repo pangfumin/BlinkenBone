@@ -20,16 +20,16 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
+   08-Mar-2016  JH      V 1.08  better commandline processing with getopt2()
    01-Feb-2016  JH      V 1.07
                                 actions to stimulated a "dimmed" control by high-speed
                                 PWM output.
    10-Oct-2014  JH      V 1.06
-   				found memoryleaks in blinkenlight_api_client.c:
-   				responses from server must be free's with  "xdr_free()" !
+                                found memoryleaks in blinkenlight_api_client.c:
+                                responses from server must be free's with  "xdr_free()" !
    22-Feb-2013	JH      V 1.05
-   				-w argument,
-   				-f read file input
+                                -w argument,
+                                -f read file input
    09-Dec-2012  JH      created
 */
 
@@ -37,7 +37,7 @@
 
 
 
-#define VERSION	"v1.07"
+#define VERSION	"v1.08"
 #define COPYRIGHT_YEAR	2016
 
 #include <stdio.h>
@@ -46,7 +46,7 @@
 #include <ctype.h>
 #include <assert.h>
 
-#include "getopt.h"
+#include "getopt2.h"
 #include "inputline.h"
 
 #include "blinkenlight_api_client.h" /* interface to RPC wrappers */
@@ -66,9 +66,11 @@
 blinkenlight_api_client_t *blinkenlight_api_client;
 
 // command line args
+getopt_t	getopt_parser;
+
 int arg_ping_repeat = 0;
-char *arg_cmdfilename = NULL;
-char *arg_hostname;
+char arg_cmdfilename[256];
+char arg_hostname[256];
 
 int arg_menu_linewidth = 132; // for screen output
 
@@ -77,81 +79,115 @@ int arg_menu_linewidth = 132; // for screen output
  */
 static void help()
 {
-	fprintf(stderr, "Usage:\n");
-	fprintf(stderr,
-			"blinkenlightapitst [-p <repeat_cout>] [-w screen_width] [-f <cmdfile>] <host>\n");
-	fprintf(stderr, "\n");
-	fprintf(stderr, "Options:\n");
-	fprintf(stderr, "-p: \"PING\". Try <repeat_count> to contact server on host <host>.\n");
-	fprintf(stderr, "           If OK, exit with code 0, else exit with 1\n");
-	fprintf(stderr, "-w: \"WIDTH\". Set width of screen in chars\n");
-	fprintf(stderr, "-f: \"FILE\". Filename, from which commands are read\n");
-	fprintf(stderr, "           Lines are processed as if typed in.\n");
-	fprintf(stderr, "\n");
+	fprintf(stdout, "Command line summary:\n\n");
+	// getop must be intialized to print the syntax
+	getopt_help(&getopt_parser, stdout, arg_menu_linewidth, 10, "blinkenlightapitst");
+	exit(1);
+}
+
+
+// show error for one option
+static void commandline_error()
+{
+	fprintf(stdout, "Error while parsing commandline:\n");
+	fprintf(stdout, "  %s\n", getopt_parser.curerrortext);
+	exit(1);
+}
+// parameter wrong for currently parsed option
+static void commandline_option_error()
+{
+	fprintf(stdout, "Error while parsing commandline option:\n");
+	fprintf(stdout, "  %s\nSyntax:  ", getopt_parser.curerrortext);
+	getopt_help_option(&getopt_parser, stdout, 96, 10);
+	exit(1);
 }
 
 /*
  * read commandline parameters into global vars
  * result: 0 = OK, 1 = error
  */
-static int parse_commandline(int argc, char **argv)
+static void parse_commandline(int argc, char **argv)
 {
-	int c;
+	int res;
 
-	while ((c = getopt(argc, argv, "p:w:f:")) != -1)
-		switch (c) {
-		case 'p':
-			arg_ping_repeat = strtol(optarg, NULL, 10);
-			break;
-		case 'w':
-			arg_menu_linewidth = strtol(optarg, NULL, 10);
+	// define commandline syntax
+	getopt_init(&getopt_parser, /*ignore_case*/1);
+	arg_cmdfilename[0] = 0;
+	arg_hostname[0] = 0;
+
+	getopt_def(&getopt_parser, NULL, NULL, "hostname", NULL, "Connect to the Blinkenlight API server on <hostname>\n"
+		"<hostname> may be numerical or ar DNS name",
+		"127.0.0.1", "connect to the server running on the same machine.",
+		"raspberrypi", "connected to a RaspberryPi with default name.");
+	getopt_def(&getopt_parser, "?", "help", NULL, NULL, "Print help", NULL, NULL, NULL, NULL);
+	getopt_def(&getopt_parser, "cf", "cmdfile", "cmdfilename", NULL, "File from which commands are read.\n"
+		"Lines are processed as if typed in.",
+		"testseq", "read commands from file \"testseq\" and execute line by line", NULL, NULL);
+	getopt_def(&getopt_parser, "p", "ping", "pingcount", NULL, "Ping server on <hostname> wether he is alife.\n"
+		"There are <pingcount> tries. On error, exit status 1 is returned.",
+		"20", "Ping for 20 seconds.", NULL, NULL);
+	getopt_def(&getopt_parser, "w", "width", "columns", NULL, "set screen width for display.\n"
+		"Panel controls are displayed in a table, which uses this much char columns.\n"
+		"Should be less or equal to terminal window width. Minimum 80, default = 132.",
+		"96", "Use 96 columns in terminal window", NULL, NULL);
+	if (argc < 2)
+		help(); // at least 1 required
+
+	res = getopt_first(&getopt_parser, argc, argv);
+	while (res > 0) {
+		if (getopt_isoption(&getopt_parser, "help")) {
+			help();
+		}
+		else if (getopt_isoption(&getopt_parser, "cmdfile")) {
+			if (getopt_arg_s(&getopt_parser, "cmdfilename", arg_cmdfilename, sizeof(arg_cmdfilename)) < 0)
+				commandline_option_error();
+		}
+		else if (getopt_isoption(&getopt_parser, "ping")) {
+			if (getopt_arg_i(&getopt_parser, "pingcount", &arg_ping_repeat) < 0)
+				commandline_option_error();
+		}
+		else if (getopt_isoption(&getopt_parser, "width")) {
+			if (getopt_arg_i(&getopt_parser, "columns", &arg_menu_linewidth) < 0)
+				commandline_option_error();
 			if (arg_menu_linewidth < 80)
 				arg_menu_linewidth = 80;
-			break;
-		case 'f':
-			arg_cmdfilename = optarg;
-			break;
-		case '?': // getopt detected an error. "opterr=0", so own error message here
-			if (optopt == 'c')
-				fprintf(stderr, "Option -%c requires an argument.\n", optopt);
-			else if (isprint(optopt))
-				fprintf(stderr, "Unknown option `-%c'.\n", optopt);
-			else
-				fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt);
-			return 1;
-			break;
-		default:
-			abort(); // getopt() got crazy?
-			break;
 		}
-	if (argc <= optind) {
-		return 1; // hostname missing
+		else if (getopt_isoption(&getopt_parser, NULL)) {
+			if (getopt_arg_s(&getopt_parser, "hostname", arg_hostname, sizeof(arg_hostname)) < 0)
+				commandline_option_error();
+		}
+
+		res = getopt_next(&getopt_parser);
 	}
-	arg_hostname = argv[optind];
-	return 0;
+	if (res == GETOPT_STATUS_MINARGCOUNT || res == GETOPT_STATUS_MAXARGCOUNT)
+		// known option, but wrong number of arguments
+		commandline_option_error();
+	else if (res < 0)
+		commandline_error();
 }
-/*
- *
- */
-int main(int argc, char *argv[])
-{
-	/*
-	 * Save values of command line arguments
-	 */
+	
+
+static void printheader() {
 	printf("\n");
 	printf(
-			"*** blinkenlightapitst %s - client for BeagleBone Blinkenlight API panel interface ***\n",
-			VERSION);
+		"*** blinkenlightapitst %s - client for BeagleBone Blinkenlight API panel interface ***\n",
+		VERSION);
 	printf("    Build " __DATE__ " " __TIME__ "\n");
 	printf("    Copyright (C) 2012-%d Joerg Hoppe.\n", COPYRIGHT_YEAR);
 	printf("    Contact: j_hoppe@t-online.de\n");
 	printf("    Web: www.retrocmp.com/projects/blinkenbone\n");
 	printf("\n");
+}
 
-	if (parse_commandline(argc, argv) != 0) {
-		help();
-		exit(1);
-	}
+int main(int argc, char *argv[])
+{
+	printheader();
+	/*
+	 * Save values of command line arguments
+	 */
+
+	parse_commandline(argc, argv);
+	// returuns only if everything is OK
 
 	if (arg_ping_repeat > 0) {
 		if (ping(arg_hostname, arg_ping_repeat) == 0)
@@ -162,7 +198,7 @@ int main(int argc, char *argv[])
 
 	menu_linewidth = arg_menu_linewidth;
 	inputline_init();
-	if (arg_cmdfilename != NULL )
+	if (strlen(arg_cmdfilename) )
 		// read commands from file
 		inputline_fopen(arg_cmdfilename);
 

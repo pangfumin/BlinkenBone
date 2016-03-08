@@ -134,7 +134,7 @@ int control_moving_bit(blinkenlight_panel_t *p, blinkenlight_control_t *c, int d
 int control_dim(blinkenlight_panel_t *p, blinkenlight_control_t *c, int period_ms,
 		int fill_from_msb)
 {
-	unsigned bit_idx, pattern_idx;
+	unsigned pattern_idx;
 	int user_break = 0;
 	u_int64_t saved_value = c->value; // save control value
 	u_int32_t pattern[16];

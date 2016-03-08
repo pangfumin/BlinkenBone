@@ -54,6 +54,7 @@ BLINKENLIGHT_API_SOURCES.c = \
 	$(BLINKENLIGHT_API_DIR)/rpcgen_linux/rpc_blinkenlight_api_xdr.c	\
 	$(BLINKENLIGHT_COMMON_DIR)/radix.c	\
 	$(BLINKENLIGHT_COMMON_DIR)/bitcalc.c \
+	$(BLINKENLIGHT_COMMON_DIR)/getopt2.c \
 	$(BLINKENLIGHT_COMMON_DIR)/kbhit.c	\
 	$(BLINKENLIGHT_COMMON_DIR)/mcout.c	\
 	$(BLINKENLIGHT_COMMON_DIR)/inputline.c
@@ -64,6 +65,7 @@ BLINKENLIGHT_API_SOURCES.h = \
 	$(BLINKENLIGHT_API_DIR)/blinkenlight_api_client.h	\
 	$(BLINKENLIGHT_COMMON_DIR)/radix.h	\
 	$(BLINKENLIGHT_COMMON_DIR)/bitcalc.h \
+	$(BLINKENLIGHT_COMMON_DIR)/getopt2.h \
 	$(BLINKENLIGHT_COMMON_DIR)/kbhit.h	\
 	$(BLINKENLIGHT_COMMON_DIR)/mcout.h	\
 	$(BLINKENLIGHT_COMMON_DIR)/inputline.h

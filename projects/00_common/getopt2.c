@@ -89,6 +89,13 @@
 #include <assert.h>
 #include "getopt2.h"
 
+#ifdef WIN32
+#include <windows.h>
+#define strcasecmp _stricmp	// grmbl
+#define snprintf  sprintf_s
+#else
+#include <unistd.h>
+#endif
 
  /*
   * first intialize, only once!
@@ -110,7 +117,7 @@ void getopt_init(getopt_t *_this, int ignore_case)
 /* compare string with regard to "ignore_case*/
 static int getopt_strcmp(getopt_t *_this, char *s1, char *s2) {
 	if (_this->ignore_case)
-		return stricmp(s1, s2);
+		return strcasecmp(s1, s2);
 	else
 		return strcmp(s1, s2);
 }
@@ -258,25 +265,25 @@ static int getopt_parse_error(getopt_t *_this, int error)
 	_this->curerror = error;
 	switch (error) {
 	case GETOPT_STATUS_ILLEGALOPTION:
-		sprintf_s(_this->curerrortext, sizeof(_this->curerrortext),
+		snprintf(_this->curerrortext, sizeof(_this->curerrortext),
 			"Undefined option at \"%s\"", _this->curtoken);
 		break;
 	case GETOPT_STATUS_MINARGCOUNT:
 		if (_this->cur_option == _this->nonoption_descr)
-			sprintf_s(_this->curerrortext, sizeof(_this->curerrortext),
+			snprintf(_this->curerrortext, sizeof(_this->curerrortext),
 				"Less than %d non-option arguments at \"%s\"",
 				_this->cur_option->fix_arg_count, _this->curtoken);
 		else
-			sprintf_s(_this->curerrortext, sizeof(_this->curerrortext),
+			snprintf(_this->curerrortext, sizeof(_this->curerrortext),
 				"Less than %d arguments for option \"%s\" at \"%s\"",
 				_this->cur_option->fix_arg_count, _this->cur_option->long_name, _this->curtoken);
 		break;
 	case GETOPT_STATUS_MAXARGCOUNT:
 		if (_this->cur_option == _this->nonoption_descr)
-			sprintf_s(_this->curerrortext, sizeof(_this->curerrortext),
+			snprintf(_this->curerrortext, sizeof(_this->curerrortext),
 				"More than %d non-option arguments at \"%s\"", _this->cur_option->max_arg_count, _this->curtoken);
 		else
-			sprintf_s(_this->curerrortext, sizeof(_this->curerrortext),
+			snprintf(_this->curerrortext, sizeof(_this->curerrortext),
 				"More than %d arguments for option \"%s\" at \"%s\"",
 				_this->cur_option->max_arg_count, _this->cur_option->long_name, _this->curtoken);
 		break;
@@ -288,19 +295,19 @@ static int getopt_arg_error(getopt_t *_this, getopt_option_descr_t *odesc, int e
 	_this->curerror = error;
 	switch (error) {
 	case GETOPT_STATUS_ILLEGALARG:
-		sprintf_s(_this->curerrortext, sizeof(_this->curerrortext),
+		snprintf(_this->curerrortext, sizeof(_this->curerrortext),
 			"Option \"%s\" has no argument \"%s\"", odesc->long_name, argname);
 		break;
 	case GETOPT_STATUS_ARGNOTSET:
-		sprintf_s(_this->curerrortext, sizeof(_this->curerrortext),
+		snprintf(_this->curerrortext, sizeof(_this->curerrortext),
 			"Optional argument \"%s\" for option \"%s\" not set", argname, odesc->long_name);
 		break;
 	case GETOPT_STATUS_ARGFORMATINT:
-		sprintf_s(_this->curerrortext, sizeof(_this->curerrortext),
+		snprintf(_this->curerrortext, sizeof(_this->curerrortext),
 			"Argument \"%s\" of option \"%s\" has value \"%s\", which is no integer", argname, odesc->long_name, argval);
 		break;
 	case GETOPT_STATUS_ARGFORMATHEX:
-		sprintf_s(_this->curerrortext, sizeof(_this->curerrortext),
+		snprintf(_this->curerrortext, sizeof(_this->curerrortext),
 			"Argument \"%s\" of option \"%s\" has value \"%s\", which is no hex integer", argname, odesc->long_name, argval);
 		break;
 	}
@@ -436,7 +443,8 @@ int getopt_arg_s(getopt_t *_this, char *argname, char *val, unsigned valsize)
 		// the optional argument [argidx] is not given in the arguument list
 		return GETOPT_STATUS_EOF;
 //		return getopt_arg_error(_this, odesc, GETOPT_STATUS_ARGNOTSET, argname, NULL);
-	strcpy_s(val, valsize, _this->cur_option_argval[argidx]);
+	strncpy(val, _this->cur_option_argval[argidx], valsize);
+	val[valsize-1] = 0;
 	return GETOPT_STATUS_OK;
 }
 
@@ -506,7 +514,8 @@ static void output_append(FILE *stream, char *line, int linesize, char *s, int l
 			for (_i_ = 0; _i_ < indent; _i_++) line[_i_] = ' ';
 		line[_i_] = 0;
 	}
-	strcat_s(line, linesize, s);
+	strncat(line, s, linesize);
+	line[linesize-1] = 0;
 }
 
 
@@ -524,38 +533,38 @@ static char *getopt_getoptionsyntax(getopt_option_descr_t *odesc, int style)
 	// mount a single "-option arg arg [arg arg]"
 	if (style == 0) {
 		if (odesc->long_name)
-			sprintf_s(buffer, sizeof(buffer), "--%s", odesc->long_name);
+			snprintf(buffer, sizeof(buffer), "--%s", odesc->long_name);
 		else if (odesc->short_name)
-			sprintf_s(buffer, sizeof(buffer), "-%s", odesc->short_name);
+			snprintf(buffer, sizeof(buffer), "-%s", odesc->short_name);
 		else  buffer[0] = 0; // no option name: non-optopn commadnline arguments
 	}
 	else { // both names comma separated: "-short, --long"
 		buffer[0] = 0;
 		if (odesc->short_name) {
-			strcat_s(buffer, sizeof(buffer), "-");
-			strcat_s(buffer, sizeof(buffer), odesc->short_name);
+			strncat(buffer, "-", sizeof(buffer));
+			strncat(buffer, odesc->short_name, sizeof(buffer));
 		}
 		if (odesc->long_name) {
 			if (odesc->short_name)
-				strcat_s(buffer, sizeof(buffer), " | ");
-			strcat_s(buffer, sizeof(buffer), "--");
-			strcat_s(buffer, sizeof(buffer), odesc->long_name);
+				strncat(buffer, " | ", sizeof(buffer));
+			strncat(buffer, "--", sizeof(buffer));
+			strncat(buffer, odesc->long_name, sizeof(buffer));
 		}
 	}
 
 	for (i = 0; s = odesc->fix_args[i]; i++) {
-		strcat_s(buffer, sizeof(buffer), " <");
-		strcat_s(buffer, sizeof(buffer), s);
-		strcat_s(buffer, sizeof(buffer), ">");
+		strncat(buffer, " <", sizeof(buffer));
+		strncat(buffer, s, sizeof(buffer));
+		strncat(buffer, ">", sizeof(buffer));
 	}
 	for (i = 0; s = odesc->var_args[i]; i++) {
-		strcat_s(buffer, sizeof(buffer), " ");
-		if (i == 0) strcat_s(buffer, sizeof(buffer), "[");
-		strcat_s(buffer, sizeof(buffer), "<");
-		strcat_s(buffer, sizeof(buffer), s);
-		strcat_s(buffer, sizeof(buffer), ">");
+		strncat(buffer, " ", sizeof(buffer));
+		if (i == 0) strncat(buffer, "[", sizeof(buffer));
+		strncat(buffer, "<", sizeof(buffer));
+		strncat(buffer, s, sizeof(buffer));
+		strncat(buffer, ">", sizeof(buffer));
 	}
-	if (i > 0) strcat_s(buffer, sizeof(buffer), "]");
+	if (i > 0) strncat(buffer, "]", sizeof(buffer));
 
 	return buffer;
 }
@@ -593,13 +602,12 @@ static void getopt_help_option_intern(getopt_option_descr_t *odesc, FILE *stream
 	linebuff[0] = 0;
 
 	// print syntax
-	strcpy_s(phrase, sizeof(phrase), getopt_getoptionsyntax(odesc, 1));
+	strncpy(phrase, getopt_getoptionsyntax(odesc, 1), sizeof(phrase));
 	output_append(stream, linebuff, sizeof(linebuff), phrase, /*linebreak*/0, linelen, indent);
 	output_append(stream, linebuff, sizeof(linebuff), "", /*linebreak*/1, linelen, indent); // newline
 	getopt_print_multilinestring(stream, linebuff, sizeof(linebuff), odesc->info, linelen, indent);
 
 	// print examples:
-
 	if (odesc->example_simple_cline_args) {
 		output_append(stream, linebuff, sizeof(linebuff), "Simple example:  ", 1, linelen, indent);
 		if (odesc->short_name) {
@@ -626,7 +634,6 @@ static void getopt_help_option_intern(getopt_option_descr_t *odesc, FILE *stream
 	}
 	// flush
 	fprintf(stream, "%s\n", linebuff);
-
 }
 
 // print cmdline syntax and help for all options
@@ -643,17 +650,17 @@ void getopt_help(getopt_t *_this, FILE *stream, unsigned linelen, unsigned inden
 	phrase[0] = 0;
 	// 1.1. print options
 	//fprintf(stream, "Command line summary:\n");
-	sprintf_s(linebuff, sizeof(linebuff), "%s ", commandname);
+	snprintf(linebuff, sizeof(linebuff), "%s ", commandname);
 	for (i = 0; odesc = _this->option_descrs[i]; i++) {
 		// mount a single "-option arg arg [arg arg]"
-		strcpy_s(phrase, sizeof(phrase), getopt_getoptionsyntax(odesc, 0));
-		strcat_s(linebuff, sizeof(linebuff), " ");
+		strncpy(phrase, getopt_getoptionsyntax(odesc, 0), sizeof(phrase));
+		strncat(linebuff, " ", sizeof(linebuff));
 		output_append(stream, linebuff, sizeof(linebuff), phrase, /*linebreak*/0, linelen, indent);
 	}
 	// 1.2. print non-option cline arguments
 	if (_this->nonoption_descr) {
-		strcpy_s(phrase, sizeof(phrase), getopt_getoptionsyntax(_this->nonoption_descr, 0));
-		strcat_s(linebuff, sizeof(linebuff), " ");
+		strncpy(phrase, getopt_getoptionsyntax(_this->nonoption_descr, 0), sizeof(phrase));
+		strncat(linebuff, " ", sizeof(linebuff));
 		output_append(stream, linebuff, sizeof(linebuff), phrase, /*linebreak*/0, linelen, indent);
 	}
 
@@ -674,7 +681,6 @@ void getopt_help(getopt_t *_this, FILE *stream, unsigned linelen, unsigned inden
 		fprintf(stream, "\nOption names are case insensitive.\n");
 	else
 		fprintf(stream, "\nOption names are case sensitive.\n");
-
 }
 
 
@@ -682,10 +688,8 @@ void getopt_help(getopt_t *_this, FILE *stream, unsigned linelen, unsigned inden
 // print help for current option
 void getopt_help_option(getopt_t *_this, FILE *stream, unsigned linelen, unsigned indent)
 {
-
 	getopt_option_descr_t  *odesc = _this->cur_option;
 	if (odesc)
 		getopt_help_option_intern(odesc, stream, linelen, indent);
-
 }
 
