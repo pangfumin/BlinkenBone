@@ -21,6 +21,7 @@
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+   09-Mar-2016  JH		V 1.2 inverted "Deposit" switch
    06-Mar-2016  JH      renamed from "blinkenlightd" to "pidp8_blinkenlightd"
    22-Feb-2016  JH		V 1.1 added panel modes LAMPTEST, POWERLESS
    13-Nov-2015  JH      V 1.0 created
@@ -43,7 +44,7 @@
 #define MAIN_C_
 
 
-#define VERSION	"v1.1.0"
+#define VERSION	"v1.2.0"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -145,6 +146,10 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
 				unsigned bit_offset = c->blinkenbus_register_wiring[0].blinkenbus_lsb;
 				unsigned mask = BitmaskFromLen32[c->value_bitlen];
 				c->value = (gpio_bits >> bit_offset) & mask; // all bits inverted
+
+				// the deposit switch must be inverted, PiDP8 electronics doesn't handle this
+				if (c == switch_deposit)
+					c->value = !c->value ;
 			}
 		}
 	}
