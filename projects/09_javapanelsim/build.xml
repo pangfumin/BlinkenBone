@@ -28,14 +28,14 @@
         <!-- The Blinkenlight API-->
         <javac srcdir="${dir.root}/07.0_blinkenlight_api/java"
                 destdir="${dir.project}/bin"
-                target="1.6" >
+                target="1.6" source="1.6" >
                 <classpath refid="otherjars"/>
         </javac>
 
         <!-- The panel simulations-->
         <javac srcdir="${dir.project}/src"
                 destdir="${dir.project}/bin"
-                target="1.6" >
+                target="1.6" source="1.6" >
                 <classpath refid="otherjars"/>
         </javac>
      </target>

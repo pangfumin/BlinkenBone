@@ -20,6 +20,7 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+   12-Mar-2016  JH      V 1.09  new C-like menu operators: ~, +, -, <, >
    08-Mar-2016  JH      V 1.08  better commandline processing with getopt2()
    01-Feb-2016  JH      V 1.07
                                 actions to stimulated a "dimmed" control by high-speed
@@ -37,7 +38,7 @@
 
 
 
-#define VERSION	"v1.08"
+#define VERSION	"v1.09"
 #define COPYRIGHT_YEAR	2016
 
 #include <stdio.h>

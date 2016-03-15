@@ -31,6 +31,7 @@
 #include <assert.h>
 
 #include "blinkenlight_panels.h"
+#include "historybuffer.h"
 
 #ifdef WIN32
 #define strcasecmp _stricmp	// grmbl
@@ -169,7 +170,9 @@ blinkenlight_control_t *blinkenlight_add_control(blinkenlight_panel_list_t *_thi
 #if defined(BLINKENLIGHT_SERVER)
 	c->mirrored_bit_order = 0;
 	c->blinkenbus_register_wiring_count = 0;
+	c->history = historybuffer_create(c, MAX_BLINKENLIGHT_HISTORY_ENTRIES) ;
 #endif
+	// is not free'd! but only single data struct allocate at program start
 	return c;
 }
 

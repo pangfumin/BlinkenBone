@@ -156,7 +156,7 @@ void blinkenlight_panels_config_fixup()
 			p->default_radix = 16; // default: hex representation
 
 		for (i_control = 0; i_control < p->controls_count; i_control++) {
-			u_int64_t all_value_bits = 0;
+			uint64_t all_value_bits = 0;
 			blinkenlight_control_t *c = &(p->controls[i_control]);
 			// get radix from panel, if not defined
 			if (c->radix == 0)
@@ -352,8 +352,8 @@ int blinkenlight_panels_config_check(void)
 	for (i_panel = 0; i_panel < blinkenlight_panel_list->panels_count; i_panel++) {
 		p = &(blinkenlight_panel_list->panels[i_panel]);
 		for (i_control = 0; i_control < p->controls_count; i_control++) {
-			u_int64_t all_value_bits = 0;
-			u_int64_t cur_value_bits;
+			uint64_t all_value_bits = 0;
+			uint64_t cur_value_bits;
 			// Check, which bits of "value" are defined by which BLINKENBUS register bits
 			// - every value bit from 0..len-1 must be defined by a register
 			// - no value bit maybe defined by more than one register
@@ -422,11 +422,11 @@ int blinkenlight_panels_config_check(void)
 			// first "0" bit must be have index == len, else there's a 0-hole in all_value_bits
 			// set bits
 			{
-				u_int64_t bitmask = BitmaskFromLen64[c->value_bitlen];
-				u_int64_t errmask = all_value_bits ^ bitmask; // all undefined bits now as 1
+				uint64_t bitmask = BitmaskFromLen64[c->value_bitlen];
+				uint64_t errmask = all_value_bits ^ bitmask; // all undefined bits now as 1
 				// continuous blocks of undefined LSB's are allowed!
 				int errmask_msb_index = get_msb_index64(errmask); // biggest undefined bit
-				u_int64_t errmask_with_all_lsbs_set = BitmaskFromLen64[errmask_msb_index + 1];
+				uint64_t errmask_with_all_lsbs_set = BitmaskFromLen64[errmask_msb_index + 1];
 				if (errmask
 						&& (errmask_msb_index >= c->value_bitlen
 								|| errmask != errmask_with_all_lsbs_set)) //

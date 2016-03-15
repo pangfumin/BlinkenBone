@@ -1,50 +1,59 @@
 /* main.c: Blinkenlight API server to run on "PiDP8" replica
 
-   Copyright (c) 2015-2016, Joerg Hoppe
-   j_hoppe@t-online.de, www.retrocmp.com
+ Copyright (c) 2015-2016, Joerg Hoppe
+ j_hoppe@t-online.de, www.retrocmp.com
 
-   Permission is hereby granted, free of charge, to any person obtaining a
-   copy of this software and associated documentation files (the "Software"),
-   to deal in the Software without restriction, including without limitation
-   the rights to use, copy, modify, merge, publish, distribute, sublicense,
-   and/or sell copies of the Software, and to permit persons to whom the
-   Software is furnished to do so, subject to the following conditions:
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the "Software"),
+ to deal in the Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ and/or sell copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following conditions:
 
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-   JOERG HOPPE BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-   IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-   09-Mar-2016  JH		V 1.2 inverted "Deposit" switch
-   06-Mar-2016  JH      renamed from "blinkenlightd" to "pidp8_blinkenlightd"
-   22-Feb-2016  JH		V 1.1 added panel modes LAMPTEST, POWERLESS
-   13-Nov-2015  JH      V 1.0 created
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ JOERG HOPPE BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-   Blinkenlight API server, which controls lamps and switches
-   on the Raspberry based "PiPDP8 replica from Oscar Vermeulen.
+ 15-Mar-2016  JH	V 1.3 Low-pass for SimH output, display patterns for brightness levels
+ 09-Mar-2016  JH	V 1.2 inverted "Deposit" switch
+ 06-Mar-2016  JH    renamed from "blinkenlightd" to "pidp8_blinkenlightd"
+ 22-Feb-2016  JH	V 1.1 added panel modes LAMPTEST, POWERLESS
+ 13-Nov-2015  JH    V 1.0 created
 
-   Like the generic blinkenlightd,
-     - PiDP8 controls are fix wired in, no config file
-     - Hardware interface to Raspberry is original "gpio.c" from Oscar
 
-   DEC names for switches and LEDs : see
-       PDP-8 FAMILY SYSTEM USER'S GUIDE
-       dec-08-ngcb-d-.pdf, pdf;  page INTRO-5, pdpf page 19
+ Blinkenlight API server, which controls lamps and switches
+ on the Raspberry based "PiPDP8 replica from Oscar Vermeulen.
 
-*/
+ Like the generic blinkenlightd,
+ - PiDP8 controls are fix wired in, no config file
+ - Hardware interface to Raspberry is original "gpio.c" from Oscar
 
+ DEC names for switches and LEDs : see
+ PDP-8 FAMILY SYSTEM USER'S GUIDE
+ dec-08-ngcb-d-.pdf, pdf;  page INTRO-5, pdpf page 19
+
+
+ Timing & CPU load:
+ There are 2 threads:
+ a) the LED MUX loop, in gpio.c, long intervl
+ b) the averaging loop in gpiopattern.c
+ (and SimH is the 3rd process running)
+
+ To fine trim cpu load, use web based "rCPU"
+ https://github.com/davidsblog/rCPU
+
+ */
 
 #define MAIN_C_
 
-
-#define VERSION	"v1.2.0"
+#define VERSION	"v1.3.0"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -69,6 +78,7 @@
 
 #include "main.h"
 #include "gpio.h"
+#include "gpiopattern.h"
 
 char program_info[1024];
 char program_name[1024]; // argv[0]
@@ -149,7 +159,7 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
 
 				// the deposit switch must be inverted, PiDP8 electronics doesn't handle this
 				if (c == switch_deposit)
-					c->value = !c->value ;
+					c->value = !c->value;
 			}
 		}
 	}
@@ -159,43 +169,17 @@ static void on_blinkenlight_api_panel_set_controlvalues(blinkenlight_panel_t *p,
 {
 	// gets called when RPC client updated panel control values
 	// converts Blinkenlight API leds to gpio (Blinkenligt API -> RPI)
-	unsigned i;
-	// mount values for gpio_registers ordered by register,
-	// else flicker by co-running gpio_mux may occur.
 
-	for (i = 0; i < p->controls_count; i++) {
-		blinkenlight_control_t *c = &p->controls[i];
-		if (!c->is_input) {
-			// fetch  shift
-			unsigned gpio_register_idx =
-					c->blinkenbus_register_wiring[0].blinkenbus_register_address;
-			unsigned bit_offset = c->blinkenbus_register_wiring[0].blinkenbus_lsb;
-			unsigned mask = (BitmaskFromLen32[c->value_bitlen] << bit_offset);
-			unsigned gpio_bits = (c->value << bit_offset);
-			switch (p->mode) {
-			case RPC_PARAM_VALUE_PANEL_MODE_NORMAL:
-				gpio_ledstatus[gpio_register_idx] = (gpio_ledstatus[gpio_register_idx] & ~mask)
-						| gpio_bits;
-			break ;
-			case RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST:
-				// all LEDs on, but do not change control values
-				gpio_ledstatus[gpio_register_idx] = (gpio_ledstatus[gpio_register_idx] & ~mask) | mask ;
-			break ;
-			case RPC_PARAM_VALUE_PANEL_MODE_ALLTEST:
-				// all LEDs on, but do not change control values
-				gpio_ledstatus[gpio_register_idx] = (gpio_ledstatus[gpio_register_idx] & ~mask) | mask ;
-			break ;
-			case RPC_PARAM_VALUE_PANEL_MODE_POWERLESS:
-				// all LEDs off, but do not change control values
-				gpio_ledstatus[gpio_register_idx] = 0 ;
-			break ;
-			}
-			}
-		}
-//	for (i = 0; i < 8; i++)
-//		gpio_ledstatus[i] = control_raw_ledstatus[i]->value;
+	// the averaging thread needs to be informed about the panel
+	// THIS WORKS ONLY BECAUSE ONLY ONE PANEL is provided by this server!
+	// NO PANEL SWITCH ALLOWED!
+	gpiopattern_blinkenlight_panel = p ;
+	// this also start the thread on first transmission, if gpiopattern_blinkenlight_panel gets != NULL
 
+
+	// gpiopattern_update_leds() ; // just forward to pattern generator
 }
+
 
 static int on_blinkenlight_api_panel_get_state(blinkenlight_panel_t *p)
 {
@@ -208,20 +192,18 @@ static void on_blinkenlight_api_panel_set_state(blinkenlight_panel_t *p, int new
 	// noop
 }
 
-
 // set get selftest/powerless mode
 static int on_blinkenlight_api_panel_get_mode(blinkenlight_panel_t *p)
 {
-	return p->mode ;
+	return p->mode;
 }
 
 static void on_blinkenlight_api_panel_set_mode(blinkenlight_panel_t *p, int new_state)
 {
-	p->mode = new_state ;
+	p->mode = new_state;
 	// GPIO logic here
-	on_blinkenlight_api_panel_set_controlvalues(p, 1) ;
+	on_blinkenlight_api_panel_set_controlvalues(p, 1);
 }
-
 
 static char *on_blinkenlight_api_get_info()
 {
@@ -239,32 +221,42 @@ static char *on_blinkenlight_api_get_info()
 /*
  * Start the parallel thread which operates the GPIO mux.
  */
-void *blink(void *ptr); // the real-time multiplexing process to start up
+void *blink(void *ptr); // the real-time GPIO multiplexing process to start up
+void *gpiopattern_update_leds(void *ptr) ; // the averaging thread
+
 pthread_t blink_thread;
 int blink_thread_terminate = 0;
+pthread_t gpiopattern_thread;
+int gpiopattern_thread_terminate = 0;
 
-static void start_gpio_mux_thread()
+
+static void gpio_mux_thread_start()
 {
-// ------------------------------------------------------------------------
-// PiDP8 hack here
-	// const char *message = "Thread 1";
-	int iret1;
-
+	int res;
 //	printf("\nPiDP FP driver 3\n");
-
-	//blinky(NULL) ;
-	// create thread
-	iret1 = pthread_create(&blink_thread, NULL, blink, &blink_thread_terminate);
-
-	if (iret1) {
-		fprintf(stderr, "Error creating thread, return code %d\n", iret1);
+	res = pthread_create(&blink_thread, NULL, blink, &blink_thread_terminate);
+	if (res) {
+		fprintf(stderr, "Error creating gpio_mux thread, return code %d\n", res);
 		exit(EXIT_FAILURE);
 	}
-//	printf("Created thread, return code %d\n", iret1);
+	printf("Created \"gpio_mux\" thread\n");
 
 	sleep(2); // allow 2 sec for multiplex to start
-// ------------------------------------------------------------------------
 }
+
+
+static void gpiopattern_start_thread(){
+	int res;
+	gpiopattern_blinkenlight_panel = NULL ; // wait for first API transmission to start
+
+	res = pthread_create(&gpiopattern_thread, NULL, gpiopattern_update_leds, &gpiopattern_thread_terminate);
+	if (res) {
+		fprintf(stderr, "Error creating gpiopattern thread, return code %d\n", res);
+		exit(EXIT_FAILURE);
+	}
+	printf("Created \"gpiopattern_update_leds\" thread\n");
+}
+
 
 /******************************************************
  * Server for Blinkenlight API
@@ -567,7 +559,8 @@ int main(int argc, char *argv[])
 		help();
 		return 1;
 	}
-	sprintf(program_info, "pidp8_blinkenlightd - Blinkenlight API server daemon for PiDP8 %s", VERSION);
+	sprintf(program_info, "pidp8_blinkenlightd - Blinkenlight API server daemon for PiDP8 %s",
+	VERSION);
 
 	info();
 
@@ -590,7 +583,8 @@ int main(int argc, char *argv[])
 	blinkenlight_api_get_info_evt = on_blinkenlight_api_get_info;
 
 	register_controls();
-	start_gpio_mux_thread();
+	gpio_mux_thread_start();
+	gpiopattern_start_thread();
 
 	/** /
 	 {
@@ -601,7 +595,6 @@ int main(int argc, char *argv[])
 	 //		return 0;
 	 }
 	 /**/
-
 
 	blinkenlight_api_server();
 	// does never end!

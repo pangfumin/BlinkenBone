@@ -146,7 +146,7 @@ static void panelsim_show(void)
 	for (i_control = 0; i_control < panelsim_panel->controls_count; i_control++) {
 		c = &(panelsim_panel->controls[i_control]);
 		if (!c->is_input) {
-			u_int64_t displayvalue;
+			uint64_t displayvalue;
 
 			if (panelsim_panel->mode == RPC_PARAM_VALUE_PANEL_MODE_ALLTEST
 					|| (panelsim_panel->mode == RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST
@@ -178,7 +178,7 @@ static void panelsim_show(void)
 	for (i_incontrol = i_control = 0; i_control < panelsim_panel->controls_count; i_control++) {
 		c = &(panelsim_panel->controls[i_control]);
 		if (c->is_input) {
-			u_int64_t displayvalue;
+			uint64_t displayvalue;
 			if (panelsim_panel->mode == RPC_PARAM_VALUE_PANEL_MODE_ALLTEST)
 				// "selftest": show "all ones"
 				// whatever "selftest on input switches" this means for a panel
@@ -210,7 +210,7 @@ void panelsim_userinput(char *user_input)
 	}
 // parse <nr> [<value>]
 	{
-		u_int64_t value;
+		uint64_t value;
 		char valuebuffer[80];
 		int n_fields = sscanf(user_input, "%d %s", &i_incontrol, valuebuffer);
 		if (n_fields > 0) {
@@ -258,7 +258,7 @@ void panelsim_userinput(char *user_input)
  */
 void panelsim_service(void)
 {
-#define MSECS(tv) ((u_int64_t)((tv).tv_sec)*1000 + (tv).tv_usec / 1000 )
+#define MSECS(tv) ((uint64_t)((tv).tv_sec)*1000 + (tv).tv_usec / 1000 )
 	struct timeval current_time_tv;
 	int curchr;
 

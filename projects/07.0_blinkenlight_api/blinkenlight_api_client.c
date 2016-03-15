@@ -283,7 +283,7 @@ blinkenlight_api_status_t blinkenlight_api_client_get_inputcontrols_values(
 	blinkenlight_control_t *c;
 	unsigned i_control;
 	unsigned char *value_byte_ptr; // index in received value byte stream
-	u_int64_t value;
+	uint64_t value;
 
 	result_valuelist = rpc_blinkenlight_api_getpanel_controlvalues_1(p->index,
 			(CLIENT *) _this->rpc_client);

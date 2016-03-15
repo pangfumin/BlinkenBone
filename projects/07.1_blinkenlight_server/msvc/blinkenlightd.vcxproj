@@ -101,6 +101,7 @@
     <ClCompile Include="..\..\00_common\namevaluelist.c" />
     <ClCompile Include="..\..\00_common\radix.c" />
     <ClCompile Include="..\..\07.0_blinkenlight_api\blinkenlight_api_server_procs.c" />
+    <ClCompile Include="..\..\07.0_blinkenlight_api\historybuffer.c" />
     <ClCompile Include="..\..\07.0_blinkenlight_api\rpcgen_linux\rpc_blinkenlight_api_xdr.c" />
     <ClCompile Include="..\..\3rdparty\libantlr3c-3.1.4-SNAPSHOT\src\antlr3baserecognizer.c" />
     <ClCompile Include="..\..\3rdparty\libantlr3c-3.1.4-SNAPSHOT\src\antlr3bitset.c" />
@@ -134,6 +135,7 @@
     <ClInclude Include="..\..\07.0_blinkenlight_api\bitcalc.h" />
     <ClInclude Include="..\..\07.0_blinkenlight_api\blinkenlight_api.h" />
     <ClInclude Include="..\..\07.0_blinkenlight_api\blinkenlight_api_server_procs.h" />
+    <ClInclude Include="..\..\07.0_blinkenlight_api\historybuffer.h" />
     <ClInclude Include="..\..\07.0_blinkenlight_api\rpcgen_linux\rpc_blinkenlight_api.h" />
     <ClInclude Include="..\panel_config_grammar\output\blinkenlight_panel_configLexer.h" />
     <ClInclude Include="..\panel_config_grammar\output\blinkenlight_panel_configParser.h" />

@@ -386,7 +386,10 @@ static int on_blinkenlight_api_panel_get_state(blinkenlight_panel_t *p)
 // side effect to other panls on the same boards!
 if (mode_panelsim)
 	return panelsim_get_blinkenboards_state(p);
-#ifndef WIN32
+#ifdef WIN32
+else
+	return 0;
+#else 
 else
 	return blinkenbus_get_blinkenboards_state(p);
 #endif

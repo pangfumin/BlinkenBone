@@ -21,11 +21,13 @@ ifeq ($(MAKE_TARGET_ARCH),BEAGLEBONE)
 	CC=arm-angstrom-linux-gnueabi-gcc  --version -mthumb -march=armv7-a -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) $(OS_CCDEFS) -I.
 	OBJDIR=bin-beaglebone
 	SSHTARGET=root@beaglebone
+	LDFLAGS += -lrt
 else
 ifeq ($(MAKE_TARGET_ARCH),RPI)
 	CC=arm-linux-gnueabihf-gcc -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) $(OS_CCDEFS) -I.
 	OBJDIR=bin-rpi
 	SSHTARGET=pi@raspberrypi
+	LDFLAGS += -lrt
 endif
 
 endif
@@ -53,6 +55,7 @@ BLINKENLIGHT_API_SOURCES.c = \
 	$(BLINKENLIGHT_API_DIR)/blinkenlight_api_server_procs.c \
 	$(BLINKENLIGHT_API_DIR)/rpcgen_linux/rpc_blinkenlight_api_svc.c \
 	$(BLINKENLIGHT_API_DIR)/rpcgen_linux/rpc_blinkenlight_api_xdr.c	\
+	$(BLINKENLIGHT_API_DIR)/historybuffer.c	\
 	$(BLINKENLIGHT_COMMON_DIR)/bitcalc.c	\
 	$(BLINKENLIGHT_COMMON_DIR)/radix.c	\
 	$(BLINKENLIGHT_COMMON_DIR)/mcout.c	\
@@ -61,6 +64,7 @@ BLINKENLIGHT_API_SOURCES.c = \
 BLINKENLIGHT_API_SOURCES.h = \
 	$(BLINKENLIGHT_API_DIR)/rpcgen_linux/rpc_blinkenlight_api.h	\
 	$(BLINKENLIGHT_API_DIR)/blinkenlight_api_server_procs.h \
+	$(BLINKENLIGHT_API_DIR)/historybuffer.h	\
 	$(BLINKENLIGHT_COMMON_DIR)/bitcalc.h	\
 	$(BLINKENLIGHT_COMMON_DIR)/radix.h	\
 	$(BLINKENLIGHT_COMMON_DIR)/mcout.h	\
@@ -76,12 +80,14 @@ $(BLINKENLIGHT_API_SOURCES.c) $(BLINKENLIGHT_API_SOURCES.h):
 SOURCES.h = \
 	main.h	\
 	gpio.h	\
+	gpiopattern.h	\
 	$(BLINKENLIGHT_SERVER_DIR)/print.h	\
 	$(BLINKENLIGHT_API_DIR)/blinkenlight_panels.h
 
 SOURCES.c = \
 	main.c	\
 	gpio.c	\
+	gpiopattern.c	\
 	$(BLINKENLIGHT_SERVER_DIR)/print.c	\
 	$(BLINKENLIGHT_API_SOURCES.c)
 

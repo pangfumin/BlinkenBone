@@ -20,6 +20,7 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+   12-Mar-2016  JH      64bit printf/scanf fmt changed to PRI*64 (inttypes.h)
       Dec-2015  JH      migration from SimH 3.82 to 4.x
                         CPU extensions moved to pdp10_cpu.c
    05-Sep-2014  JH      created
@@ -48,6 +49,7 @@
 
 #define REALCONS_PDP10_CONTROL_C_
 
+#include <inttypes.h>
 #include <assert.h>
 #include "realcons.h"
 #include "realcons_pdp10_control.h"
@@ -96,7 +98,7 @@ t_stat realcons_pdp10_control_init(realcons_pdp10_control_t *_this, realcons_t *
 
 
 // get state of buttons with account of enable logic
-u_int64_t realcons_pdp10_control_get(realcons_pdp10_control_t *_this)
+uint64_t realcons_pdp10_control_get(realcons_pdp10_control_t *_this)
 {
 
 	if (_this->lamps)
@@ -111,7 +113,7 @@ u_int64_t realcons_pdp10_control_get(realcons_pdp10_control_t *_this)
 		return 0;
 }
 
-void realcons_pdp10_control_set(realcons_pdp10_control_t *_this, u_int64_t value)
+void realcons_pdp10_control_set(realcons_pdp10_control_t *_this, uint64_t value)
 // trunc value to bit mask
 // does NOT produce a change-event in service()!
 {
@@ -132,7 +134,7 @@ void realcons_pdp10_control_set(realcons_pdp10_control_t *_this, u_int64_t value
  */
 unsigned realcons_pdp10_control_service(realcons_pdp10_control_t *_this)
 {
-	u_int64_t now_pressed, now_changed, now_released;
+	uint64_t now_pressed, now_changed, now_released;
 
 	// scan buttons for change
 	if (!_this->buttons)
@@ -160,7 +162,7 @@ unsigned realcons_pdp10_control_service(realcons_pdp10_control_t *_this)
 			_this->lamps->value &= ~now_released; // lamps OFF even if not enabled
 			if (_this->realcons->debug)
 				printf(
-						"'Direct' button changed: %s, value= 0x%llx, now pressed = 0x%llx. pending = 0x%llx\n",
+						"'Direct' button changed: %s, value= 0x%" PRIx64 ", now pressed = 0x%" PRIx64 ". pending = 0x%" PRIx64 "\n",
 						_this->buttons->name, _this->lamps->value, now_pressed,
 						_this->pendingbuttons);
 
@@ -174,7 +176,7 @@ unsigned realcons_pdp10_control_service(realcons_pdp10_control_t *_this)
 			}
 			if (_this->realcons->debug)
 				printf(
-						"'Toggle' button changed: %s, value= 0x%llx, now pressed = 0x%llx. pendig = 0x%llx\n",
+						"'Toggle' button changed: %s, value= 0x%" PRIx64  ", now pressed = 0x%" PRIx64 ". pending = 0x%" PRIx64 "\n",
 						_this->buttons->name, _this->lamps->value, now_pressed,
 						_this->pendingbuttons);
 

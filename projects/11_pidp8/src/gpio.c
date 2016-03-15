@@ -1,41 +1,40 @@
 /* gpio.c: the real-time process that handles multiplexing
 
-   Copyright (c) 2015-2016, Oscar Vermeulen & Joerg Hoppe
-   j_hoppe@t-online.de, www.retrocmp.com
+ Copyright (c) 2015-2016, Oscar Vermeulen & Joerg Hoppe
+ j_hoppe@t-online.de, www.retrocmp.com
 
-   Permission is hereby granted, free of charge, to any person obtaining a
-   copy of this software and associated documentation files (the "Software"),
-   to deal in the Software without restriction, including without limitation
-   the rights to use, copy, modify, merge, publish, distribute, sublicense,
-   and/or sell copies of the Software, and to permit persons to whom the
-   Software is furnished to do so, subject to the following conditions:
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the "Software"),
+ to deal in the Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ and/or sell copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following conditions:
 
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-   JOERG HOPPE BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-   IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ JOERG HOPPE BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+ 15-Mar-2016  JH	display patterns for brightness levels
+ 16-Nov-2015  JH    acquired from Oscar
 
 
-   16-Nov-2015  JH      created
+ gpio.c from Oscar Vermeules PiDP8-sources.
+ Slightest possible modification by Joerg.
+ See www.obsolescenceguaranteed.blogspot.com
 
+ The only communication with the main program (simh):
+ external variable ledstatus is read to determine which leds to light.
+ external variable switchstatus is updated with current switch settings.
 
-   gpio.c from Oscar Vermeules PiDP8-sources.
-   Slightest possible modification by Joerg.
-   See www.obsolescenceguaranteed.blogspot.com
-
-   The only communication with the main program (simh):
-   external variable ledstatus is read to determine which leds to light.
-   external variable switchstatus is updated with current switch settings.
-
-*/
+ */
 
 #define _GPIO_C_
-
 
 // TO DO: define SERIALSETUP to use PiDPs wired for serial port
 //#define SERIALSETUP
@@ -43,6 +42,7 @@
 #include <pthread.h>
 #include <stdint.h>
 #include "gpio.h"
+#include "gpiopattern.h"
 
 typedef unsigned int uint32;
 typedef signed int int32;
@@ -54,15 +54,11 @@ static unsigned get_dt_ranges(const char *filename, unsigned offset); // Pi 2 de
 
 struct bcm2835_peripheral gpio; // needs initialisation
 
-long intervl = 300000; // light each row of leds this long
-
+// long intervl = 300000; // light each row of leds this long
+long intervl = 50000; // light each row of leds 50 us
+// almost flickerfree at 32 phases
 
 // static unsigned loopcount = 0 ;
-
-volatile uint32 gpio_switchstatus[3] =
-{ 0 }; // bitfields: 3 rows of up to 12 switches
-volatile uint32 gpio_ledstatus[8] =
-{ 0 }; // bitfields: 8 ledrows of up to 12 LEDs
 
 // PART 1 - GPIO and RT process stuff ----------------------------------
 
@@ -129,7 +125,6 @@ void *blink(int *terminate)
 		printf("RPi 2 detected\n");
 
 	// printf("Priority max SCHED_FIFO = %u\n",sched_get_priority_max(SCHED_FIFO) );
-
 
 	// set thread to real time priority -----------------
 	struct sched_param sp;
@@ -200,67 +195,80 @@ void *blink(int *terminate)
 
 	printf("\nFP on\n");
 
+
 	while (*terminate == 0) {
+		unsigned phase;
 //		if ((loopcount++ % 500) == 0)	printf("1\n"); // visual heart beat
 
-		// prepare for lighting LEDs by setting col pins to output
-		for (i = 0; i < 12; i++) {
-			INP_GPIO(cols[i]); //
-			OUT_GPIO(cols[i]); // Define cols as output
-		}
 
-		// light up 8 rows of 12 LEDs each
-		for (i = 0; i < 8; i++) {
+		// display all phases circular
+		for (phase = 0; phase < GPIOPATTERN_LED_BRIGHTNESS_PHASES; phase++) {
+			// each phase must be eact same duration, so include switch scanning here
 
-			// Toggle columns for this ledrow (which LEDs should be on (CLR = on))
-			for (k = 0; k < 12; k++) {
-				if ((gpio_ledstatus[i] & (1 << k)) == 0)
-					GPIO_SET = 1 << cols[k];
-				else
-					GPIO_CLR = 1 << cols[k];
+			// the original gpio_ledstatus[8] runs trough all phases
+			volatile uint32_t *gpio_ledstatus =
+					gpiopattern_ledstatus_phases[gpiopattern_ledstatus_phases_readidx][phase];
+
+			// prepare for lighting LEDs by setting col pins to output
+			for (i = 0; i < 12; i++) {
+				INP_GPIO(cols[i]); //
+				OUT_GPIO(cols[i]); // Define cols as output
 			}
 
-			// Toggle this ledrow on
-			INP_GPIO(ledrows[i]);
-			GPIO_SET = 1 << ledrows[i]; // test for flash problem
-			OUT_GPIO(ledrows[i]);
-			/*test* /			GPIO_SET = 1 << ledrows[i]; /**/
+			// light up 8 rows of 12 LEDs each
+			for (i = 0; i < 8; i++) {
 
-			nanosleep((struct timespec[]){{ 0, intervl } }, NULL);
+				// Toggle columns for this ledrow (which LEDs should be on (CLR = on))
+				for (k = 0; k < 12; k++) {
+					if ((gpio_ledstatus[i] & (1 << k)) == 0)
+						GPIO_SET = 1 << cols[k];
+					else
+						GPIO_CLR = 1 << cols[k];
+				}
 
-			// Toggle ledrow off
-			GPIO_CLR = 1 << ledrows[i]; // superstition
-			INP_GPIO(ledrows[i]);
-			usleep(10); // waste of cpu cycles but may help against udn2981 ghosting, not flashes though
-		}
+				// Toggle this ledrow on
+				INP_GPIO(ledrows[i]);
+				GPIO_SET = 1 << ledrows[i]; // test for flash problem
+				OUT_GPIO(ledrows[i]);
+				/*test* /			GPIO_SET = 1 << ledrows[i]; /**/
+
+				nanosleep((struct timespec[]
+				) {	{	0, intervl}}, NULL);
+
+				// Toggle ledrow off
+				GPIO_CLR = 1 << ledrows[i]; // superstition
+				INP_GPIO(ledrows[i]);
+				usleep(10); // waste of cpu cycles but may help against udn2981 ghosting, not flashes though
+			}
 
 //nanosleep ((struct timespec[]){{0, intervl}}, NULL); // test
 
-		// prepare for reading switches
-		for (i = 0; i < 12; i++)
-			INP_GPIO(cols[i]); // flip columns to input. Need internal pull-ups enabled.
+			// prepare for reading switches
+			for (i = 0; i < 12; i++)
+				INP_GPIO(cols[i]); // flip columns to input. Need internal pull-ups enabled.
 
-		// read three rows of switches
-		for (i = 0; i < 3; i++) {
-			INP_GPIO(rows[i]); //			GPIO_CLR = 1 << rows[i];	// and output 0V to overrule built-in pull-up from column input pin
-			OUT_GPIO(rows[i]); // turn on one switch row
-			GPIO_CLR = 1 << rows[i]; // and output 0V to overrule built-in pull-up from column input pin
+			// read three rows of switches
+			for (i = 0; i < 3; i++) {
+				INP_GPIO(rows[i]); //			GPIO_CLR = 1 << rows[i];	// and output 0V to overrule built-in pull-up from column input pin
+				OUT_GPIO(rows[i]); // turn on one switch row
+				GPIO_CLR = 1 << rows[i]; // and output 0V to overrule built-in pull-up from column input pin
 
-			nanosleep((struct timespec[]
-					)
-					{
-					{ 0, intervl / 100 } }, NULL); // probably unnecessary long wait, maybe put above this loop also
+				nanosleep((struct timespec[]
+				)
+				{
+					{	0, intervl / 100}}, NULL); // probably unnecessary long wait, maybe put above this loop also
 
-			switchscan = 0;
-			for (j = 0; j < 12; j++) // 12 switches in each row
-					{
-				tmp = GPIO_READ(cols[j]);
-				if (tmp != 0)
-					switchscan += 1 << j;
+				switchscan = 0;
+				for (j = 0; j < 12; j++) // 12 switches in each row
+						{
+					tmp = GPIO_READ(cols[j]);
+					if (tmp != 0)
+						switchscan += 1 << j;
+				}
+				INP_GPIO(rows[i]); // stop sinking current from this row of switches
+
+				gpio_switchstatus[i] = switchscan;
 			}
-			INP_GPIO(rows[i]); // stop sinking current from this row of switches
-
-			gpio_switchstatus[i] = switchscan;
 		}
 	}
 

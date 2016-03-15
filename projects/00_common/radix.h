@@ -27,19 +27,12 @@
 #ifndef RADIX_H_
 #define RADIX_H_
 
-#if defined(_MSC_VER)
 #include <stdint.h>
-typedef uint64_t	u_int64_t;
-typedef uint32_t	u_int32_t;
-// #define u_int64_t and int32_t in cmd line !
-#endif
 
-#include <sys/types.h>
-
-char *radix_u642str(u_int64_t value, int radix, int bitlen, int use_prefix);
+char *radix_u642str(uint64_t value, int radix, int bitlen, int use_prefix);
 char *radix_uint2str(unsigned value, int radix, int bitlen, int use_prefix);
 
-int radix_str2u64(u_int64_t *value, int radix, char *buffer);
+int radix_str2u64(uint64_t *value, int radix, char *buffer);
 int radix_str2uint(unsigned *value, int radix, char *buffer);
 
 char *radix_getname_char(int radix);

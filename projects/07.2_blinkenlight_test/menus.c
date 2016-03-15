@@ -49,6 +49,7 @@
 // width of screen for menu display
 int menu_linewidth;
 
+
 /**********************************************
  * User Interface
  *********************************************/
@@ -89,8 +90,10 @@ static void menu_controls(blinkenlight_panel_t *p)
 	blinkenlight_control_t *c;
 	mcout_t mcout; // Multi Column OUTput
 	char *s_choice;
+	unsigned screen_number ; // global count up display updates
 
 	ready = 0;
+	screen_number = 0;
 	do {
 		// clear "change" marker
 		for (i_control = 0; i_control < p->controls_count; i_control++) {
@@ -104,7 +107,7 @@ static void menu_controls(blinkenlight_panel_t *p)
 		}
 		printf("\n");
 		printf("\n");
-		printf("*** Controls of panel \"%s\" ***\n", p->name);
+		printf("*** Controls of panel \"%s\", screen #%u ***\n", p->name, screen_number++);
 		for (name_len = i_control = 0; i_control < p->controls_count; i_control++) {
 			c = &(p->controls[i_control]);
 			if (c->is_input && name_len < strlen(c->name))
@@ -153,7 +156,10 @@ static void menu_controls(blinkenlight_panel_t *p)
 		mcout_printf(&mcout, "\"<id> <value>\" - set output manually");
 		mcout_printf(&mcout, "\"<id> mo\"      - \"moving ones\"");
 		mcout_printf(&mcout, "\"<id> mz\"      - \"moving zeros\"");
-		mcout_printf(&mcout, "\"<id> i\"       - \"invert bits\"");
+		mcout_printf(&mcout, "\"<id> ~ + - < > - \"invert, inc, dec, shift\"");
+
+		// mcout_printf(&mcout, "\"<id> i\"       - \"invert bits\"");
+
 		mcout_printf(&mcout, "\"<id> dl <period>\" - \"dim LSBs, period in ms\"");
 		mcout_printf(&mcout, "\"<id> dh <period>\" - \"dim MSBs\"");
 		mcout_printf(&mcout, "<id>: number, name or \"*\"");

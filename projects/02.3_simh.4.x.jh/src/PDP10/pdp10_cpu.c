@@ -236,7 +236,7 @@ extern 	int realcons_console_halt; // 1: CPU halted by realcons console
 
 								   // 2. state extension for PDP10, initialize in cpu_reset()
 int32			realcons_PC ; // own buffer!
-u_int64_t		realcons_instruction; // current instruction
+uint64_t		realcons_instruction; // current instruction
 
 									  // Pointers to event handlers
 									  // Events are called in SimH-code as pointers to functions in panel logic

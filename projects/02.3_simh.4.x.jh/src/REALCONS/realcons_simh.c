@@ -127,7 +127,7 @@ t_stat realcons_simh_set_service_interval(int32 flg, char *cptr)
 		return SCPE_ARG;
 	if (*tptr != 0)
 		return SCPE_ARG;
-	cpu_realcons->service_interval_msec = val;
+	cpu_realcons->service_interval_msec = (unsigned)val;
 	return SCPE_OK;
 }
 

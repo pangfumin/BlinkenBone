@@ -1,36 +1,36 @@
 /* blinkenlight_panels.h: Blinkenlight API data structs panellist- panel - control
 
-   Copyright (c) 2012-2016, Joerg Hoppe
-   j_hoppe@t-online.de, www.retrocmp.com
+ Copyright (c) 2012-2016, Joerg Hoppe
+ j_hoppe@t-online.de, www.retrocmp.com
 
-   Permission is hereby granted, free of charge, to any person obtaining a
-   copy of this software and associated documentation files (the "Software"),
-   to deal in the Software without restriction, including without limitation
-   the rights to use, copy, modify, merge, publish, distribute, sublicense,
-   and/or sell copies of the Software, and to permit persons to whom the
-   Software is furnished to do so, subject to the following conditions:
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the "Software"),
+ to deal in the Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ and/or sell copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following conditions:
 
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-   JOERG HOPPE BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-   IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ JOERG HOPPE BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-   23-Feb-2016  JH      coding of const dummy input controls defined
-   02-Feb-2012  JH      created
+ 23-Feb-2016  JH      coding of const dummy input controls defined
+ 02-Feb-2012  JH      created
 
 
-   Representation of a blinkenlight panel, on a level of "controls" and "states"
-   (not "BLINKENBUS register bits")
+ Representation of a blinkenlight panel, on a level of "controls" and "states"
+ (not "BLINKENBUS register bits")
 
-   Is used by client and server, but with different fields
-   You must define BLINKENLIGHT_SERVER or BLINKENLIGHT_CLIENT
+ Is used by client and server, but with different fields
+ You must define BLINKENLIGHT_SERVER or BLINKENLIGHT_CLIENT
 
-   including mapping to BLINKENBUS register bits for access
+ including mapping to BLINKENBUS register bits for access
 
  */
 
@@ -42,13 +42,9 @@
 #endif
 
 #include <stdio.h>	// FILE
-#if defined(_MSC_VER)
 #include <stdint.h>
-typedef uint64_t	u_int64_t;
-// #define u_int64_t and int32_t in cmd line !
-#else
-#include <sys/types.h> 	// u_int64_t
-#endif
+
+#include "historybuffer.h"
 
 // !!! keep #defines and structs in sync with blinkenlight_api.x !!!
 
@@ -58,6 +54,9 @@ typedef uint64_t	u_int64_t;
 #define MAX_BLINKENLIGHT_PANELS	3
 #define MAX_BLINKENLIGHT_PANEL_CONTROLS	200	// the PDP-10 KI10 has > 100 !
 #define MAX_BLINKENLIGHT_REGISTERS_PER_CONTROL 8 //on panel control maybe spread accross max 8 BLINKENBUS registers
+#define MAX_BLINKENLIGHT_HISTORY_ENTRIES	256 // worst case: 1ms update from client, 1/4 sec low pass -> must hold 250 entries
+//#define MAX_BLINKENLIGHT_HISTORY_ENTRIES	16 // test
+
 // Calculation of struct size:
 // ( sizeof(blinkenlight_control_blinkenbus_register_wiring_struct) * MAX_BLINKENLIGHT_REGISTERS_PER_CONTROL
 //  + MAX_BLINKENLIGHT_CONTROL_NAME_LEN )* MAX_BLINKENLIGHT_PANEL_CONTROLS
@@ -134,7 +133,7 @@ typedef struct blinkenlight_control_blinkenbus_register_wiring_struct
 
 typedef enum blinkenlight_control_value_encoding_enum
 {
-	// "binary": bit pattern from BlinkenBus is interpretad as binary number
+	// "binary": bit pattern from BlinkenBus is interpreted as binary number
 	// example: "00010100" -> value=12
 	binary = 1,
 	// "bitposition": bit pattern may only contain one bit set, value is the bit number
@@ -148,12 +147,12 @@ typedef struct blinkenlight_control_struct
 {
 	unsigned index; // index of this record in control list of parent panel
 	char name[MAX_BLINKENLIGHT_NAME_LEN];
-	u_int64_t tag ; // application marker
+	uint64_t tag; // application marker
 	unsigned char is_input; // 0 = out, 1 = in
 	blinkenlight_control_type_t type;
-	u_int64_t value; // 64bit: for instance for the LED row of a PDP-10 register (36 bit)
-	u_int64_t value_previous; // "old" value before change
-	u_int64_t value_default; // startup value
+	uint64_t value; // 64bit: for instance for the LED row of a PDP-10 register (36 bit)
+	uint64_t value_previous; // "old" value before change
+	uint64_t value_default; // startup value
 	unsigned radix; // number representation: 8 (octal) or 16 (hex)?
 	unsigned value_bitlen; // relevant lsb's in value
 	unsigned value_bytelen; // len of value in bytes ... for RPC transmissions
@@ -161,7 +160,7 @@ typedef struct blinkenlight_control_struct
 #ifdef BLINKENLIGHT_SERVER
 	// the value for a control comes over IO boards attached to the BLINKENBUS.
 	// 1) define ordered list of wires, lowest value first
-	unsigned blinkenbus_register_wiring_count; // count of blinkenbus registers carrying the control value
+	unsigned blinkenbus_register_wiring_count;// count of blinkenbus registers carrying the control value
 	// if "0", the input control is a dummy with constant value, "bitlen" must be set in config file
 	blinkenlight_control_blinkenbus_register_wiring_t blinkenbus_register_wiring[MAX_BLINKENLIGHT_REGISTERS_PER_CONTROL];
 
@@ -171,7 +170,16 @@ typedef struct blinkenlight_control_struct
 
 	// value from blinkenbus must be mirror bits:
 	// bit [0] -> bit[bitlen-1], bit [1] -> bit[bitlen-2], ...
-	unsigned	mirrored_bit_order ;
+	unsigned mirrored_bit_order;
+
+	historybuffer_t *history;// ringbuffer for recent values
+	// for each bit the average als value 0..255
+	// calculated by historybuffer_get_average_vals(...bitmode=1)
+	uint8_t averaged_value_bits[64];
+	// arithmetic average of whole value
+	// calculated by historybuffer_get_average_vals(...bitmode=0)
+	uint64_t averaged_value;
+
 #endif
 } blinkenlight_control_t;
 
@@ -182,7 +190,7 @@ typedef struct blinkenlight_panel_struct
 	char name[MAX_BLINKENLIGHT_NAME_LEN];
 	// info is not transmitted over RPC, until Java/RemoteTea problem is solved !
 	char info[MAX_BLINKENLIGHT_INFO_LEN];
-	u_int64_t tag ; // application marker
+	uint64_t tag; // application marker
 	unsigned default_radix; // default number representation for controls: 8 (octal) or 16 (hex)?
 	unsigned controls_count;
 	blinkenlight_control_t controls[MAX_BLINKENLIGHT_PANEL_CONTROLS];
@@ -198,7 +206,7 @@ typedef struct blinkenlight_panel_struct
 	// 0x01 = historic accurate lamp test (RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST)
 	// 0x02 = test every control, inputs and outputs, (RPC_PARAM_VALUE_PANEL_MODE_ALLTEST)
 	// 0x03 = "powerless": all controls dark, power button OFF, but still responsive to API
-	unsigned mode ;
+	unsigned mode;
 
 } blinkenlight_panel_t;
 

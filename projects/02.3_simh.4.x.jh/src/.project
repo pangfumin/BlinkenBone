@@ -3,6 +3,8 @@
 	<name>02.3_simh.4.x.jh</name>
 	<comment></comment>
 	<projects>
+		<project>00_common</project>
+		<project>07.0_blinkenlight_api</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

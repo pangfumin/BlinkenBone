@@ -2,6 +2,9 @@
 #!/bin/bash
 
 
+# stop on error
+set -e
+
 # Debugging:
 # set -x
 
@@ -59,3 +62,5 @@ MAKE_TARGET_ARCH=BEAGLEBONE make $MAKEOPTIONS $MAKETARGETS
 MAKE_TARGET_ARCH=RPI make $MAKEOPTIONS $MAKETARGETS
 )
 
+echo
+echo "All OK!"

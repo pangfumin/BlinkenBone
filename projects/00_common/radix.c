@@ -20,7 +20,7 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
+   12-Mar-2016  JH      64bit printf/scanf fmt changed to PRI*64 (inttypes.h)
    22-Mar-2012  JH      created
 */
 
@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
+#include <inttypes.h>
 #include <sys/types.h>
 #include "bitcalc.h"
 #include "radix.h"
@@ -37,7 +38,7 @@
  * bitlen: if > 0 produce always as many digits as bit count of value needs
  * ocatal and hex numbers are file4ld with '0', deccimal ist filled with  ' '
  */
-char *radix_u642str(u_int64_t value, int radix, int bitlen, int use_prefix)
+char *radix_u642str(uint64_t value, int radix, int bitlen, int use_prefix)
 {
 	static char buffer[80];
 	int digitcount = 0;
@@ -48,12 +49,12 @@ char *radix_u642str(u_int64_t value, int radix, int bitlen, int use_prefix)
 
 	if (radix == 10)
 	{
-		sprintf(buffer, "%*llu", digitcount, value);
+		sprintf(buffer, "%*"PRId64, digitcount, value);
 	}
 	else if (radix == 8)
-		sprintf(buffer, "%s%0*llo", use_prefix ? "0" : "", digitcount, value);
+		sprintf(buffer, "%s%0*"PRIo64, use_prefix ? "0" : "", digitcount, value);
 	else if (radix == 16)
-		sprintf(buffer, "%s%0*llx", use_prefix ? "0x" : "", digitcount, value);
+		sprintf(buffer, "%s%0*"PRIx64, use_prefix ? "0x" : "", digitcount, value);
 	else
 	{
 		fprintf(stderr, "radix_u642str(): radix must be 10, 8 or 16\n");
@@ -87,7 +88,7 @@ char *radix_uint2str(unsigned value, int radix, int bitlen, int use_prefix)
  * parse string, with or without prefix
  * result: 0 = error, 1 = ok
  */
-int radix_str2u64(u_int64_t *value, int radix, char *buffer)
+int radix_str2u64(uint64_t *value, int radix, char *buffer)
 {
 	int i, n;
 
@@ -97,19 +98,19 @@ int radix_str2u64(u_int64_t *value, int radix, char *buffer)
 
 	if (radix == 10)
 	{
-		n = sscanf(bufferlocase, "%llu", value);
+		n = sscanf(bufferlocase, "%"PRId64, value);
 	}
 	else if (radix == 8)
 	{
-		n = sscanf(bufferlocase, "%llo", value);
+		n = sscanf(bufferlocase, "%"PRIo64, value);
 		if (!n)
-			n = sscanf(bufferlocase, "0%llo", value);
+			n = sscanf(bufferlocase, "0%"PRIo64, value);
 	}
 	else if (radix == 16)
 	{
-		n = sscanf(bufferlocase, "%llx", value);
+		n = sscanf(bufferlocase, "%"PRIx64, value);
 		if (!n)
-			n = sscanf(bufferlocase, "0x%llx", value);
+			n = sscanf(bufferlocase, "0x%"PRIx64, value);
 	}
 	else
 	{

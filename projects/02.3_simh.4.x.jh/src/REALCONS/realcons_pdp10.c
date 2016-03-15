@@ -263,7 +263,7 @@ void realcons_console_pdp10__event_program_write_address_addrcond(
 {
 	// switch displaymode, if not disabled
 	if (!realcons_pdp10_control_get(&_this->button_MI_PROG_DIS)) {
-		u_int64_t address_addrcond = SIGNAL_GET(cpusignal_console_address_addrcond);
+		uint64_t address_addrcond = SIGNAL_GET(cpusignal_console_address_addrcond);
 		// _this->memory_indicator_program = 1 ; // MI PROG? not, if address is written?
 
 		// console_address_addrcond codes the ADDRESS SWITCHES
@@ -273,19 +273,19 @@ void realcons_console_pdp10__event_program_write_address_addrcond(
 
 		// INST_FETCH = Bit 0(pdp10)
 		realcons_pdp10_control_set(&_this->button_FETCH_INST,
-			!!(address_addrcond & ((u_int64_t)1 << (35 - 0))));
+			!!(address_addrcond & ((uint64_t)1 << (35 - 0))));
 		// DATA_FETCH = Bit 1(pdp10)
 		realcons_pdp10_control_set(&_this->button_FETCH_DATA,
-			!!(address_addrcond & ((u_int64_t)1 << (35 - 1))));
+			!!(address_addrcond & ((uint64_t)1 << (35 - 1))));
 		// WRITE = Bit 4(pdp10)
 		realcons_pdp10_control_set(&_this->button_WRITE,
-			!!(address_addrcond & ((u_int64_t)1 << (35 - 4))));
+			!!(address_addrcond & ((uint64_t)1 << (35 - 4))));
 		// EXEC PAGING = Bit 5(pdp10)
 		realcons_pdp10_control_set(&_this->button_PAGING_EXEC,
-			!!(address_addrcond & ((u_int64_t)1 << (35 - 5))));
+			!!(address_addrcond & ((uint64_t)1 << (35 - 5))));
 		// USER PAGING = Bit 6(pdp10)
 		realcons_pdp10_control_set(&_this->button_PAGING_USER,
-			!!(address_addrcond & ((u_int64_t)1 << (35 - 6))));
+			!!(address_addrcond & ((uint64_t)1 << (35 - 6))));
 		// ADDRESS SWITCHES = Bits 7..35(pdp10) = lower 22 bits
 		realcons_pdp10_control_set(&_this->buttons_ADDRESS, address_addrcond & 0x3fffffL);
 	}
@@ -335,9 +335,9 @@ void realcons_console_pdp10_interface_connect(realcons_console_logic_pdp10_t *_t
 	//	extern int32 SR, DR; // switch/display register, global in pdp11_cpu_mod.c
 	//	extern int32 cm; // cpu mode, global in pdp11_cpu.c. MD:KRN_MD, MD_SUP,MD_USR,MD_UND
 		extern int32 pi_enb, pi_act, pi_on, pi_prq, pi_ioq;
-		extern u_int64_t cds, cmi, caacs;
+		extern uint64_t cds, cmi, caacs;
 		extern	int32			realcons_PC; // own buffer!
-		extern u_int64_t		realcons_instruction; // current instr
+		extern uint64_t		realcons_instruction; // current instr
 
 		realcons_console_halt = 0;
 

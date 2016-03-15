@@ -37,7 +37,7 @@ unsigned char BitmaskFromLen8[9] =
 { 0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f, 0xff };
 
 
-u_int32_t BitmaskFromLen32[33] = {
+uint32_t BitmaskFromLen32[33] = {
 		 0x00000000, //
 			0x00000001, 0x00000003, 0x00000007, 0x0000000f, //
 			0x0000001f, 0x0000003f, 0x0000007f, 0x000000ff, //
@@ -50,7 +50,7 @@ u_int32_t BitmaskFromLen32[33] = {
 };
 
 
-u_int64_t BitmaskFromLen64[65] =
+uint64_t BitmaskFromLen64[65] =
 { 0x0000000000000000ULL, //
 		0x0000000000000001ULL, 0x0000000000000003ULL, 0x0000000000000007ULL, 0x000000000000000fULL, //
 		0x000000000000001fULL, 0x000000000000003fULL, 0x000000000000007fULL, 0x00000000000000ffULL, //
@@ -206,7 +206,7 @@ if (i < 64) printf(", ") ;
  * find index of lowest set or or reset bit ('bitval')
  * -1, if not found
  */
-int find_lowest_bit64(u_int64_t value, int bitval)
+int find_lowest_bit64(uint64_t value, int bitval)
 {
 	int i;
 	for (i = 0; i < 64; i++)
@@ -223,7 +223,7 @@ int find_lowest_bit64(u_int64_t value, int bitval)
  * result: index ( 0 for 0x0001, 1 for 0x0002, 2 for 0x0004, ... )
  * -1, value == 0
  */
-int get_msb_index64(u_int64_t value)
+int get_msb_index64(uint64_t value)
 {
 	int i;
 	for (i = 0; i < 64; i++)
@@ -237,10 +237,10 @@ int get_msb_index64(u_int64_t value)
 
 // bitmask is a left shifted bit field, wich is moutned into buffer so, that
 // bitmask.bit[0] -> buffer.bit[buffer_bitoffset]
-u_int64_t mount_bits_to_mask64(u_int64_t buffer, u_int64_t bitmask, int bitmask_leftshift,
+uint64_t mount_bits_to_mask64(uint64_t buffer, uint64_t bitmask, int bitmask_leftshift,
 		int buffer_bitoffset)
 {
-	u_int64_t tmp;
+	uint64_t tmp;
 	tmp = (bitmask >> bitmask_leftshift) << buffer_bitoffset;
 	return buffer | tmp;
 }
@@ -249,7 +249,7 @@ u_int64_t mount_bits_to_mask64(u_int64_t buffer, u_int64_t bitmask, int bitmask_
 // lsb first, only the "bytecount" lowest bytes
 // Example: value= 0x123456789a, bytecount = 6
 // buffer[0] = 9a, buffer[1] = 78, 56, 34, 12, buffer[5]  = 00
-void encode_uint64_to_bytes(unsigned char *buffer, u_int64_t value, unsigned bytecount)
+void encode_uint64_to_bytes(unsigned char *buffer, uint64_t value, unsigned bytecount)
 {
 	assert(bytecount < 9);
 	// loop unrolled
@@ -275,27 +275,27 @@ void encode_uint64_to_bytes(unsigned char *buffer, u_int64_t value, unsigned byt
 // lsb first, only the "bytecount" lowest bytes
 // Example buffer[0] = 9a, buffer[1] = 78, 56, 34, Buffer[4] = 12, buffer[5]  = 00, bytecount = 4
 // => result =  0x3456789a
-u_int64_t decode_uint64_from_bytes(unsigned char *buffer, unsigned bytecount)
+uint64_t decode_uint64_from_bytes(unsigned char *buffer, unsigned bytecount)
 {
-	u_int64_t value = 0;
+	uint64_t value = 0;
 	assert(bytecount < 9);
 	// loop unrolled
 	if (bytecount > 0)
-		value |= (u_int64_t) buffer[0];
+		value |= (uint64_t) buffer[0];
 	if (bytecount > 1)
-		value |= (u_int64_t) buffer[1] << 8;
+		value |= (uint64_t) buffer[1] << 8;
 	if (bytecount > 2)
-		value |= (u_int64_t) buffer[2] << 16;
+		value |= (uint64_t) buffer[2] << 16;
 	if (bytecount > 3)
-		value |= (u_int64_t) buffer[3] << 24;
+		value |= (uint64_t) buffer[3] << 24;
 	if (bytecount > 4)
-		value |= (u_int64_t) buffer[4] << 32;
+		value |= (uint64_t) buffer[4] << 32;
 	if (bytecount > 5)
-		value |= (u_int64_t) buffer[5] << 36;
+		value |= (uint64_t) buffer[5] << 36;
 	if (bytecount > 6)
-		value |= (u_int64_t) buffer[6] << 40;
+		value |= (uint64_t) buffer[6] << 40;
 	if (bytecount > 7)
-		value |= (u_int64_t) buffer[7] << 44;
+		value |= (uint64_t) buffer[7] << 44;
 	return value;
 }
 

@@ -21,6 +21,7 @@
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+ 12-Mar-2016  JH      new C-like operators: ~, +, -, <, > for invert, inc, dec, shift
  25-Feb-2016  JH      ping failed on RPi, now first "connect", then "data request"
  09-Dec-2012  JH      created
  */
@@ -92,7 +93,7 @@ int control_moving_bit(blinkenlight_panel_t *p, blinkenlight_control_t *c, int d
 		int moving_one)
 {
 	int bitidx;
-	u_int64_t saved_value, test_value;
+	uint64_t saved_value, test_value;
 	int user_break = 0;
 
 	saved_value = c->value; // save control value
@@ -102,7 +103,7 @@ int control_moving_bit(blinkenlight_panel_t *p, blinkenlight_control_t *c, int d
 		if (bitidx < 0)
 			test_value = 0;
 		else
-			test_value = ((u_int64_t) 1 << bitidx);
+			test_value = ((uint64_t) 1 << bitidx);
 		if (!moving_one)
 			test_value = (~test_value) & BitmaskFromLen64[c->value_bitlen]; // moving zeros
 		c->value = test_value;
@@ -136,8 +137,8 @@ int control_dim(blinkenlight_panel_t *p, blinkenlight_control_t *c, int period_m
 {
 	unsigned pattern_idx;
 	int user_break = 0;
-	u_int64_t saved_value = c->value; // save control value
-	u_int32_t pattern[16];
+	uint64_t saved_value = c->value; // save control value
+	uint32_t pattern[16];
 
 	// 1) generate pattern:
 
@@ -180,7 +181,7 @@ int control_dim(blinkenlight_panel_t *p, blinkenlight_control_t *c, int period_m
 #endif
 	pattern_idx = 0;
 	while (!user_break) {
-		u_int32_t tmppattern = 0;
+		uint32_t tmppattern = 0;
 		pattern_idx = (pattern_idx + 1) % 16;
 		tmppattern = pattern[pattern_idx];
 
@@ -256,7 +257,11 @@ int ping(char *hostname, int repeat_count)
  * "number" -> setcontrol value to number
  * "mo" -> do a moving one bit on every value bit
  * "mz" -> do a moving zero bit on every value bit
- * "i" -> invert all bits
+ * "~" -> invert all bits
+ * "+" -> inc value
+ * "-" -> dec bits
+ * "<" -> shift bits left
+ * ">" -> shift bits right
  * "dl <period>": "dimm low" show on control bits the low dim levels for 1 sec
  *                bit 0 is darkest, higher bit become brighter
  *                <period> is the pulse duration in milli secs
@@ -269,7 +274,7 @@ int do_output_control_action(blinkenlight_panel_t *p, blinkenlight_control_t *c,
 		char *action_args)
 {
 #define DELAY 250		// 4 lights/Sec
-	u_int64_t value;
+	uint64_t value;
 	int user_abort = 0;
 	if (!strcasecmp(action, "mo")) {
 		// special test: moving ones
@@ -277,9 +282,29 @@ int do_output_control_action(blinkenlight_panel_t *p, blinkenlight_control_t *c,
 	} else if (!strcasecmp(action, "mz")) {
 		// special test: moving zeros
 		user_abort = control_moving_bit(p, c, /*delay ms*/DELAY, 0);
-	} else if (!strcasecmp(action, "i")) {
+	} else if (!strcasecmp(action, "~")) {
 		// invert all bits, trunc to valid
 		c->value = ~c->value & BitmaskFromLen64[c->value_bitlen];
+		set_controls_outputs(p);
+	}
+	else if (!strcasecmp(action, "+")) {
+		// invert all bits, trunc to valid
+		c->value = (c->value + 1 )& BitmaskFromLen64[c->value_bitlen];
+		set_controls_outputs(p);
+	}
+	else if (!strcasecmp(action, "-")) {
+		// invert all bits, trunc to valid
+		c->value = (c->value - 1) & BitmaskFromLen64[c->value_bitlen];
+		set_controls_outputs(p);
+	}
+	else if (!strcasecmp(action, "<")) {
+		// invert all bits, trunc to valid
+		c->value = (c->value << 1) & BitmaskFromLen64[c->value_bitlen];
+		set_controls_outputs(p);
+	}
+	else if (!strcasecmp(action, ">")) {
+		// invert all bits, trunc to valid
+		c->value = ( c->value >> 1 ) & BitmaskFromLen64[c->value_bitlen];
 		set_controls_outputs(p);
 	} else if (!strncasecmp(action, "dl", 2)) {
 		char *endptr;

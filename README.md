@@ -1,6 +1,6 @@
-# BlinkenBone - Extend the SimH simulator with real or simulated console panels.
+# BlinkenBone - extend the SimH simulator with real or simulated console panels.
 
-"BlinkenBone" is an architecture to connect simulators of vintage computers (yes, SimH!)
+"BlinkenBone" is an architecture to connect simulators of vintage computers
 with "Blinkenlight panels".
 
 The panels can be vintage physical panels enhanced with modern micro-Linux controllers,

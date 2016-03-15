@@ -59,8 +59,8 @@ t_stat realcons_console_pdp10_maintpanel_service(realcons_console_logic_pdp10_t 
 	/*** LOCK ***/
 
 	// these two flags are referenced by all buttons as "disable"
-	_this->console_lock = realcons_pdp10_control_get(&_this->button_CONSOLE_LOCK);
-	_this->console_datalock = realcons_pdp10_control_get(&_this->button_CONSOLE_DATALOCK);
+	_this->console_lock = !!realcons_pdp10_control_get(&_this->button_CONSOLE_LOCK);
+	_this->console_datalock = !!realcons_pdp10_control_get(&_this->button_CONSOLE_DATALOCK);
 
 	// controls, which are not set here, remain enabled by default
 	// "enable =1"

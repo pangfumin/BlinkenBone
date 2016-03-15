@@ -105,9 +105,9 @@ unsigned debug_blinkenbusfile_local_read_data_source;
  *
  */
 
-static u_int64_t mirror_bits(u_int64_t value, unsigned bitlen)
+static uint64_t mirror_bits(uint64_t value, unsigned bitlen)
 {
-	u_int64_t result;
+	uint64_t result;
 	unsigned i;
 	unsigned byte_count; // value uses this much bytes ...
 	unsigned extra_bits; // and so much msb bits are unused then
@@ -233,7 +233,7 @@ static void control_write_to_cache(blinkenlight_control_t *c, unsigned char *bli
 {
 	unsigned i_register_wiring;
 	blinkenlight_control_blinkenbus_register_wiring_t *bbrw;
-	u_int64_t value;
+	uint64_t value;
 	if (clear)
 		value = 0;
 	else if (as_mask)
@@ -271,7 +271,7 @@ static void control_read_from_cache(blinkenlight_control_t *c, unsigned char *bl
 {
 	unsigned i_register_wiring;
 	blinkenlight_control_blinkenbus_register_wiring_t *bbrw;
-	u_int64_t value;
+	uint64_t value;
 
 	if (c->blinkenbus_register_wiring_count == 0)
 		// dummy input with constant value: like POWER on 11/70
@@ -290,7 +290,7 @@ static void control_read_from_cache(blinkenlight_control_t *c, unsigned char *bl
 			regvalbits &= bbrw->blinkenbus_bitmask; // bits of value, unshiftet
 			regvalbits >>= bbrw->blinkenbus_lsb;
 			// OR in the bits of current register
-			value |= (u_int64_t) regvalbits << bbrw->control_value_bit_offset;
+			value |= (uint64_t) regvalbits << bbrw->control_value_bit_offset;
 		}
 		if (c->mirrored_bit_order)
 			value = mirror_bits(value, c->value_bitlen);

@@ -68,6 +68,8 @@ public class DimmableLightbulbVisualization extends ControlSliceVisualization {
 	 * Measured where 16 power levels (voltage * current).
 	 * Nominal driven with +15V = 16/16 = 100% brightness.
 	 * 100% color temperature is 2350K.
+         *
+         * Compare to http://www.tannerhelland.com/4435/convert-temperature-rgb-algorithm-code/
 	 */
 
 	private static final Color[] redshiftTable = new Color[] {

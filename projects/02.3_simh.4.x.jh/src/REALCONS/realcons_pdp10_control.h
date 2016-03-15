@@ -58,7 +58,7 @@ typedef struct
 	struct realcons_struct *realcons; // link to parent
 
 	// TODO: further ideas
-	u_int64_t pendingbuttons; // latched buttons, which not have been processed
+	uint64_t pendingbuttons; // latched buttons, which not have been processed
 
 	unsigned listindex; // index in list of controls
 
@@ -73,8 +73,8 @@ extern unsigned realcons_pdp10_controls_count;
 extern realcons_pdp10_control_t *realcons_pdp10_controls[];
 #endif
 
-u_int64_t realcons_pdp10_control_get(realcons_pdp10_control_t *_this);
-void realcons_pdp10_control_set(realcons_pdp10_control_t *_this, u_int64_t value);
+uint64_t realcons_pdp10_control_get(realcons_pdp10_control_t *_this);
+void realcons_pdp10_control_set(realcons_pdp10_control_t *_this, uint64_t value);
 
 // void realcons_console_lampbutton_connect_signal(realcons_pdp10_control_t *_this);
 

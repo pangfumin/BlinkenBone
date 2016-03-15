@@ -201,6 +201,7 @@ rpc_blinkenlight_api_setpanel_controlvalues_res *
 rpc_blinkenlight_api_setpanel_controlvalues_1_svc(u_int i_panel,
 		rpc_blinkenlight_api_controlvalues_struct valuelist, struct svc_req *rqstp)
 {
+	uint64_t	now_us ; // system ticks in microseconds
 	static rpc_blinkenlight_api_setpanel_controlvalues_res result;
 	blinkenlight_panel_t *p;
 	unsigned i_control;
@@ -228,6 +229,7 @@ rpc_blinkenlight_api_setpanel_controlvalues_1_svc(u_int i_panel,
 		/* go through all output controls, assign value to each
 		 * decode control value from the right amount of bytes
 		 * */
+		now_us = historybuffer_now_us() ;
 		value_byte_ptr = valuelist.value_bytes.value_bytes_val;
 		for (i_control = 0; i_control < p->controls_count; i_control++) {
 			c = &(p->controls[i_control]);
@@ -236,6 +238,8 @@ rpc_blinkenlight_api_setpanel_controlvalues_1_svc(u_int i_panel,
 						(value_byte_ptr - valuelist.value_bytes.value_bytes_val)
 								< valuelist.value_bytes.value_bytes_len);
 				c->value = decode_uint64_from_bytes(value_byte_ptr, c->value_bytelen);
+				// save value in history
+				historybuffer_set_val(c->history, now_us, c->value) ;
 				// trunc to valid bits
 				c->value &= BitmaskFromLen64[c->value_bitlen];
 				print(LOG_DEBUG, "   control[%d].value = 0x%llx (%d bytes)\n", i_control, c->value,

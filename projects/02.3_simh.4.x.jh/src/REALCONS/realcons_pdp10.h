@@ -92,7 +92,7 @@ typedef struct
 
 		 /* Signals for SimH's PDP10 cpu. */
 		 int32 *cpusignal_PC; // programm counter
-		 u_int64_t	*cpusignal_instruction ; // current instruction
+		 uint64_t	*cpusignal_instruction ; // current instruction
 
 		 int32		*cpusignal_pi_on ; // PI system enable
 		 int32_t	*cpusignal_pi_enb ; // PI levels enabled. simh pdp10 cpu reg "PIENB"
@@ -101,9 +101,9 @@ typedef struct
 			 int32_t	*cpusignal_pi_ioq ; // PI levels with IO requests. simh  pdp10 cpu reg "PIIOQ"
 
 	// KI10 console registers in SimH
-	u_int64_t  *cpusignal_console_data_switches ;
-	u_int64_t  *cpusignal_console_memory_indicator ;
-	u_int64_t  *cpusignal_console_address_addrcond ;
+	uint64_t  *cpusignal_console_data_switches ;
+	uint64_t  *cpusignal_console_memory_indicator ;
+	uint64_t  *cpusignal_console_address_addrcond ;
 
 
 	/* KI10 specific Blinkenlight API controls */
@@ -181,7 +181,7 @@ typedef struct
 	realcons_pdp10_control_t button_DEPOSIT_THIS ;
 	realcons_pdp10_control_t button_DEPOSIT_NEXT ;
 
-	//these two flags are referenced by all buttos as "disable"
+	// these two flags are referenced by all buttons as "disable"
 	// "1" =
 	// From doc: " the console data lock disables the data and sense switches;
 	//	the console lock disables all other buttons except those that are mechanical"
@@ -189,7 +189,7 @@ typedef struct
 	unsigned	console_datalock ;
 
 	// bool. Source of value in memory indicator (lower pabel, row 4)
-	// 0: dispaly caused by console exam/deposit
+	// 0: display caused by console exam/deposit
 	// 1, if CPU has written the value
 	unsigned 	memory_indicator_program  ; // MI PROG
 

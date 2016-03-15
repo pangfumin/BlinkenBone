@@ -27,18 +27,12 @@
 #ifndef BITCALC_H_
 #define BITCALC_H_
 
-#if defined(_MSC_VER)
 #include <stdint.h>
-typedef uint64_t	u_int64_t;
-typedef uint32_t	u_int32_t;
-// #define u_int64_t and int32_t in cmd line !
-#endif
 
-#include <sys/types.h> 	// u_int64_t
 #if !defined(BITCALC_C_)
 extern unsigned char BitmaskFromLen8[9];
-extern u_int32_t BitmaskFromLen32[33];
-extern u_int64_t BitmaskFromLen64[65];
+extern uint32_t BitmaskFromLen32[33];
+extern uint64_t BitmaskFromLen64[65];
 extern unsigned char BitmaskReversed[256];
 extern unsigned char BitsMirrored[256] ;
 
@@ -46,14 +40,14 @@ extern int DecimalDigitLenFromLen64[65] ;
 
 #endif
 
-int find_lowest_bit64(u_int64_t value, int bitval);
-int get_msb_index64(u_int64_t value);
+int find_lowest_bit64(uint64_t value, int bitval);
+int get_msb_index64(uint64_t value);
 
-u_int64_t mount_bits_to_mask64(u_int64_t buffer, u_int64_t bitmask, int bitmask_leftshift,
+uint64_t mount_bits_to_mask64(uint64_t buffer, uint64_t bitmask, int bitmask_leftshift,
 		int buffer_bitoffset);
 
-void encode_uint64_to_bytes(unsigned char *buffer, u_int64_t value, unsigned bytecount);
-u_int64_t decode_uint64_from_bytes(unsigned char *buffer, unsigned bytecount);
+void encode_uint64_to_bytes(unsigned char *buffer, uint64_t value, unsigned bytecount);
+uint64_t decode_uint64_from_bytes(unsigned char *buffer, unsigned bytecount);
 
 int digitcount_from_bitlen(int radix, int bitlen) ;
 

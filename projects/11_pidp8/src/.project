@@ -3,6 +3,7 @@
 	<name>11_pidp8_server</name>
 	<comment></comment>
 	<projects>
+		<project>00_common</project>
 		<project>070blinkenlight_api</project>
 	</projects>
 	<buildSpec>

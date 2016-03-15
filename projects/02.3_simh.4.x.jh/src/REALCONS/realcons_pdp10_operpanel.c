@@ -21,13 +21,16 @@
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+   12-Mar-2016  JH      64bit printf/scanf fmt changed to PRI*64 (inttypes.h)
    05-Sep-2014  JH      created
  */
 
 #define REALCONS_PDP10_C_	// enable private global defintions in realcons_cpu_pdp10.h
-#include	"realcons.h"
-#include	"realcons_pdp10.h"
-#include	"realcons_pdp10_control.h"
+
+#include <inttypes.h>
+#include "realcons.h"
+#include "realcons_pdp10.h"
+#include "realcons_pdp10_control.h"
 
 // process panel state.
 // operates on Blinkenlight_API panel structs,
@@ -68,7 +71,7 @@ t_stat realcons_pdp10_operpanel_service(realcons_console_logic_pdp10_t *_this)
 	// instructions and there is thus no way to continue."
 	// - SINGLE is a mode flag, not a command
 	_this->button_SINGLE_INST.enabled = !_this->console_lock;
-	single_inst = realcons_pdp10_control_get(&_this->button_SINGLE_INST);
+	single_inst = !!realcons_pdp10_control_get(&_this->button_SINGLE_INST);
 	if (single_inst && _this->run_state == RUN_STATE_RUN) {
 		// first stop the CPU, like pressing "HALT"
 		SIGNAL_SET(cpusignal_console_halt, 1);
@@ -91,13 +94,13 @@ t_stat realcons_pdp10_operpanel_service(realcons_console_logic_pdp10_t *_this)
 	_this->button_START.enabled = !_this->console_lock;
 	if (_this->button_START.pendingbuttons) {
 		// PC value <=?=> value of addr lamps???
-		SIGNAL_SET(cpusignal_PC, realcons_pdp10_control_get(&_this->buttons_ADDRESS));
+		SIGNAL_SET(cpusignal_PC, (int32) realcons_pdp10_control_get(&_this->buttons_ADDRESS));
 		if (single_inst) // set PC and single step
-			sprintf(_this->realcons->simh_cmd_buffer, "deposit pc %llo\nstep 1\n",
+			sprintf(_this->realcons->simh_cmd_buffer, "deposit pc %" PRIo64 "\nstep 1\n",
 					realcons_pdp10_control_get(&_this->buttons_ADDRESS));
 		else
 			// SimH start is like
-			sprintf(_this->realcons->simh_cmd_buffer, "run %llo\n",
+			sprintf(_this->realcons->simh_cmd_buffer, "run %" PRIo64 "\n",
 					realcons_pdp10_control_get(&_this->buttons_ADDRESS));
 		_this->button_START.pendingbuttons = 0;
 	}
@@ -136,7 +139,7 @@ t_stat realcons_pdp10_operpanel_service(realcons_console_logic_pdp10_t *_this)
 	// selects the least significant octal digit (which is always 0 or 4) in the device code)."
 	_this->button_READ_IN.enabled = !_this->console_lock && (_this->run_state != RUN_STATE_RUN);
 	if (_this->button_READ_IN.pendingbuttons) {
-		unsigned readin_device = realcons_pdp10_control_get(&_this->buttons_READ_IN_DEVICE);
+		unsigned readin_device = (unsigned) realcons_pdp10_control_get(&_this->buttons_READ_IN_DEVICE);
 		// readin device: button labels "3..9" -> bits 6..0
 		readin_device <<= 2; // bits 1 and 0 are missing
 		switch (readin_device) {
@@ -213,30 +216,30 @@ t_stat realcons_pdp10_operpanel_service(realcons_console_logic_pdp10_t *_this)
 	_this->button_DEPOSIT_NEXT.enabled = !_this->console_lock
 			&& (_this->run_state != RUN_STATE_RUN);
 	if (_this->button_EXAMINE_THIS.pendingbuttons) {
-		sprintf(_this->realcons->simh_cmd_buffer, "examine %llo\n",
+		sprintf(_this->realcons->simh_cmd_buffer, "examine %" PRIo64 "\n",
 				realcons_pdp10_control_get(&_this->buttons_ADDRESS));
 		// addr&data result written to LEDs in "event_exam_deposit()"
 		_this->button_EXAMINE_THIS.pendingbuttons = 0;
 	}
 	if (_this->button_EXAMINE_NEXT.pendingbuttons) {
 		// inc address buttons before examine
-		u_int64_t addr = realcons_pdp10_control_get(&_this->buttons_ADDRESS);
+		uint64_t addr = realcons_pdp10_control_get(&_this->buttons_ADDRESS);
 		addr++;
-		sprintf(_this->realcons->simh_cmd_buffer, "examine %llo\n", addr);
+		sprintf(_this->realcons->simh_cmd_buffer, "examine %" PRIo64 "\n", addr);
 		// addr&data result written to LEDs in "event_exam_deposit()"
 		_this->button_EXAMINE_NEXT.pendingbuttons = 0;
 	}
 	if (_this->button_DEPOSIT_THIS.pendingbuttons) {
-		sprintf(_this->realcons->simh_cmd_buffer, "deposit %llo %llo\n",
+		sprintf(_this->realcons->simh_cmd_buffer, "deposit %" PRIo64 " %" PRIo64 "\n",
 				realcons_pdp10_control_get(&_this->buttons_ADDRESS),
 				realcons_pdp10_control_get(&_this->buttons_DATA));
 		// addr&data result written to LEDs in "event_exam_deposit()"
 		_this->button_DEPOSIT_THIS.pendingbuttons = 0;
 	}
 	if (_this->button_DEPOSIT_NEXT.pendingbuttons) {
-		u_int64_t addr = realcons_pdp10_control_get(&_this->buttons_ADDRESS);
+		uint64_t addr = realcons_pdp10_control_get(&_this->buttons_ADDRESS);
 		addr++;
-		sprintf(_this->realcons->simh_cmd_buffer, "deposit %llo %llo\n", addr,
+		sprintf(_this->realcons->simh_cmd_buffer, "deposit %" PRIo64 " %" PRIo64 "\n", addr,
 				realcons_pdp10_control_get(&_this->buttons_DATA));
 		// addr&data result written to LEDs in "event_exam_deposit()"
 		_this->button_DEPOSIT_NEXT.pendingbuttons = 0;

@@ -53,8 +53,8 @@ struct bcm2835_peripheral {
 
 
 #ifndef _GPIO_C_
-extern volatile unsigned int gpio_switchstatus[3] ; // bitfields: 3 rows of up to 12 switches
-extern volatile unsigned int gpio_ledstatus[8] ;	// bitfields: 8 ledrows of up to 12 LEDs
+//extern volatile unsigned int gpio_switchstatus[3] ; // bitfields: 3 rows of up to 12 switches
+//extern volatile unsigned int gpio_ledstatus[8] ;	// bitfields: 8 ledrows of up to 12 LEDs
 #endif
 
 
