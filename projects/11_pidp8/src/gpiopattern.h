@@ -34,7 +34,7 @@
 #define GPIOPATTERN_UPDATE_PERIOD_US 20000  // 1/50 sec for screen update
 
 #define GPIOPATTERN_LED_BRIGHTNESS_LEVELS	32	// brightness levels. Not changeable without code rework
-#define GPIOPATTERN_LED_BRIGHTNESS_PHASES	GPIOPATTERN_LED_BRIGHTNESS_LEVELS-1
+#define GPIOPATTERN_LED_BRIGHTNESS_PHASES	31
 // 32 levels are made with 31 display phases
 
 
