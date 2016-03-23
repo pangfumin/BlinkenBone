@@ -152,7 +152,7 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
                 c->value = 1; // send "power"" switch as ON
             else if (c == keyswitch_panel_lock)
                 c->value = 0; // send "panel lock" switch as OFF
-            }             else {
+            else {
                 // mount switch value from register bit fields
                 unsigned i_register_wiring;
                 blinkenlight_control_blinkenbus_register_wiring_t *bbrw;
@@ -180,6 +180,7 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
                     c->value = !c->value;
         }
     }
+}
 }
 
 static void on_blinkenlight_api_panel_set_controlvalues(blinkenlight_panel_t *p, int force_all)
