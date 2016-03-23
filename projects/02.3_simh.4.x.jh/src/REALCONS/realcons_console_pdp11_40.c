@@ -20,7 +20,7 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
+   18-Mar-2016	JH		access to SimHs I/O page and CPU registers (18->22bit addr)
    20-Feb-2016  JH      added PANEL_MODE_POWERLESS
       Dec-2015  JH      migration from SimH 3.82 to 4.x
                         CPU extensions moved to pdp11_cpu.c
@@ -64,6 +64,66 @@
 #define RUN_STATE_RESET	1
 #define RUN_STATE_WAIT	2
 #define RUN_STATE_RUN		3
+
+
+
+/*
+ * translate console adresses to SimH 22 bit addr / registers
+ * SimH specifies all adresses 22bit, even for 16 and 18 bit machines
+ * so panel I/O page addresses 760000-777777 must translated to
+ *	17760000-17777777
+ * The 11/40 does not "inc by one" on CPU registers, is implemented here anyhow
+ * the address LSB is set to 0.
+ *
+ * Also SimH gives not the CPU registers, if their IO page addresses are exam/deposit
+ * So convert addr -> reg, and revers in the *_operator_reg_exam_deposit()
+ */
+static t_addr realcons_console_pdp11_40_addr_inc(t_addr addr) {
+		if (addr >= 0777700 && addr <= 0777707)
+			addr += 1; // inc to next register
+		else addr += 2; // inc by word
+		addr &= 0777777; // trunc to 18 bit
+		return addr;
+}
+
+static char *realcons_console_pdp11_40_addr_panel2simh(t_addr panel_addr)
+{
+	static char buff[40];
+	switch (panel_addr) {
+	case 0777700: return "r0";
+	case 0777701: return "r1";
+	case 0777702: return "r2";
+	case 0777703: return "r3";
+	case 0777704: return "r4";
+	case 0777705: return "r5";
+	case 0777706: return "sp";
+	case 0777707: return "pc";
+	default:
+		panel_addr &= ~1; // clear LSB, according to DEC doc
+		if (panel_addr >= 0760000)
+			panel_addr += 017000000; // 18->22 bit I/O page
+		sprintf(buff, "%o", panel_addr);
+		return buff;
+	}
+}
+
+// only registers encode before must be back converted to addresses
+static t_addr realcons_console_pdp11_40_addr_reg(char	*regname)
+{
+	if (!strcasecmp(regname, "r0")) return 0777700 ;
+	if (!strcasecmp(regname, "r1")) return 0777701 ;
+	if (!strcasecmp(regname, "r2")) return 0777702 ;
+	if (!strcasecmp(regname, "r3")) return 0777703 ;
+	if (!strcasecmp(regname, "r4")) return 0777704 ;
+	if (!strcasecmp(regname, "r5")) return 0777705 ;
+	if (!strcasecmp(regname, "sp")) return 0777706 ;
+	if (!strcasecmp(regname, "pc")) return 0777707 ;
+	fprintf(stderr, "REALCONS progrm error: unknown register in ...addr_reg()\n");
+	exit(1);
+}
+
+
+
 /*
  * constructor / destructor
  */
@@ -111,14 +171,14 @@ void realcons_console_pdp11_40_destructor(realcons_console_logic_pdp11_40_t *_th
 
 void realcons_console_pdp11_40_event_connect(realcons_console_logic_pdp11_40_t *_this)
 {
-   // set panel mode to "powerless". all lights go off, 
+   // set panel mode to "powerless". all lights go off,
    // On Java panels the power switch should flip to the ON position
 	realcons_power_mode(_this->realcons, 1);
 }
 
 void realcons_console_pdp11_40_event_disconnect(realcons_console_logic_pdp11_40_t *_this)
 {
-	// set panel mode to "powerless". all lights go off, 
+	// set panel mode to "powerless". all lights go off,
 	// On Java panels the power switch should flip to the OFF position
 	realcons_power_mode(_this->realcons, 0);
 }
@@ -212,6 +272,34 @@ void realcons_console_pdp11_40__event_operator_exam_deposit(realcons_console_log
 	_this->led_PROCESSOR->value = 0; // processor idle
 }
 
+// Called if Realcons or a user typed "examine <regname>" or "deposit <regname> value".
+// Realcons accesses only the CPU registers by name, so only these are recognized here
+// see realcons_console_pdp11_40_addr_panel2simh() !
+void realcons_console_pdp11_40__event_operator_reg_exam_deposit(realcons_console_logic_pdp11_40_t *_this)
+{
+	char *regname = SIGNAL_GET(cpusignal_register_name); // alias
+	t_addr	addr = 0;
+	if (_this->realcons->debug)
+		printf("realcons_console_pdp11_70__event_operator_reg_exam_deposit\n");
+	// exam on SimH console sets also console address (like LOAD ADR)
+	// convert register into UNIBUS address
+	if (!strcasecmp(regname, "r0")) addr = 0777700;
+	else if (!strcasecmp(regname, "r1")) addr = 0777701;
+	else if (!strcasecmp(regname, "r2")) addr = 0777702;
+	else if (!strcasecmp(regname, "r3")) addr = 0777703;
+	else if (!strcasecmp(regname, "r4")) addr = 0777704;
+	else if (!strcasecmp(regname, "r5")) addr = 0777705;
+	else if (!strcasecmp(regname, "sp")) addr = 0777706;
+	else if (!strcasecmp(regname, "pc")) addr = 0777707;
+	if (addr) {
+		SIGNAL_SET(cpusignal_memory_address_register, addr);
+		realcons_console_pdp11_40__event_operator_exam_deposit(_this);
+	} // other register access are ignored by the panel
+
+
+}
+
+
 
 void realcons_console_pdp11_40_interface_connect(realcons_console_logic_pdp11_40_t *_this,
 	realcons_console_controller_interface_t *intf, char *panel_name)
@@ -233,6 +321,7 @@ void realcons_console_pdp11_40_interface_connect(realcons_console_logic_pdp11_40
 	{
 		// REALCONS extension in scp.c
 		extern t_addr realcons_memory_address_register; // REALCONS extension in scp.c
+		extern char *realcons_register_name; // pseudo: name of last accessed register
 		extern t_value realcons_memory_data_register; // REALCONS extension in scp.c
 		extern  int realcons_console_halt; // 1: CPU halted by realcons console
 		extern int32 sim_is_running; // global in scp.c
@@ -251,6 +340,7 @@ void realcons_console_pdp11_40_interface_connect(realcons_console_logic_pdp11_40
 
 		// from scp.c
 		_this->cpusignal_memory_address_register = &realcons_memory_address_register;
+		_this->cpusignal_register_name = &realcons_register_name; // pseudo: name of last accessed register
 		_this->cpusignal_memory_data_register = &realcons_memory_data_register;
 		_this->cpusignal_console_halt = &realcons_console_halt;
 
@@ -286,6 +376,8 @@ void realcons_console_pdp11_40_interface_connect(realcons_console_logic_pdp11_40
 		extern console_controller_event_func_t realcons_event_step_halt;
 		extern console_controller_event_func_t realcons_event_operator_exam;
 		extern console_controller_event_func_t realcons_event_operator_deposit;
+		extern console_controller_event_func_t realcons_event_operator_reg_exam;
+		extern console_controller_event_func_t realcons_event_operator_reg_deposit;
 		// pdp11_cpu.c
 		extern console_controller_event_func_t realcons_event_opcode_any; // triggered after any opcode execution
 		extern console_controller_event_func_t realcons_event_opcode_halt;
@@ -302,6 +394,9 @@ void realcons_console_pdp11_40_interface_connect(realcons_console_logic_pdp11_40
 		realcons_event_operator_exam =
 			realcons_event_operator_deposit =
 			(console_controller_event_func_t)realcons_console_pdp11_40__event_operator_exam_deposit;
+		realcons_event_operator_reg_exam =
+			realcons_event_operator_reg_deposit =
+			(console_controller_event_func_t)realcons_console_pdp11_40__event_operator_reg_exam_deposit;
 
 		realcons_event_opcode_any =
 			(console_controller_event_func_t)realcons_console_pdp11_40__event_opcode_any;
@@ -437,7 +532,7 @@ t_stat realcons_console_pdp11_40_service(realcons_console_logic_pdp11_40_t *_thi
 		else
 			// inc panel address register
 			SIGNAL_SET(cpusignal_console_address_register,
-				SIGNAL_GET(cpusignal_console_address_register) + 2);
+				realcons_console_pdp11_40_addr_inc(SIGNAL_GET(cpusignal_console_address_register)) );
 
 		if (action_switch == _this->switch_LOADADRS) {
 			SIGNAL_SET(cpusignal_console_address_register,
@@ -458,8 +553,9 @@ t_stat realcons_console_pdp11_40_service(realcons_console_logic_pdp11_40_t *_thi
 			_this->autoinc_addr_action_switch = _this->switch_EXAM; // inc addr on next EXAM
 			// generate simh "exam cmd"
 			// fix octal, should use SimH-radix
-			sprintf(_this->realcons->simh_cmd_buffer, "examine %o\n",
-				SIGNAL_GET(cpusignal_console_address_register));
+			sprintf(_this->realcons->simh_cmd_buffer, "examine %s\n",
+				realcons_console_pdp11_40_addr_panel2simh(
+				SIGNAL_GET(cpusignal_console_address_register)));
 		}
 
 		if (action_switch == _this->switch_DEPOSIT) {
@@ -468,8 +564,9 @@ t_stat realcons_console_pdp11_40_service(realcons_console_logic_pdp11_40_t *_thi
 			_this->autoinc_addr_action_switch = _this->switch_DEPOSIT; // inc addr on next DEP
 
 			// produce SimH cmd. fix octal, should use SimH-radix
-			sprintf(_this->realcons->simh_cmd_buffer, "deposit %o %o\n",
-				SIGNAL_GET(cpusignal_console_address_register), dataval);
+			sprintf(_this->realcons->simh_cmd_buffer, "deposit %s %o\n",
+				realcons_console_pdp11_40_addr_panel2simh(SIGNAL_GET(cpusignal_console_address_register)),
+				dataval);
 			// flash with DATA LEDs
 			_this->realcons->timer_running_msec[TIMER_DATA_FLASH] =
 				_this->realcons->service_cur_time_msec + TIME_DATA_FLASH_MS;

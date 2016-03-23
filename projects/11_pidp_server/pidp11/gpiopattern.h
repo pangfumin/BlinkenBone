@@ -1,4 +1,4 @@
-/* gpiopattern.h: pattern generator, transforms data bewtwwen Blinkenlight APi and gpio-MUX
+/* gpiopattern.h: pattern generator, transforms data between Blinkenlight APi and gpio-MUX
 
    Copyright (c) 2016, Joerg Hoppe
    j_hoppe@t-online.de, www.retrocmp.com
@@ -30,10 +30,13 @@
 
 #include "blinkenlight_panels.h"
 
-#define AVERAGING_INTERVAL_US 200000  // 1/5 sec for slow lightbulb emulation
-#define GPIOPATTERN_UPDATE_PERIOD_US 20000  // 1/50 sec for screen update
+//#define GPIOPATTERN_UPDATE_PERIOD_US 20000  // 1/50 sec for screen update
+#define GPIOPATTERN_UPDATE_PERIOD_US 50000  // 1/20 sec for screen update
+// in one cycle more than GPIOPATTERN_LED_BRIGHTNESS_LEVELS events from server must be
+// sampled, else loss of resolution
 
 #define GPIOPATTERN_LED_BRIGHTNESS_LEVELS	32	// brightness levels. Not changeable without code rework
+//#define GPIOPATTERN_LED_BRIGHTNESS_PHASES	64
 #define GPIOPATTERN_LED_BRIGHTNESS_PHASES	31
 // 32 levels are made with 31 display phases
 

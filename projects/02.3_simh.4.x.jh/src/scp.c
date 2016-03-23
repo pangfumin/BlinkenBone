@@ -1854,6 +1854,7 @@ static SHTAB show_unit_tab[] = {
 	// Additional CPU state for exam, deposit, start stop etc.
 	t_addr realcons_memory_address_register; // memory address
 	t_value realcons_memory_data_register; // memory data
+	const char *realcons_register_name; // pseudo: name of last accessed register
 	int realcons_console_halt; // 1: CPU halted by realcons console
 
 	// Pointers to event handlers for simulated CPU
@@ -1863,8 +1864,10 @@ static SHTAB show_unit_tab[] = {
 	console_controller_event_func_t	realcons_event_operator_halt ; // after cpu is stopped by operator
 	console_controller_event_func_t	realcons_event_step_start ; // before cpu performs a single step
 	console_controller_event_func_t	realcons_event_step_halt ; // after cpu performeds a single step
-	console_controller_event_func_t	realcons_event_operator_exam ; // after manual EXAM cycle
-	console_controller_event_func_t	realcons_event_operator_deposit ; // after manual DEPOSIT cycle
+	console_controller_event_func_t	realcons_event_operator_exam ; // after manual "EXAM addr" cycle
+	console_controller_event_func_t	realcons_event_operator_deposit ; // after manual "DEPOSIT addr" cycle
+	console_controller_event_func_t	realcons_event_operator_reg_exam ; // after manual "EXAM register" cycle
+	console_controller_event_func_t	realcons_event_operator_reg_deposit ; // after manual "DEPOSIT register" cycle
 
 #endif
 
@@ -6644,6 +6647,13 @@ else if (!(rptr->flags & REG_VMFLAGS) ||
     (fprint_sym (ofile, (rptr->flags & REG_UFMASK) | rdx, &val,
                  NULL, sim_switches | SIM_SW_REG) > 0)) {
         fprint_val (ofile, val, rdx, rptr->width, rptr->flags & REG_FMT);
+#ifdef USE_REALCONS
+					{ // 2nd id system: register not known by CPU addresses
+						realcons_register_name = rptr->name; //
+						realcons_memory_data_register = val ;
+						REALCONS_EVENT(cpu_realcons, realcons_event_operator_reg_exam) ;
+					}
+#endif
         if (rptr->fields) {
             Fprintf (ofile, "\t");
             fprint_fields (ofile, val, val, rptr->fields);
@@ -6751,6 +6761,14 @@ else
 if ((rptr->flags & REG_NZ) && (val == 0))
     return SCPE_ARG;
 put_rval (rptr, idx, val);
+#ifdef USE_REALCONS
+					{ // 2nd id system: register not known by CPU addresses
+						realcons_register_name = rptr->name; //
+						realcons_memory_data_register = val ;
+						REALCONS_EVENT(cpu_realcons, realcons_event_operator_reg_deposit) ;
+					}
+#endif
+
 return SCPE_OK;
 }
 
@@ -6851,7 +6869,6 @@ if ((reason = fprint_sym (ofile, addr, sim_eval, uptr, sim_switches)) > 0) {
     reason = 1 - dptr->aincr;
 #ifdef USE_REALCONS
 			{
-	//		uint16 dataword = (uint16)(sim_eval[0] & 0xFFFF);
 				realcons_memory_address_register = addr;
 				realcons_memory_data_register = sim_eval[0] ;
 				REALCONS_EVENT(cpu_realcons, realcons_event_operator_exam) ;

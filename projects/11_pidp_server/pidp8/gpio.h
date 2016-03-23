@@ -1,6 +1,6 @@
-/* config.h: Loading and processing of config file
+/* gpio.c: the real-time process that handles multiplexing
 
-   Copyright (c) 2012-2016, Joerg Hoppe
+   Copyright (c) 2015-2016, Oscar Vermeulen & Joerg Hoppe
    j_hoppe@t-online.de, www.retrocmp.com
 
    Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,28 +21,48 @@
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-   14-Feb-2012  JH      created
+   16-Nov-2015  JH      created
 */
 
 
-#ifndef CONFIG_PROCESS_H_
-#define CONFIG_PROCESS_H_
+#ifndef _GPIO_H_
+#define _GPIO_H_
 
-#include "blinkenlight_panels.h"
+#include <stdio.h>
 
-#if !defined(CONFIG_C_)
-// globals for use by ANTLR parser
-extern blinkenlight_panel_t *parser_cur_panel; // current panel
-extern blinkenlight_control_t *parser_cur_control; // current control ;
-extern blinkenlight_control_blinkenbus_register_wiring_t *parser_cur_register_wiring;
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#include <unistd.h>
+#include <fcntl.h> // extra
+
+
+//#define BCM2708_PERI_BASE       0x3f000000
+//#define GPIO_BASE               (BCM2708_PERI_BASE + 0x200000)	// GPIO controller
+
+#define BLOCK_SIZE 		(4*1024)
+
+// IO Acces
+struct bcm2835_peripheral {
+    unsigned long addr_p;
+    int mem_fd;
+    void *map;
+    volatile unsigned int *addr;
+};
+
+
+#ifndef _GPIO_C_
+//extern volatile unsigned int gpio_switchstatus[3] ; // bitfields: 3 rows of up to 12 switches
+//extern volatile unsigned int gpio_ledstatus[8] ;	// bitfields: 8 ledrows of up to 12 LEDs
 #endif
 
-char *parser_strip_quotes(char *parsed_string); // make "\"xxx\"" -> "xxx"
-blinkenlight_control_blinkenbus_register_wiring_t *parser_add_register_wiring(
-		blinkenlight_control_t *c);
 
-// all function operate on the global static "blinkenlight_panel_list"
-void blinkenlight_panels_config_load(char *filename);
-int blinkenlight_panels_config_check(void);
+//struct bcm2835_peripheral gpio = {GPIO_BASE};
 
-#endif /* CONFIG_PROCESS_H_ */
+
+// thread main procedure
+//void *blink(int *terminate) ;
+// differnt type to use it for pthread_start
+
+#endif

@@ -85,6 +85,7 @@ ENCODING_BITPOSITION
 	:	  'BITPOSITION' {USER1=2;};
 DEFAULT :	'DEFAULT';
 BITS_MIRRORED:	'BITS_MIRRORED';
+FMAX	:	'FMAX';
 BITLEN	:	'BITLEN' ;
 BLINKENBUS_WIRING	:	 'BLINKENBUS_WIRING' ;
 REGISTER_WIRING	:	 'REGISTER_WIRING' ;
@@ -246,6 +247,7 @@ control_parameter
 	| DEFAULT '=' default_value=unsigned_int_expr{parser_cur_control->value_default = $default_value.value;}
 	| BITLEN '=' bitlen = unsigned_int_expr	{parser_cur_control->value_bitlen = $bitlen.value;}
 	| (BITS_MIRRORED {parser_cur_control->mirrored_bit_order = 1;})
+	| FMAX '=' fmax = unsigned_int_expr	{parser_cur_control->fmax = $fmax.value;}
 //	{ printf("ENCODING=\%d\n", $control_encoding->user1) ;}
   	| RADIX '=' radix = unsigned_int_expr {parser_cur_control->radix = $radix.value;}
 	| BLINKENBUS_WIRING '=' register_wiring_list
@@ -257,7 +259,7 @@ register_wiring_list
 
 register_wiring
 	: 	REGISTER_WIRING '='
-	{ parser_cur_register_wiring = parser_add_register_wiring(parser_cur_control) ;}
+	{ parser_cur_register_wiring = blinkenlight_add_register_wiring(parser_cur_control) ;}
 	'{' register_wiring_parameter (',' register_wiring_parameter)*  '}' ;
 
 register_wiring_parameter

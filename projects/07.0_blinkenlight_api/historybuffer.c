@@ -227,7 +227,7 @@ void historybuffer_set_val(historybuffer_t *_this, uint64_t now_us, uint64_t val
  * 			then result is returned in 'control->averaged_value'
  *
  * averaged_value_bits is an array of uint8_t, with bit indexes.
- * Factional scale: 1.0 <=> 255, 0 <=> 0
+ * Fractional scale: 1.0 <=> 255, 0 <=> 0
  * Two modes: "value mode" and "bit mode"
  *Bit mode average each bit separately.
  * So if the input pattern in the average time interval is 0x00, 0x01, 0x02, 0x03, 0x05 ...

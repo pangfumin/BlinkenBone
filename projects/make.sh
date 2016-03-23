@@ -39,7 +39,12 @@ MAKE_TARGET_ARCH=X64 make $MAKEOPTIONS $MAKETARGETS
 
 (
 # the Blinkenligt API server for Oscar Vermeulen's PiDP8
-cd 11_pidp8/src
+cd 11_pidp_server/pidp8
+MAKE_TARGET_ARCH=RPI make $MAKEOPTIONS $MAKETARGETS
+)
+(
+# the Blinkenligt API server for Oscar Vermeulen's PiDP11
+cd 11_pidp_server/pidp11
 MAKE_TARGET_ARCH=RPI make $MAKEOPTIONS $MAKETARGETS
 )
 

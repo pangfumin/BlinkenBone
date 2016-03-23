@@ -40,6 +40,8 @@ extern int DecimalDigitLenFromLen64[65] ;
 
 #endif
 
+uint64_t mirror_bits(uint64_t value, unsigned bitlen) ;
+
 int find_lowest_bit64(uint64_t value, int bitval);
 int get_msb_index64(uint64_t value);
 

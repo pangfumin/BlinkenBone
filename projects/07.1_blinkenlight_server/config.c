@@ -139,98 +139,6 @@ void blinkenlight_panels_config_load(char *filename)
 }
 
 /*
- * post processing after parsing
- *
- * - count controls
- */
-void blinkenlight_panels_config_fixup()
-{
-	unsigned i_panel, i_control, i_register_wiring;
-	// eval lsb, msb bit ranges
-	for (i_panel = 0; i_panel < blinkenlight_panel_list->panels_count; i_panel++) {
-		blinkenlight_panel_t *p = &(blinkenlight_panel_list->panels[i_panel]);
-		p->controls_inputs_count = 0;
-		p->controls_outputs_count = 0;
-
-		if (p->default_radix == 0)
-			p->default_radix = 16; // default: hex representation
-
-		for (i_control = 0; i_control < p->controls_count; i_control++) {
-			uint64_t all_value_bits = 0;
-			blinkenlight_control_t *c = &(p->controls[i_control]);
-			// get radix from panel, if not defined
-			if (c->radix == 0)
-				c->radix = p->default_radix;
-			// calc input/output direction
-			if (BLINKENLIGHT_IS_OUTPUT_CONTROL(c->type)) {
-				c->is_input = 0;
-			} else
-				c->is_input = 1;
-			if (c->is_input)
-				p->controls_inputs_count++;
-			else
-				p->controls_outputs_count++;
-
-			if (c->blinkenbus_register_wiring_count > 0) {
-				// no const value, set value_bitlen by register bit sum
-				for (i_register_wiring = 0; i_register_wiring < c->blinkenbus_register_wiring_count;
-						i_register_wiring++) {
-					blinkenlight_control_blinkenbus_register_wiring_t *bbrw =
-							&(c->blinkenbus_register_wiring[i_register_wiring]);
-					// calc absolute blinkenbus address
-					bbrw->blinkenbus_register_address = (bbrw->blinkenbus_board_address << 4)
-							| bbrw->board_register_address;
-					if (bbrw->blinkenbus_lsb > 7) {
-						print(LOG_ERR, "Error in panel %s, control %s, register %d: lsb > 7!\n",
-								p->name, c->name, i_register_wiring);
-						exit(1);
-					}
-					if (bbrw->blinkenbus_msb > 7) {
-						print(LOG_ERR, "Error in panel %s, control %s, register %d: msb > 7!\n",
-								p->name, c->name, i_register_wiring);
-						exit(1);
-					}
-					// are lsb and msb reversed?
-					bbrw->blinkenbus_reversed = 0;
-					if (bbrw->blinkenbus_msb < bbrw->blinkenbus_lsb) {
-						unsigned char tmp = bbrw->blinkenbus_lsb;
-						bbrw->blinkenbus_lsb = bbrw->blinkenbus_msb;
-						bbrw->blinkenbus_msb = tmp;
-						bbrw->blinkenbus_reversed = 1;
-					}
-					// calc bitmap for range lsb .. msb
-					// mask the used bits from the blinkenbus register
-					bbrw->blinkenbus_bitmask_len =
-							(bbrw->blinkenbus_msb - bbrw->blinkenbus_lsb + 1);
-					bbrw->blinkenbus_bitmask = BitmaskFromLen8[bbrw->blinkenbus_bitmask_len]
-							<< bbrw->blinkenbus_lsb;
-
-					; // mask with bitmask_len bits from blinkenbus register
-
-					// mount all bit field from registers together into control
-					all_value_bits = mount_bits_to_mask64(all_value_bits, bbrw->blinkenbus_bitmask,
-							bbrw->blinkenbus_lsb, bbrw->control_value_bit_offset);
-				}
-				c->value_bitlen = get_msb_index64(all_value_bits) + 1;
-			}
-			// round bitlen up to bytes
-			c->value_bytelen = (c->value_bitlen + 7) / 8; // 0-> 0, 1->1 8->1, 9->2, ...
-		}
-		// count total amount of bytes for all values of input/output controls
-		// needed for compressed value transmission over RPC
-		p->controls_inputs_values_bytecount = 0;
-		p->controls_outputs_values_bytecount = 0;
-		for (i_control = 0; i_control < p->controls_count; i_control++) {
-			blinkenlight_control_t *c = &(p->controls[i_control]);
-			if (c->is_input)
-				p->controls_inputs_values_bytecount += c->value_bytelen;
-			else
-				p->controls_outputs_values_bytecount += c->value_bytelen;
-		}
-	}
-}
-
-/*
  * Check, whether the config has not semantic errors
  * - no BLINKENBUS bit used in multiple controls
  * - no undefined bits in control value
@@ -363,6 +271,18 @@ int blinkenlight_panels_config_check(void)
 					i_register_wiring++) {
 				blinkenlight_control_blinkenbus_register_wiring_t *bbrw =
 						&(c->blinkenbus_register_wiring[i_register_wiring]);
+                                                /* Test: only 8 bit registers used? */
+					if (bbrw->blinkenbus_lsb > 7) {
+						print(LOG_ERR, "Error in panel %s, control %s, register %d: lsb > 7!\n",
+								p->name, c->name, i_register_wiring);
+						ok = 0;
+					}
+					if (bbrw->blinkenbus_msb > 7) {
+						print(LOG_ERR, "Error in panel %s, control %s, register %d: msb > 7!\n",
+								p->name, c->name, i_register_wiring);
+						ok = 0;
+					}
+
 				// Test: board numbers only 0..29
 				if (bbrw->blinkenbus_board_address > BLINKENBUS_MAX_BOARD_ADDR) {
 					print(LOG_ERR, "Error #5 in config file: \n");

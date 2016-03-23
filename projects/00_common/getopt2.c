@@ -20,8 +20,8 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
-   01-Feb-2016  JH      created
+   17-Mar-2016  JH  allow "/" option marker only #ifdef WIN32
+   01-Feb-2016  JH  created
 
 
    Adavanced getopt(), parses command lines,
@@ -255,8 +255,10 @@ static char *get_dashed_option_name(char *clinearg) {
 		res = clinearg + 2;
 	else if (!strncmp(clinearg, "-", 1))
 		res = clinearg + 1;
+#ifdef WIN32
 	else if (!strncmp(clinearg, "/", 1))
 		res = clinearg + 1;
+#endif
 	return res;
 }
 

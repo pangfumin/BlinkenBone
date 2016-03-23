@@ -36,8 +36,6 @@
 
 #define _GPIO_C_
 
-// TO DO: define SERIALSETUP to use PiDPs wired for serial port
-//#define SERIALSETUP
 #include <time.h>
 #include <pthread.h>
 #include <stdint.h>
@@ -101,17 +99,12 @@ void unmap_peripheral(struct bcm2835_peripheral *p)
 
 // PART 2 - the multiplexing logic driving the front panel -------------
 
-uint8_t ledrows[] =
-{ 20, 21, 22, 23, 24, 25, 26, 27 };
-uint8_t rows[] =
-{ 16, 17, 18 };
+uint8_t ledrows[] = {20, 21, 22, 23, 24, 25};
+uint8_t rows[] = {16, 17, 18};
+// pidp11 setup:
+//uint8_t cols[] = {13, 12, 11,    10, 9, 8,    7, 6, 5,    4, 27, 26};  
+uint8_t cols[] = {26,27,4, 5,6,7, 8,9,10, 11,12,13};  
 
-#ifdef SERIALSETUP
-uint8_t cols[] = {13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2};
-#else
-uint8_t cols[] =
-{ 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 15, 14 };
-#endif
 
 void *blink(int *terminate)
 {
@@ -140,10 +133,8 @@ void *blink(int *terminate)
 	}
 
 	// initialise GPIO (all pins used as inputs, with pull-ups enabled on cols)
-	//	INSERT CODE HERE TO SET GPIO 14 AND 15 TO I/O INSTEAD OF ALT 0.
-	//	AT THE MOMENT, USE "sudo ./gpio mode 14 in" and "sudo ./gpio mode 15 in". "sudo ./gpio readall" to verify.
 
-	for (i = 0; i < 8; i++) { // Define ledrows as input
+	for (i = 0; i < 6; i++) { // Define ledrows as input
 		INP_GPIO(ledrows[i]);
 		GPIO_CLR = 1 << ledrows[i]; // so go to Low when switched to output
 	}
@@ -159,11 +150,8 @@ void *blink(int *terminate)
 	// BCM2835 ARM Peripherals PDF p 101 & elinux.org/RPi_Low-level_peripherals#Internal_Pull-Ups_.26_Pull-Downs
 	GPIO_PULL = 2; // pull-up
 	short_wait(); // must wait 150 cycles
-#ifdef SERIALSETUP
-	GPIO_PULLCLK0 = 0x03ffc; // selects GPIO pins 2..13 (frees up serial port on 14 & 15)
-#else
-	GPIO_PULLCLK0 = 0x0fff0; // selects GPIO pins 4..15 (assumes we avoid pins 2 and 3!)
-#endif
+	GPIO_PULLCLK0 = 0x0c003ff0; // selects GPIO pins 4..13 and 26,27 
+
 	short_wait();
 	GPIO_PULL = 0; // reset GPPUD register
 	short_wait();
@@ -173,7 +161,7 @@ void *blink(int *terminate)
 	// BCM2835 ARM Peripherals PDF p 101 & elinux.org/RPi_Low-level_peripherals#Internal_Pull-Ups_.26_Pull-Downs
 	GPIO_PULL = 0; // no pull-up no pull-down just float
 	short_wait(); // must wait 150 cycles
-	GPIO_PULLCLK0 = 0x0ff00000; // selects GPIO pins 20..27
+	GPIO_PULLCLK0 = 0x03f00000; // selects GPIO pins 20..25
 	short_wait();
 	GPIO_PULL = 0; // reset GPPUD register
 	short_wait();
@@ -193,7 +181,7 @@ void *blink(int *terminate)
 	short_wait(); // probably unnecessary
 	// --------------------------------------------------
 
-	printf("\nFP on\n");
+	printf("\nPiDP-11 FP on\n");
 
 
 	while (*terminate == 0) {
@@ -215,8 +203,8 @@ void *blink(int *terminate)
 				OUT_GPIO(cols[i]); // Define cols as output
 			}
 
-			// light up 8 rows of 12 LEDs each
-			for (i = 0; i < 8; i++) {
+			// light up 6 rows of 12 LEDs each
+			for (i = 0; i < 6; i++) {
 
 				// Toggle columns for this ledrow (which LEDs should be on (CLR = on))
 				for (k = 0; k < 12; k++) {

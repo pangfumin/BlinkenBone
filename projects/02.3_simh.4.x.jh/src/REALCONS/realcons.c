@@ -84,10 +84,6 @@
 #include "rpc_blinkenlight_api.h"
 #include "blinkenlight_api_client.h"
 
-#ifdef WIN32
-#define strcasecmp _stricmp	// grmbl
-#endif
-
 // global data
 // At the moment, only ONE realcons per SimH is possible
 // Later, every device unit may have its own ... may be ...

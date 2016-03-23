@@ -113,7 +113,7 @@ void realcons_console_pdp8i__event_connect(realcons_console_logic_pdp8i_t *_this
 void realcons_console_pdp8i__event_disconnect(realcons_console_logic_pdp8i_t *_this)
 {
 //	realcons_console_clear_output_controls(_this->realcons); // every LED to state 0
-	// set panel mode to "powerless". all lights go off, 
+	// set panel mode to "powerless". all lights go off,
 	// On Java panels the powerbutton flips to the OFF position
 	realcons_power_mode(_this->realcons, 0);
 }
@@ -250,6 +250,7 @@ void realcons_console_pdp8i_interface_connect(realcons_console_logic_pdp8i_t *_t
 	{
 		// REALCONS extension in scp.c
 		extern t_addr realcons_memory_address_register; // REALCONS extension in scp.c
+		extern char *realcons_register_name; // pseudo: name of last accessed register
 		extern t_value realcons_memory_data_register; // REALCONS extension in scp.c
 		extern  int realcons_console_halt; // 1: CPU halted by realcons console
 		extern int32 sim_is_running; // global in scp.c
@@ -273,6 +274,7 @@ void realcons_console_pdp8i_interface_connect(realcons_console_logic_pdp8i_t *_t
 
 		// from scp.c
 		_this->cpusignal_memory_address_register = &realcons_memory_address_register;
+        _this->cpusignal_register_name = &realcons_register_name; // pseudo: name of last accessed register
 		_this->cpusignal_memory_data_register = &realcons_memory_data_register;
 		_this->cpusignal_console_halt = &realcons_console_halt;
 		// from pdp8_cpu.c
@@ -301,6 +303,8 @@ void realcons_console_pdp8i_interface_connect(realcons_console_logic_pdp8i_t *_t
 		extern console_controller_event_func_t realcons_event_step_halt;
 		extern console_controller_event_func_t realcons_event_operator_exam;
 		extern console_controller_event_func_t realcons_event_operator_deposit;
+		extern console_controller_event_func_t realcons_event_operator_reg_exam;
+		extern console_controller_event_func_t realcons_event_operator_reg_deposit;
 
 		realcons_event_run_start =
 			(console_controller_event_func_t)realcons_console_pdp8i__event_run_start;
@@ -312,6 +316,7 @@ void realcons_console_pdp8i_interface_connect(realcons_console_logic_pdp8i_t *_t
 		realcons_event_operator_exam =
 			realcons_event_operator_deposit =
 			(console_controller_event_func_t)realcons_console_pdp8i__event_operator_exam_deposit;
+		realcons_event_operator_reg_exam = realcons_event_operator_reg_deposit = NULL ;
 	}
 #ifdef TODO
 	{

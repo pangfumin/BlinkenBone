@@ -327,6 +327,7 @@ void realcons_console_pdp10_interface_connect(realcons_console_logic_pdp10_t *_t
 	{
 		// REALCONS extension in scp.c
 		extern t_addr realcons_memory_address_register; // REALCONS extension in scp.c
+         	extern char *realcons_register_name; // pseudo: name of last accessed register
 		extern t_value realcons_memory_data_register; // REALCONS extension in scp.c
 		extern  int realcons_console_halt; // 1: CPU halted by realcons console
 		extern int32 sim_is_running; // global in scp.c
@@ -343,6 +344,7 @@ void realcons_console_pdp10_interface_connect(realcons_console_logic_pdp10_t *_t
 
 		// from scp.c
 		_this->cpusignal_memory_address_register = &realcons_memory_address_register;
+                _this->cpusignal_register_name = &realcons_register_name; // pseudo: name of last accessed register
 		_this->cpusignal_memory_data_register = &realcons_memory_data_register;
 		_this->cpusignal_console_halt = &realcons_console_halt;
 		// is "sim_is_running" indeed identical with our "cpu_is_running" ?
@@ -370,6 +372,8 @@ void realcons_console_pdp10_interface_connect(realcons_console_logic_pdp10_t *_t
 		extern console_controller_event_func_t realcons_event_step_halt;
 		extern console_controller_event_func_t realcons_event_operator_exam;
 		extern console_controller_event_func_t realcons_event_operator_deposit;
+		extern console_controller_event_func_t realcons_event_operator_reg_exam;
+		extern console_controller_event_func_t realcons_event_operator_reg_deposit;
 		// pdp10_cpu.c
 		extern console_controller_event_func_t realcons_event_opcode_any; // triggered after any opcode execution
 		extern console_controller_event_func_t realcons_event_opcode_halt;
@@ -391,6 +395,7 @@ void realcons_console_pdp10_interface_connect(realcons_console_logic_pdp10_t *_t
 			(console_controller_event_func_t)realcons_console_pdp10__event_operator_exam_deposit;
 		realcons_event_operator_deposit =
 			(console_controller_event_func_t)realcons_console_pdp10__event_operator_exam_deposit;
+        	realcons_event_operator_reg_exam = realcons_event_operator_reg_deposit = NULL ;
 
 		realcons_event_opcode_any =
 			(console_controller_event_func_t)realcons_console_pdp10__event_opcode_any;

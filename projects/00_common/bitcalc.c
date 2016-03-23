@@ -199,7 +199,46 @@ if (i < 64) printf(", ") ;
  }
  /**/
 
+uint64_t mirror_bits(uint64_t value, unsigned bitlen)
+{
+    uint64_t result;
+    unsigned i;
+    unsigned byte_count; // value uses this much bytes ...
+    unsigned extra_bits; // and so much msb bits are unused then
+//  u_int8_t    b ;
+    uint8_t b[8]; // temp byte array. No unions, be independent of endianess!
 
+    byte_count = (bitlen + 7) >> 3; // 1..8 -> 1, 9..16 -> 2, ...
+    extra_bits = (byte_count << 3) - bitlen;
+
+    // separate value into bytes, and calc byte mirror
+    switch (byte_count) {
+    case 8:
+        b[7] = (value >> 56) & 0xff; // no break: fall through!
+    case 7:
+        b[6] = (value >> 48) & 0xff;
+    case 6:
+        b[5] = (value >> 40) & 0xff;
+    case 5:
+        b[4] = (value >> 32) & 0xff;
+    case 4:
+        b[3] = (value >> 24) & 0xff;
+    case 3:
+        b[2] = (value >> 16) & 0xff;
+    case 2:
+        b[1] = (value >> 8) & 0xff;
+    case 1:
+        b[0] = (value >> 0) & 0xff;
+    }
+
+    // mount result_ byte[0] -> byte[7],
+    result = 0;
+    for (i = 0; i < byte_count; i++)
+        result = (result << 8) | BitsMirrored[b[i]];
+
+    // extra msbs are now extra lsbs
+    return result >> extra_bits;
+}
 
 
 /*

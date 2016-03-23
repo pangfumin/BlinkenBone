@@ -1,4 +1,4 @@
-/* gpiopattern.c: pattern generator, transforms data bewtwwen Blinkenlight APi and gpio-MUX
+/* gpiopattern.c: pattern generator, transforms data between Blinkenlight APi and gpio-MUX
 
  Copyright (c) 2016, Joerg Hoppe
  j_hoppe@t-online.de, www.retrocmp.com
@@ -125,7 +125,7 @@ volatile uint32_t gpiopattern_ledstatus_phases[2][GPIOPATTERN_LED_BRIGHTNESS_PHA
  * This table depends on the driver electronic and needs to be fine-tuned.
  * Pattern style: "Distributed"
  */
-static char brightness_phase_lookup_32[32][31] =
+static char brightness_phase_lookup[32][31] =
 { //
 		{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 				0 }, //  0/31 =  0%
@@ -244,6 +244,7 @@ char brightness_phase_lookup[32][31] =
 #endif
 
 
+
 // DBG
 void break_here()
 {
@@ -255,30 +256,81 @@ void break_here()
 static void value2gpio_ledstatus_value(blinkenlight_panel_t *p, blinkenlight_control_t *c,
 		uint32_t value, volatile uint32_t *gpio_ledstatus)
 {
-	unsigned gpio_register_idx = c->blinkenbus_register_wiring[0].blinkenbus_register_address;
-	unsigned bit_offset = c->blinkenbus_register_wiring[0].blinkenbus_lsb;
-	unsigned mask = (BitmaskFromLen32[c->value_bitlen] << bit_offset);
-	unsigned gpio_bits;
+    unsigned i_register_wiring;
+    extern blinkenlight_control_t * leds_MMR0_MODE ;
+    extern blinkenlight_control_t * switch_LAMPTEST ;
+    int panel_mode = p->mode ;
 
-	// write value to gpio's
-	gpio_bits = (value << bit_offset);
-	switch (p->mode) {
+    // local LAMPTEST overrides mode set over API
+    if (switch_LAMPTEST->value)
+        panel_mode = RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST ;
+
+    if (c == leds_MMR0_MODE) {
+        // circumevent wiring defintions, hard coded logic here:
+        // val: 0 = Kernel, 1= off,  2 = Super, 3 = User
+        // leds: kernel = reg[2].4, super= reg[2].5 user=reg[2].6
+#define REGMASK_LED_KERNEL 0x10
+#define REGMASK_LED_SUPER 0x20
+#define REGMASK_LED_USER 0x40
+#define REGMASK_LEDS_K_S_U 0x70
+        int mask = 0;
+        switch (panel_mode) {
+        case RPC_PARAM_VALUE_PANEL_MODE_NORMAL:
+
+            switch(value) {
+            case 0: mask |= REGMASK_LED_KERNEL ; break ;
+            case 2: mask |= REGMASK_LED_SUPER; break ;
+            case 3: mask |= REGMASK_LED_USER; break ;
+            }
+            case RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST:
+        case RPC_PARAM_VALUE_PANEL_MODE_ALLTEST:
+            mask = REGMASK_LEDS_K_S_U ; // all ON
+            break;
+        case RPC_PARAM_VALUE_PANEL_MODE_POWERLESS:
+            mask = 0 ; // all off
+            break;
+        }
+        // mask all out and set selective
+        gpio_ledstatus[2] = (gpio_ledstatus[2] & ~REGMASK_LEDS_K_S_U) | mask ;
+        //
+        return ;
+    }
+
+	switch (panel_mode) {
 	case RPC_PARAM_VALUE_PANEL_MODE_NORMAL:
-		gpio_ledstatus[gpio_register_idx] = (gpio_ledstatus[gpio_register_idx] & ~mask) | gpio_bits;
+        if (c->mirrored_bit_order)
+            value = mirror_bits(value, c->value_bitlen);
 		break;
 	case RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST:
-		// all LEDs on, but do not change control values
-		gpio_ledstatus[gpio_register_idx] = (gpio_ledstatus[gpio_register_idx] & ~mask) | mask;
-		break;
 	case RPC_PARAM_VALUE_PANEL_MODE_ALLTEST:
-		// all LEDs on, but do not change control values
-		gpio_ledstatus[gpio_register_idx] = (gpio_ledstatus[gpio_register_idx] & ~mask) | mask;
+        value = BitmaskFromLen64[c->value_bitlen]; // all '1'
 		break;
 	case RPC_PARAM_VALUE_PANEL_MODE_POWERLESS:
 		// all LEDs off, but do not change control values
-		gpio_ledstatus[gpio_register_idx] = 0;
+        value = 0;
 		break;
 	}
+
+    // write value to gpio registers
+    for (i_register_wiring = 0; i_register_wiring < c->blinkenbus_register_wiring_count;
+            i_register_wiring++) {
+        blinkenlight_control_blinkenbus_register_wiring_t *bbrw;
+        unsigned regval; // value of current register
+        unsigned bitfield; // bits moutnend into current register
+        // for all registers assigned whole or in part to control
+        bbrw = &(c->blinkenbus_register_wiring[i_register_wiring]);
+
+        // clear out used bits in register
+        regval = gpio_ledstatus[bbrw->blinkenbus_register_address] & ~bbrw->blinkenbus_bitmask;
+
+        bitfield = (value >> bbrw->control_value_bit_offset); // value shifted to register lsb
+        if (bbrw->blinkenbus_levels_active_low)
+            bitfield = ~bitfield;
+        bitfield &= BitmaskFromLen32[bbrw->blinkenbus_bitmask_len]; // masked to register
+        bitfield <<= bbrw->blinkenbus_lsb;
+
+        gpio_ledstatus[bbrw->blinkenbus_register_address] = regval | bitfield; // write back
+    }
 }
 
 /*
@@ -320,7 +372,8 @@ void *gpiopattern_update_leds(int *terminate)
 
 			// fetch  shift
 			// get averaged values
-			historybuffer_get_average_vals(c->history, AVERAGING_INTERVAL_US, now_us, /*bitmode*/1);
+			assert(c->fmax) ;
+				historybuffer_get_average_vals(c->history, 1000000 / c->fmax, now_us, /*bitmode*/1);
 
 
 			/*

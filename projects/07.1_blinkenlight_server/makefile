@@ -57,6 +57,7 @@ BLINKENLIGHT_API_SOURCES.c = \
 	$(BLINKENLIGHT_API_DIR)/rpcgen_linux/rpc_blinkenlight_api_xdr.c	\
 	$(BLINKENLIGHT_API_DIR)/historybuffer.c	\
 	$(BLINKENLIGHT_COMMON_DIR)/bitcalc.c	\
+	$(BLINKENLIGHT_COMMON_DIR)/getopt2.c	\
 	$(BLINKENLIGHT_COMMON_DIR)/radix.c	\
 	$(BLINKENLIGHT_COMMON_DIR)/namevaluelist.c	\
 	$(BLINKENLIGHT_COMMON_DIR)/mcout.c	\
@@ -67,6 +68,7 @@ BLINKENLIGHT_API_SOURCES.h = \
 	$(BLINKENLIGHT_API_DIR)/historybuffer.h	\
 	$(BLINKENLIGHT_API_DIR)/blinkenlight_api_server_procs.h \
 	$(BLINKENLIGHT_COMMON_DIR)/bitcalc.h	\
+	$(BLINKENLIGHT_COMMON_DIR)/getopt2.h	\
 	$(BLINKENLIGHT_COMMON_DIR)/radix.h	\
 	$(BLINKENLIGHT_COMMON_DIR)/namevaluelist.h	\
 	$(BLINKENLIGHT_COMMON_DIR)/mcout.h	\
@@ -112,6 +114,7 @@ SOURCES.h = \
 	$(BLINKENLIGHT_API_DIR)/blinkenlight_panels.h	\
 	config.h	\
 	$(BLINKENLIGHT_API_DIR)/blinkenlight_api_server_procs.h \
+	iopattern.h \
 	blinkenbus.h \
 	panelsim.h \
 	$(ANTLR_OUTDIR)/blinkenlight_panel_configLexer.h	\
@@ -119,6 +122,7 @@ SOURCES.h = \
 SOURCES.c = \
 	main.c	\
 	config.c	\
+	iopattern.c \
 	blinkenbus.c \
 	panelsim.c \
 	print.c	\

@@ -35,6 +35,12 @@
 // include all realcons_* modules
 #include "realcons_simh.h"
 
+#ifdef WIN32
+#define strcasecmp _stricmp	// grmbl
+#endif
+
+
+
 // base type for machine registers
 typedef uint32 realcons_machine_word_t;
 

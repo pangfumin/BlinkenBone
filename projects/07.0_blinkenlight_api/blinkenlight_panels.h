@@ -20,6 +20,7 @@
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+ 22-Mar-2016  JH      allow non-BlinkenBoard hardware registers
  23-Feb-2016  JH      coding of const dummy input controls defined
  02-Feb-2012  JH      created
 
@@ -107,6 +108,9 @@ char *blinkenlight_register_space_t_text(blinkenlight_register_space_t x);
 //		bit 8 for the control signal value is assigned to register bit 2
 //		bit 9   "   "   "         "     "   "    "     "  register bit 5
 //		bit 10  "   "   "         "     "   "    "     "  register bit 6
+//
+// If other hardware is used (PiDP), hardware registers are not grouped by
+//  "boards", and width of a register may be up to 32 sizeof(unsigned)
 typedef struct blinkenlight_control_blinkenbus_register_wiring_struct
 {
 	unsigned index; // index of this record in parent list
@@ -125,8 +129,8 @@ typedef struct blinkenlight_control_blinkenbus_register_wiring_struct
 	// then highest bit in blinkenbus is lowest bit in value,
 	// lsb bit maps to  (lsb-msb+value_bit_offset)
 	unsigned blinkenbus_register_address;// absolute register address in blinkenbus space, from board and local addr
-	unsigned char blinkenbus_bitmask_len;
-	unsigned char blinkenbus_bitmask;// mask with btmask_len bits from blinkenbus register
+	unsigned blinkenbus_bitmask_len;
+	unsigned blinkenbus_bitmask;// mask with bitmask_len bits from blinkenbus register
 	// if in blinkenbus_bitmask <n> bits are set,
 	// this struct defines the value bits <offset>:<offset+n-1>
 }blinkenlight_control_blinkenbus_register_wiring_t;
@@ -171,6 +175,9 @@ typedef struct blinkenlight_control_struct
 	// value from blinkenbus must be mirror bits:
 	// bit [0] -> bit[bitlen-1], bit [1] -> bit[bitlen-2], ...
 	unsigned mirrored_bit_order;
+
+	unsigned	fmax ; // control can change max with that frequency, 0 = undefd.
+	// Used in call of historybuffer_get_average_vals(..., 1000000/fmax,..)
 
 	historybuffer_t *history;// ringbuffer for recent values
 	// for each bit the average als value 0..255
@@ -225,6 +232,9 @@ void blinkenlight_panels_clear(blinkenlight_panel_list_t *_this);
 blinkenlight_panel_t *blinkenlight_add_panel(blinkenlight_panel_list_t *_this);
 blinkenlight_control_t *blinkenlight_add_control(blinkenlight_panel_list_t *_this,
 		blinkenlight_panel_t *);
+#ifdef BLINKENLIGHT_SERVER
+blinkenlight_control_blinkenbus_register_wiring_t *blinkenlight_add_register_wiring(blinkenlight_control_t *c) ;
+#endif
 
 blinkenlight_panel_t * blinkenlight_panels_get_panel_by_name(blinkenlight_panel_list_t *_this,
 		char *panelname);
@@ -234,6 +244,10 @@ unsigned blinkenlight_panels_get_control_value_changes(blinkenlight_panel_list_t
 		blinkenlight_panel_t *p, int is_input);
 unsigned blinkenlight_panels_get_max_control_name_len(blinkenlight_panel_list_t *_this,
 		blinkenlight_panel_t *p);
+#ifdef BLINKENLIGHT_SERVER
+void blinkenlight_panels_config_fixup(blinkenlight_panel_list_t *_this) ;
+#endif
+
 void blinkenlight_panels_diagprint(blinkenlight_panel_list_t *_this, FILE *f);
 
 #endif /* BLINKENLIGHT_PANELS_H_ */

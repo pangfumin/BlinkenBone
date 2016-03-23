@@ -69,6 +69,7 @@ typedef struct
 	 * (either set by simulator and read by panel logic, ore vice verse) or be bidirectional.
 	 */
 		t_addr *cpusignal_memory_address_register; // address of last bus cycle (EXAM/DEPOSIT)
+		char **cpusignal_register_name ; // name of last accessed exam/deposit register
 		t_value *cpusignal_memory_data_register; // data of last bus cycle
 		int *cpusignal_console_halt; // 1, if a real console halts program execution
 		int *cpusignal_run; // 1, if simulated cpu is running

@@ -1,6 +1,6 @@
-/* config.h: Loading and processing of config file
+/* main.h: Blinkenlight API server to run on "PiDP8" replica
 
-   Copyright (c) 2012-2016, Joerg Hoppe
+   Copyright (c) 2015-2016, Joerg Hoppe
    j_hoppe@t-online.de, www.retrocmp.com
 
    Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,28 +21,31 @@
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-   14-Feb-2012  JH      created
+   13-Nov-2015  JH      created
 */
 
 
-#ifndef CONFIG_PROCESS_H_
-#define CONFIG_PROCESS_H_
+#ifndef MAIN_H_
+#define MAIN_H_
 
 #include "blinkenlight_panels.h"
 
-#if !defined(CONFIG_C_)
-// globals for use by ANTLR parser
-extern blinkenlight_panel_t *parser_cur_panel; // current panel
-extern blinkenlight_control_t *parser_cur_control; // current control ;
-extern blinkenlight_control_blinkenbus_register_wiring_t *parser_cur_register_wiring;
+#define MAX_FILENAME_LEN	1024
+
+#ifndef MAIN_C_
+// global panel config
+extern blinkenlight_panel_list_t *blinkenlight_panel_list ;
+
+extern char configfilename[MAX_FILENAME_LEN];
+// global flags
+extern int mode_test; // no server, just test config
+extern int mode_panelsim; // do not access BLINKENBUS, no daemon, user oeprates simualted panel
+
+//extern int stmode; // no server, just test config
+extern char program_info[];
+extern char program_name[]; // argv[0]
+extern char program_options[]; // argv[1.argc-1]
+
 #endif
 
-char *parser_strip_quotes(char *parsed_string); // make "\"xxx\"" -> "xxx"
-blinkenlight_control_blinkenbus_register_wiring_t *parser_add_register_wiring(
-		blinkenlight_control_t *c);
-
-// all function operate on the global static "blinkenlight_panel_list"
-void blinkenlight_panels_config_load(char *filename);
-int blinkenlight_panels_config_check(void);
-
-#endif /* CONFIG_PROCESS_H_ */
+#endif /* MAIN_H_ */
