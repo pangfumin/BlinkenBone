@@ -18,6 +18,9 @@ pwd
 export MAKEOPTIONS=--silent
 export MAKETARGETS="clean all"
 
+# optimize all compiles, see makefiles 
+export MAKE_CONFIGURATION=RELEASE
+
 
 (
 # All classes and resources for all Java panels into one jar

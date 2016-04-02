@@ -36,6 +36,7 @@
 // global panel config
 extern blinkenlight_panel_list_t *blinkenlight_panel_list ;
 
+
 extern char configfilename[MAX_FILENAME_LEN];
 // global flags
 extern int mode_test; // no server, just test config

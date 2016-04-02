@@ -8,7 +8,11 @@
 #
 
 #OS_CCDEFS = -lrt -lm -D_GNU_SOURCE
+ifeq ($(MAKE_CONFIGURATION),RELEASE)
+CC_DBG_FLAGS = -O2 -Wno-unused-result
+else
 CC_DBG_FLAGS = -ggdb3 -O0
+endif
 #LIBS=-lm
 OS_CCDEFS =
 
@@ -22,10 +26,10 @@ else ifeq ($(MAKE_TARGET_ARCH),RPI)
 	CC=arm-linux-gnueabihf-gcc -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) $(OS_CCDEFS) -I.
 	OBJDIR=bin-rpi
 else ifeq ($(MAKE_TARGET_ARCH),X86)
-    OS_CCDEFS=-m32
+    OS_CCDEFS=-m32 $(CC_DBG_FLAGS)
 	OBJDIR=bin-ubuntu-x86
 else ifeq ($(MAKE_TARGET_ARCH),X64)
-    OS_CCDEFS=-m64
+    OS_CCDEFS=-m64 $(CC_DBG_FLAGS)
 	OBJDIR=bin-ubuntu-x64
 else
 	$error("MAKE_TARGET_ARCH not set!")

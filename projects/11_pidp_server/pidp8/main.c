@@ -84,9 +84,8 @@
 char program_info[1024];
 char program_name[1024]; // argv[0]
 char program_options[1024]; // argv[1.argc-1]
-int opt_test = 0 ;
+int opt_test = 0;
 int opt_background = 0;
-
 
 /*
  *	PiDP8 controls wich are accessible over Blinkenlight API
@@ -178,9 +177,9 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
                 // the deposit switch must be inverted, PiDP8 electronics doesn't handle this
                 if (c == switch_deposit)
                     c->value = !c->value;
+            }
         }
     }
-}
 }
 
 static void on_blinkenlight_api_panel_set_controlvalues(blinkenlight_panel_t *p, int force_all)
@@ -405,7 +404,7 @@ static int parse_commandline(int argc, char **argv)
             opt_background = 1;
             break;
         case 't':
-            opt_test = 1 ;
+            opt_test = 1;
             break;
         case '?': // getopt detected an error. "opterr=0", so own error message here
             if (isprint(optopt))
@@ -456,14 +455,14 @@ static blinkenlight_control_t *define_switch_slice(blinkenlight_panel_t *p, char
         c->radix = 8; // display octal
     }
     // shift and mask data are saved in the "register wiring" struct.
-    bbrw = blinkenlight_add_register_wiring(c) ;
+    bbrw = blinkenlight_add_register_wiring(c);
     bbrw->blinkenbus_board_address = 0; // simulate 1 board with unlimited registers
     bbrw->board_register_address = gpio_switchstatus_index;
-    bbrw->control_value_bit_offset = control_value_bit_offset ;
+    bbrw->control_value_bit_offset = control_value_bit_offset;
     bbrw->blinkenbus_lsb = bit_offset;
     bbrw->blinkenbus_msb = bbrw->blinkenbus_lsb + bitlen - 1;
     // all switches invers: bit 1 => switch up in "0" position
-    bbrw->blinkenbus_levels_active_low = 1 ;
+    bbrw->blinkenbus_levels_active_low = 1;
 
     return c;
 }
@@ -489,10 +488,10 @@ static blinkenlight_control_t *define_lamp_slice(blinkenlight_panel_t *p, char *
     bbrw = blinkenlight_add_register_wiring(c);
     bbrw->blinkenbus_board_address = 0; // simulate 1 board with unlimited registers
     bbrw->board_register_address = gpio_ledstatus_index;
-    bbrw->control_value_bit_offset = control_value_bit_offset ;
+    bbrw->control_value_bit_offset = control_value_bit_offset;
     bbrw->blinkenbus_lsb = bit_offset;
     bbrw->blinkenbus_msb = bbrw->blinkenbus_lsb + bitlen - 1;
-    bbrw->blinkenbus_levels_active_low = 0 ; // LED drivers not inverting
+    bbrw->blinkenbus_levels_active_low = 0; // LED drivers not inverting
 
     return c;
 }
@@ -602,9 +601,9 @@ int main(int argc, char *argv[])
     register_controls();
 
     if (opt_test) {
-        printf("Dump of register <-> control data struct:\n") ;
-        blinkenlight_panels_diagprint(blinkenlight_panel_list, stdout) ;
-        exit(0) ;
+        printf("Dump of register <-> control data struct:\n");
+        blinkenlight_panels_diagprint(blinkenlight_panel_list, stdout);
+        exit(0);
     }
 
     gpio_mux_thread_start();

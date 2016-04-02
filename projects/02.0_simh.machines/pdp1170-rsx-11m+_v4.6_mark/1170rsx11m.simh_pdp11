@@ -36,7 +36,8 @@ sho cpu
 
 ; connect to real panel
 ;set realcons host=goe-001-test-04
-set realcons host=vmubuprog
+set realcons host=blinkenbone1170
+;set realcons host=vmubuprog
 ;set realcons host=localhost
 set realcons panel=11/70
 ; We're running on a desktop PC with connection to localhost: max speed!

@@ -79,6 +79,9 @@ typedef struct
 	//	t_value *bus_register; // 11/70: BR - DATA of UNIBUS access
 		int 	*cpusignal_bus_ID_mode ; // ID mode of last bus access. 1 = DATA space access, 0 = instruction space access
 		unsigned *cpusignal_cpu_mode; // cpu run mode. which memory mode to display? REALCONS_CPU_PDP11_MEMMODE_*, MD_SUP,MD_KER,MD_USR,MD_UND
+        int32   * cpusignal_MMR0 ; // MMU register 17 777 572
+        int32   * cpusignal_MMR3 ; // MMU register 17 772 516
+
 		int32 *cpusignal_PC; // programm counter
 		t_value *cpusignal_PSW; // processor status word
 		t_value *cpusignal_instruction_register; // cpu internal instruction register, holds opcode

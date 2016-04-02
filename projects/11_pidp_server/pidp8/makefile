@@ -9,7 +9,11 @@
 
 # own settings
 OS_CCDEFS =
+ifeq ($(MAKE_CONFIGURATION),RELEASE)
+CC_DBG_FLAGS = -O3
+else
 CC_DBG_FLAGS = -ggdb3 -O0
+endif
 LDFLAGS = -pthread
 
 	# all other cases: X86

@@ -98,21 +98,27 @@ void print_memdump(int level, char *info, unsigned start_addr, unsigned count, u
 {
 	char buff[1000], buff1[100];
 	unsigned i;
+	int  buff_empty ;
 	buff[0] = 0;
 	if (info)
 		strcat(buff, info);
 	sprintf(buff1, "start=0x%04x, data[0..%2u]=", start_addr, count - 1);
 	strcat(buff, buff1);
+	buff_empty = 0;
 	// break every 16 bytes
 	for (i = 0; i < count; i++) {
-		if (i % 16 == 15) {
+		if (i && (i % 16 == 0)) {
 			print(level, "%s\n", buff);
 			strcpy(buff, "        ");
+		    buff_empty = 1;
 		}
+		if (i % 16 == 8)
+		    strcat(buff, " ") ; // mark every 8
 		sprintf(buff1, "%02x ", (unsigned) data[i]);
 		strcat(buff, buff1);
+        buff_empty = 0;
 	}
-	if (count % 16) // something left in buffer
+	if (!buff_empty) // something left in buffer
 		print(level, "%s\n", buff);
 }
 

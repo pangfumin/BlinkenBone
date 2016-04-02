@@ -147,8 +147,11 @@ typedef enum blinkenlight_control_value_encoding_enum
 char *blinkenlight_control_value_encoding_t_text(blinkenlight_control_value_encoding_t x);
 #endif
 
+
+struct blinkenlight_panel_struct ;
 typedef struct blinkenlight_control_struct
 {
+    struct blinkenlight_panel_struct *panel ; // uplink to parent
 	unsigned index; // index of this record in control list of parent panel
 	char name[MAX_BLINKENLIGHT_NAME_LEN];
 	uint64_t tag; // application marker

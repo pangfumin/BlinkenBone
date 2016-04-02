@@ -51,17 +51,20 @@ extern int blinkenbus_fd; // file descriptor for interface to driver
 typedef unsigned char blinkenbus_map_t[BLINKENBUS_MAX_REGISTER_ADDR + 1];
 
 void blinkenbus_init(void);
-void blinkenbus_control_to_cache(unsigned char *blinkenbus_cache, blinkenlight_control_t *c,
-        int clear, int as_mask) ;
+void blinkenbus_outputcontrol_to_cache(unsigned char *blinkenbus_cache, blinkenlight_control_t *c,
+        uint64_t value);
 void blinkenbus_control_from_cache(unsigned char *blinkenbus_cache, blinkenlight_control_t *c) ;
-void blinkenbus_panel_to_cache(unsigned char *blinkenbus_cache, blinkenlight_panel_t *p) ;
-void blinkenbus_panel_from_cache(unsigned char *blinkenbus_cache, blinkenlight_panel_t *p) ;
+void blinkenbus_outputcontrols_to_cache(unsigned char *blinkenbus_cache, blinkenlight_panel_t *p) ;
+void blinkenbus_inputcontrols_from_cache(unsigned char *blinkenbus_cache, blinkenlight_panel_t *p) ;
 
 void blinkenbus_cache_from_blinkenboards_outputs(unsigned char *blinkenbus_cache) ;
 void blinkenbus_cache_to_blinkenboards_outputs(unsigned char *blinkenbus_cache, int force_all) ;
-void blinkenbus_cache_from_blinkenboards_inputs(unsigned char *blinkenbus_cache, blinkenlight_panel_t *p) ;
+void blinkenbus_cache_from_blinkenboards_inputs(unsigned char *blinkenbus_cache) ;
 
 void blinkenbus_set_blinkenboards_state(blinkenlight_panel_t *p, int new_state) ;
 int blinkenbus_get_blinkenboards_state(blinkenlight_panel_t *p) ;
+
+void blinkenbus_map_dump(unsigned char *map, char *info) ;
+
 
 #endif /* BLINKENBUS_H_ */

@@ -20,6 +20,7 @@
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+ 01-Apr-2016  OV    almost perfect before VCF SE
  15-Mar-2016  JH	display patterns for brightness levels
  16-Nov-2015  JH    acquired from Oscar
 
@@ -49,6 +50,9 @@ typedef unsigned short uint16;
 void short_wait(void); // used as pause between clocked GPIO changes
 unsigned bcm_host_get_peripheral_address(void); // find Pi 2 or Pi's gpio base address
 static unsigned get_dt_ranges(const char *filename, unsigned offset); // Pi 2 detect
+
+extern int knobValue[2];	// value for knobs. 0=ADDR, 1=DATA. see main.c.
+void check_rotary_encoders(int switchscan);
 
 struct bcm2835_peripheral gpio; // needs initialisation
 
@@ -236,26 +240,28 @@ void *blink(int *terminate)
 				INP_GPIO(cols[i]); // flip columns to input. Need internal pull-ups enabled.
 
 			// read three rows of switches
-			for (i = 0; i < 3; i++) {
+			for (i = 0; i < 3; i++) 
+			{
 				INP_GPIO(rows[i]); //			GPIO_CLR = 1 << rows[i];	// and output 0V to overrule built-in pull-up from column input pin
 				OUT_GPIO(rows[i]); // turn on one switch row
 				GPIO_CLR = 1 << rows[i]; // and output 0V to overrule built-in pull-up from column input pin
 
-				nanosleep((struct timespec[]
-				)
-				{
-					{	0, intervl / 100}}, NULL); // probably unnecessary long wait, maybe put above this loop also
+				nanosleep((struct timespec[]) { { 0, intervl / 100}}, NULL); // probably unnecessary long wait, maybe put above this loop also
 
 				switchscan = 0;
 				for (j = 0; j < 12; j++) // 12 switches in each row
-						{
+				{
 					tmp = GPIO_READ(cols[j]);
 					if (tmp != 0)
 						switchscan += 1 << j;
 				}
 				INP_GPIO(rows[i]); // stop sinking current from this row of switches
 
+				if (i==2)
+					check_rotary_encoders(switchscan);	// translate raw encoder data to switch position
+
 				gpio_switchstatus[i] = switchscan;
+
 			}
 		}
 	}
@@ -295,3 +301,65 @@ static unsigned get_dt_ranges(const char *filename, unsigned offset)
 	return address;
 }
 
+
+
+void check_rotary_encoders(int switchscan)
+{
+	// 2 rotary encoders. Each has two switch pins. Normally, both are 0 - no rotation.
+	// encoder 1: row1, bits 8,9. Encoder 2: row1, bits 10,11
+	// Gray encoding: rotate up sequence   = 11 -> 01 -> 00 -> 10 -> 11
+	// Gray encoding: rotate down sequence = 11 -> 10 -> 00 -> 01 -> 11
+
+	static int lastCode[2] = {3,3};
+	int code[2];
+	int i;
+
+	code[0] = (switchscan & 0x300) >> 8;
+	code[1] = (switchscan & 0xC00) >> 10;
+	switchscan = switchscan & 0xff;	// set the 4 bits to zero
+
+//printf("code 0 = %d, code 1 = %d\n", code[0], code[1]);
+
+	// detect rotation
+	for (i=0;i<2;i++)
+	{
+		if ((code[i]==1) && (lastCode[i]==3))
+			lastCode[i]=code[i];
+		else if ((code[i]==2) && (lastCode[i]==3))
+			lastCode[i]=code[i];
+	}
+
+	// detect end of rotation
+	for (i=0;i<2;i++)
+	{
+		if ((code[i]==3) && (lastCode[i]==1))
+		{
+			lastCode[i]=code[i];
+			switchscan = switchscan + (1<<((i*2)+8));
+//			printf("%d end of UP %d %d\n",i, switchscan, (1<<((i*2)+8)));
+			knobValue[i]++;
+
+		}
+		else if ((code[i]==3) && (lastCode[i]==2))
+		{
+			lastCode[i]=code[i];
+			switchscan = switchscan + (2<<((i*2)+8));
+//			printf("%d end of DOWN %d %d\n",i,switchscan, (2<<((i*2)+8)));
+			knobValue[i]--;
+		}
+	}
+
+	
+	if (knobValue[0]>7)
+		knobValue[0] = 0;
+	if (knobValue[1]>3)
+		knobValue[1] = 0;
+	if (knobValue[0]<0)
+		knobValue[0] = 7;
+	if (knobValue[1]<0)
+		knobValue[1] = 3;
+	
+	// end result: bits 8,9 are 00 normally, 01 if UP, 10 if DOWN. Same for bits 10,11 (knob 2)
+	// these bits are not used, actually. Status is communicated through global variable knobValue[i]
+
+}

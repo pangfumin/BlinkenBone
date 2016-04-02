@@ -1,4 +1,4 @@
-/* Panelsim1140_app.java: visual application framework for PDP-11/70 sim
+/* Panelsim1140_app.java: visual application framework for PDP-11/40 sim
 
    Copyright (c) 2015-2016, Joerg Hoppe
    j_hoppe@t-online.de, www.retrocmp.com

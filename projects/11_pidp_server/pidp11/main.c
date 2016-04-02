@@ -20,7 +20,7 @@
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
+ 01-Apr-2016  OV    almost perfect before VCF SE
  22-Mar-2016  JH    allow a control value to be distributed over several hw registers
  20-Mar-2016  OV    test hack to convert pidp8 into pidp11 server.
 
@@ -75,6 +75,9 @@ char program_options[1024]; // argv[1.argc-1]
 int opt_test = 0;
 int opt_background = 0;
 
+int knobValue[2] = {7,0};	// default start value for knobs. 0=ADDR, 1=DATA
+
+
 /*
  *	PiDP11 controls wich are accessible over Blinkenlight API
  */
@@ -86,20 +89,27 @@ blinkenlight_control_t *control_raw_ledstatus[6]; //6 not 8 for PiDP11
 blinkenlight_control_t *switch_SR, *switch_LOADADRS, *switch_EXAM, *switch_DEPOSIT, *switch_CONT,
         *switch_HALT, *switch_S_BUS_CYCLE, *switch_START, *switch_DATA_SELECT, *switch_ADDR_SELECT,
         *switch_LAMPTEST, *switch_PANEL_LOCK, *switch_POWER;
+//	*switch_DATA_SELECT_R, *switch_ADDR_SELECT_R;	// real rotary encoder
 
 // output controls on the panel
 blinkenlight_control_t *leds_ADDRESS, *leds_DATA, *led_PARITY_HIGH, *led_PARITY_LOW, *led_PAR_ERR,
         *led_ADRS_ERR, *led_RUN, *led_PAUSE, *led_MASTER, *leds_MMR0_MODE, *led_DATA_SPACE,
-        *led_ADDRESSING_16, *led_ADDRESSING_18, *led_ADDRESSING_22, *leds_DATA_SELECT,
-        *leds_ADDR_SELECT;
+        *led_ADDRESSING_16, *led_ADDRESSING_18, *led_ADDRESSING_22, 
+	*leds_DATA_SELECT, *leds_ADDR_SELECT;
 
 // bits in artificially constructed control value for DATA SELECT KNOB feedback LEDs
-#define VALMASK_LED_DATA_PATHS 0x01
-#define VALMASK_LED_BUS_REG 0x02
+
+
+
+#define VALMASK_LED_BUS_REG 0x01
+#define VALMASK_LED_DATA_PATHS 0x02
 #define VALMASK_LED_UADDRS 0x04
 #define VALMASK_LED_DISP_REG 0x08
+
+
+
 // bits in artificially constructed control value for ADDR SELECT KNOB feedback LEDs
-    #define VALMASK_LED_USER_D 0x01
+/*    #define VALMASK_LED_USER_D 0x01
     #define VALMASK_LED_SUPER_D 0x02
     #define VALMASK_LED_KERNEL_D 0x04
     #define VALMASK_LED_CONS_PHY 0x08
@@ -107,7 +117,15 @@ blinkenlight_control_t *leds_ADDRESS, *leds_DATA, *led_PARITY_HIGH, *led_PARITY_
 #define VALMASK_LED_SUPER_I 0x20
 #define VALMASK_LED_KERNEL_I 0x40
 #define VALMASK_LED_PROG_PHY 0x80
-
+*/
+#define VALMASK_LED_PROG_PHY 0x01
+#define VALMASK_LED_CONS_PHY 0x02
+#define VALMASK_LED_KERNEL_D 0x04
+#define VALMASK_LED_SUPER_D 0x08
+#define VALMASK_LED_USER_D 0x10
+#define VALMASK_LED_USER_I 0x20
+#define VALMASK_LED_SUPER_I 0x40
+#define VALMASK_LED_KERNEL_I 0x80
 
 
 
@@ -122,24 +140,19 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
     // gets called when RPC client wants panel input control values
     //- converts gpio switches to Blinkenlight API switch conrols (RPI->Blinkenlight API)
     unsigned i;
+
     for (i = 0; i < p->controls_count; i++) {
         blinkenlight_control_t *c = &p->controls[i];
         if (c->is_input) {
-            /* switch_PANEL_LOCK is doing 2 functions below - figure out how
-             if (c == keyswitch_power)
-             c->value = 1; // send "power"" switch as ON
-             else if (c == keyswitch_panel_lock)
-             c->value = 0; // send "panel lock" switch as OFF
-             else
-             */
+         
+            if (c == switch_POWER)
+             	c->value = 1; // send "power"" switch as ON
 
-// crude fixed values for the two knobs: FIX BELOW ----------
-            if (c == switch_DATA_SELECT)
-                c->value = 2;
-            else if (c == switch_ADDR_SELECT)
-                c->value = 4;
+            else if (c == switch_PANEL_LOCK)
+             	c->value = 0; // send "panel lock" switch as OFF
 
-            else {
+            else 
+	    {
                 // mount switch value from register bit fields
                 unsigned i_register_wiring;
                 blinkenlight_control_blinkenbus_register_wiring_t *bbrw;
@@ -160,70 +173,59 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
                 }
                 if (c->mirrored_bit_order)
                     c->value = mirror_bits(c->value, c->value_bitlen);
-
                 // individual fixup/logic
-                // the deposit switch must be inverted, PiDP8 electronics doesn't handle this
+
                 if (c == switch_ADDR_SELECT) {
-                    // convert knob positions from hardware to predefined
+		    c->value = 7-knobValue[0];
                     switch (c->value) {
+
                     // INSERT CORRECT HW VALUES IN CASE SELECTORS
-                    case 0:
-                        c->value = 0; // USER I
-                        leds_ADDR_SELECT->value = 0 ; // feedback
-                        break;
-                    case 1:
-                        c->value = 1; // USER D
-                        leds_ADDR_SELECT->value = VALMASK_LED_USER_D ; // feedback
-                        break;
-                    case 2:
-                        c->value = 2; // SUPER I
-                        leds_ADDR_SELECT->value = VALMASK_LED_SUPER_I ; // feedback
-                        break;
-                    case 3:
-                        c->value = 3; // SUPER D
-                        leds_ADDR_SELECT->value = VALMASK_LED_SUPER_D ; // feedback
-                        break;
-                    case 4:
-                        c->value = 4; // CONS PHY
-                        leds_ADDR_SELECT->value = VALMASK_LED_CONS_PHY ; // feedback
-                        break;
-                    case 5:
-                        c->value = 5; // KERNEL I
-                        leds_ADDR_SELECT->value = VALMASK_LED_KERNEL_I ; // feedback
-                        break;
-                    case 6:
-                        c->value = 6; // KERNEL D
-                        leds_ADDR_SELECT->value = VALMASK_LED_KERNEL_D ; // feedback
-                        break;
-                    case 7:
-                        c->value = 7; // PROG PHY
+                   case 0:
                         leds_ADDR_SELECT->value = VALMASK_LED_PROG_PHY ; // feedback
                         break;
+                   case 1:
+                        leds_ADDR_SELECT->value = VALMASK_LED_CONS_PHY ; // feedback
+                        break;
+                   case 2:
+                        leds_ADDR_SELECT->value = VALMASK_LED_KERNEL_D ; // feedback
+                        break;
+                   case 3:
+                        leds_ADDR_SELECT->value = VALMASK_LED_SUPER_D ; // feedback
+                        break;
+                   case 4:
+                        leds_ADDR_SELECT->value = VALMASK_LED_USER_D ; // feedback
+                        break;
+                   case 5:
+                        leds_ADDR_SELECT->value = VALMASK_LED_USER_I ; // feedback
+                        break;
+                   case 6:
+                        leds_ADDR_SELECT->value = VALMASK_LED_SUPER_I ; // feedback
+                        break;
+                   case 7:
+                        leds_ADDR_SELECT->value = VALMASK_LED_KERNEL_I ; // feedback
+                        break;
+
+
+
                     };
 
                 } else if (c == switch_DATA_SELECT) {
+		    c->value = 3- knobValue[1];
                     switch (c->value) {
                     // INSERT CORRECT HW VALUES IN CASE SELECTORS
                     case 0:
-                    case 4:
-                        c->value = 0; // u ADRS
-                        leds_DATA_SELECT->value = VALMASK_LED_UADDRS ;
-                        break;
-                    case 1:
-                    case 5:
-                        c->value = 1; // DISPLAY REGISTER
-                        leds_DATA_SELECT->value = VALMASK_LED_DISP_REG ;
-                        break;
-                    case 2:
-                    case 6:
-                        c->value = 2; // BUS REG
                         leds_DATA_SELECT->value = VALMASK_LED_BUS_REG ; // feedback
                         break;
-                    case 3:
-                    case 7:
-                        c->value = 3; // DATA PATHS
+                    case 1:
                         leds_DATA_SELECT->value = VALMASK_LED_DATA_PATHS ; // feedback
                         break;
+                   case 2:
+                        leds_DATA_SELECT->value = VALMASK_LED_UADDRS ;
+                        break;
+                    case 3:
+                        leds_DATA_SELECT->value = VALMASK_LED_DISP_REG ;
+                        break;
+
                     };
                 }
             }
@@ -239,8 +241,18 @@ static void on_blinkenlight_api_panel_set_controlvalues(blinkenlight_panel_t *p,
     // the averaging thread needs to be informed about the panel
     // THIS WORKS ONLY BECAUSE ONLY ONE PANEL is provided by this server!
     // NO PANEL SWITCH ALLOWED!
+
+// ov workaround 1 - do not let simh mess with knob leds
+//int tmpADDR = leds_ADDR_SELECT->value;
+//int tmpDATA = leds_DATA_SELECT->value;
+
     gpiopattern_blinkenlight_panel = p;
     // this also start the thread on first transmission, if gpiopattern_blinkenlight_panel gets != NULL
+
+// ov workaround 2 - do not let simh mess with knob leds
+//leds_ADDR_SELECT->value = 0; //tmpADDR;
+//leds_DATA_SELECT->value = 0; //tmpDATA;
+
 
     // gpiopattern_update_leds() ; // just forward to pattern generator
 }
@@ -528,7 +540,8 @@ static blinkenlight_control_t *define_led_slice(blinkenlight_panel_t *p, char *n
         c->is_input = 0;
         c->type = output_lamp;
         c->encoding = binary;
-        c->fmax = 4; // lamps are slow light bulbs, low-pass with 4 Hz
+//        c->fmax = 4; // lamps are slow light bulbs, low-pass with 4 Hz
+        c->fmax = 10; // Joerg's setting for pdp11 java panel
         c->radix = 8; // display octal
     }
     bbrw = blinkenlight_add_register_wiring(c);
@@ -558,7 +571,7 @@ static void register_controls()
      * hardware switch- and led-registers
      */
 
-    //PROBLEM: how to bolt together SR from 12 and 10 bit subparts?
+    //SR consists of 12 and 10 bit subparts
     switch_SR = define_switch_slice(p, "SR", 0, 12, 0, 0); // 0, 0xfff. bits 0..11
     switch_SR = define_switch_slice(p, "SR", 12, 10, 1, 0); // 1  0x3ff, bits 12..21
 
@@ -577,10 +590,16 @@ static void register_controls()
     // Constant values set in on_blinkenlight_api_panel_get_controlvalues()
 
     leds_ADDRESS = define_led_slice(p, "ADDRESS", 0, 12, 0, 0); // 0,0xfff, bits 0..11
-    leds_ADDRESS = define_led_slice(p, "ADDRESS", 12, 10, 0, 0); // 0,0xfff, bits 12..21
+//    leds_ADDRESS = define_led_slice(p, "ADDRESS", 12, 10, 0, 0); // 0,0xfff, bits 12..21
+// oscar correction
+    leds_ADDRESS = define_led_slice(p, "ADDRESS", 12, 10, 1, 0); // 0,0xfff, bits 12..21
+// end of oscar correction
 
     leds_DATA = define_led_slice(p, "DATA", 0, 12, 3, 0); // 3,0xfff, bits 0..11
-    leds_DATA = define_led_slice(p, "DATA", 12, 4, 3, 0); // 4,0xf, bits 12..15
+//    leds_DATA = define_led_slice(p, "DATA", 12, 4, 3, 0); // 4,0xf, bits 12..15
+// oscar correction
+    leds_DATA = define_led_slice(p, "DATA", 12, 4, 4, 0); // 4,0xf, bits 12..15
+// end of oscar correction
 
     led_PARITY_HIGH = define_led_slice(p, "PARITY_HIGH", 0, 1, 4, 5); // 4, 0x20
     led_PARITY_LOW = define_led_slice(p, "PARITY_LOW", 0, 1, 4, 4); // 4, 0x10
@@ -592,7 +611,9 @@ static void register_controls()
     // Problem: MMR0_MODE needs translation to leds.
     // 0 = Kernel, 1= off,  2 = Super, 3 = User
     // the wiring here is ignored; see handcoding in gpiopattern.value2gpio_ledstatus_value()
-    leds_MMR0_MODE = define_led_slice(p, "MMR0_MODE", 0, 2, 2, 4); // TEMP: wrong cos lights 2 of the 3 leds in wrong order. BUG if forgotten!
+
+//MMRfix
+    leds_MMR0_MODE = define_led_slice(p, "MMR0_MODE", 0, 3, 2, 4);
 
     led_DATA_SPACE = define_led_slice(p, "DATA_SPACE", 0, 1, 2, 3); // 2, 0x08
     led_ADDRESSING_16 = define_led_slice(p, "ADDRESSING_16", 0, 1, 2, 2); // 2, 0x04
@@ -601,22 +622,29 @@ static void register_controls()
 
     // knobs: raw data like 3/2 bit switch. encoding see
     // on_blinkenlight_api_panel_get_controlvalues()
-    switch_ADDR_SELECT = define_led_slice(p, "ADDR_SELECT", 0, 3, 0, 0);
-    switch_DATA_SELECT = define_led_slice(p, "DATA_SELECT", 0, 2, 0, 0);
+//jorg's patch 20160323: switch slice not led slice
 
+// this is for real encoder addressing (0 1 2 3 0 sequences visible)
+//    switch_ADDR_SELECT = define_switch_slice(p, "ADDR_SELECT", 0, 3, 2, 8); // conflict 2 or 3 bits xxxxxxxxxxxxx
+//    switch_DATA_SELECT = define_switch_slice(p, "DATA_SELECT", 0, 2, 2, 10);
+// this is to fake knob value on SR panel
+    switch_ADDR_SELECT = define_switch_slice(p, "ADDR_SELECT", 0, 3, 0, 0); 
+    switch_DATA_SELECT = define_switch_slice(p, "DATA_SELECT", 0, 2, 0, 3);
 
     // ADDR_SELECT & DATA_SELECT feedback LEDs:
     // unlike on DEC panel they are visible over API, but always locally override with
     // knob positons. See on_blinkenlight_api_panel_get_controlvalues()
 
 
-    // bit encoding in API value:
+    // bit encoding in API value: BUG? BELOW ORDER INCORRECT ACC TO JAVA CODE
     // 0..7 = user_d, super_d, kernel_d, cons_phy, user_i, super_i, kernel_i, prog_phy
     // see VALMASK_LED_*
-       leds_ADDR_SELECT = define_led_slice(p, "ADDR_SELECT_FEEDBACK", 0, 4, 4, 6);
-    leds_ADDR_SELECT = define_led_slice(p, "ADDR_SELECT_FEEDBACK", 4, 0, 5, 5);
+    leds_ADDR_SELECT = define_led_slice(p, "ADDR_SELECT_FEEDBACK", 0, 4, 4, 6);
+    leds_ADDR_SELECT = define_led_slice(p, "ADDR_SELECT_FEEDBACK", 4, 4, 5, 5);
 
-    // bit encoding in API value: 0..3 = data_paths, bus_reg, muaddr, disp_reg
+
+    // bit encoding in API value: BUG? BELOW ORDER INCORRECT ACC TO JAVA CODE
+    //0..3 = data_paths, bus_reg, muaddr, disp_reg
     // see VALMASK_LED_*
     leds_DATA_SELECT = define_led_slice(p, "DATA_SELECT_FEEDBACK", 0, 2, 4, 10); // bus_reg, data_paths
     leds_DATA_SELECT = define_led_slice(p, "DATA_SELECT_FEEDBACK", 2, 2, 5, 10); // disp_reg, muaddr
@@ -681,3 +709,4 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+

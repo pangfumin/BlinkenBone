@@ -238,10 +238,17 @@ rpc_blinkenlight_api_setpanel_controlvalues_1_svc(u_int i_panel,
 						(value_byte_ptr - valuelist.value_bytes.value_bytes_val)
 								< valuelist.value_bytes.value_bytes_len);
 				c->value = decode_uint64_from_bytes(value_byte_ptr, c->value_bytelen);
-				// save value in history
-				historybuffer_set_val(c->history, now_us, c->value) ;
-				// trunc to valid bits
-				c->value &= BitmaskFromLen64[c->value_bitlen];
+                // trunc to valid bits
+                c->value &= BitmaskFromLen64[c->value_bitlen];
+
+
+                if (c->fmax > 0) {
+                    // low pass requested.
+                    // If fmax == 0: fast processing without ring buffer and averaging logic
+                    // TODO: local lamp test should be feed changed values here, so
+                    //          lamptest appearance is low passed
+                    historybuffer_set_val(c->history, now_us, c->value) ;
+                }
 				print(LOG_DEBUG, "   control[%d].value = 0x%llx (%d bytes)\n", i_control, c->value,
 						c->value_bytelen);
 				value_byte_ptr += c->value_bytelen;
@@ -385,8 +392,8 @@ rpc_param_set_1_svc(rpc_param_cmd_set_struct cmd_set, struct svc_req *rqstp)
 	rpc_param_cmd_get_struct cmd_get;
 
 	blinkenlight_panel_t *p;
-	blinkenlight_control_t *c;
-	unsigned i_control;
+	//blinkenlight_control_t *c;
+	//unsigned i_control;
 
 	// only 1 thing implemented
 	result.error_code = RPC_ERR_PARAM_ILL_CLASS; // default: error

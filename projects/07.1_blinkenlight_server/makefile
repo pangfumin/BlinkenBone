@@ -8,27 +8,33 @@
 #
 
 # own settings
-OS_CCDEFS =
+OS_CCDEFS = 
+ifeq ($(MAKE_CONFIGURATION),RELEASE)
+CC_DBG_FLAGS = -O2 -Wno-unused-result
+else
 CC_DBG_FLAGS = -ggdb3 -O0
+endif
 
 ifeq ($(MAKE_TARGET_ARCH),BEAGLEBONE)
 	#### !!! when cross compiling !!!!
 	# fuer beaglebone und angstrom stand alone toolchain
-	CC=arm-angstrom-linux-gnueabi-gcc -mthumb -march=armv7-a -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) $(OS_CCDEFS) -I.
+	CC=arm-angstrom-linux-gnueabi-gcc -mthumb -march=armv7-a -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) -I.
 	OBJDIR=bin-beaglebone
 	SSHTARGET=root@beaglebone
-	LDFLAGS=-lrt
+	LDFLAGS=-lrt -pthread
 else ifeq ($(MAKE_TARGET_ARCH),RPI)
-	CC=arm-linux-gnueabihf-gcc -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) $(OS_CCDEFS) -I.
+	CC=arm-linux-gnueabihf-gcc -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS)  -I.
 	OBJDIR=bin-rpi
 	SSHTARGET=pi@raspberrypi
-	LDFLAGS=-lrt
+	LDFLAGS=-lrt -pthread
 else ifeq ($(MAKE_TARGET_ARCH),X86)
     OS_CCDEFS = -m32
 	OBJDIR=bin-ubuntu-x86
+	LDFLAGS=-pthread
 else ifeq ($(MAKE_TARGET_ARCH),X64)
     OS_CCDEFS = -m64
     OBJDIR=bin-ubuntu-x64
+	LDFLAGS=-pthread
 else
 	$error("MAKE_TARGET_ARCH not set!")
 endif
@@ -134,13 +140,21 @@ SOURCES.c = \
 
 
 OBJECTS = $(SOURCES.c:%.c=%.o)
+
+# assembly listings, see http://www.delorie.com/djgpp/v2faq/faq8_20.html
+# always with symbol info (-ggdb), without link stage (-c)
+%.lst:	%.c
+	${CC} $(CCDEFS) -ggdb3 -c -Wa,-a,-ad  $^ >$@ 
+	rm -f a.out *.o ; mkdir -p $(OBJDIR) ; mv $@ $(OBJDIR)
+
+
 #
 # Build everything
 #
 all:    blinkenlightd
 
 clean:
-	rm -f core blinkenlightd $(OBJECTS) $(OBJDIR)/blinkenlightd
+	rm -f a.out core blinkenlightd $(OBJECTS) $(OBJDIR)/*.lst $(OBJDIR)/blinkenlightd
 	make --directory=$(BLINKENLIGHT_API_DIR)/rpcgen_linux clean
 
 install:
@@ -154,7 +168,7 @@ endif
 
 
 blinkenlightd:	$(SOURCES.c) $(SOURCES.h)
-	${CC} $^ -o $@ $(CCDEFS) ${LDFLAGS}
+	${CC} $^ -o $@ $(CCDEFS) ${LDFLAGS} >$@.lst
 	mkdir -p $(OBJDIR)
 	mv $@ $(OBJDIR)
 	# Verify: was it x86 or ARM?

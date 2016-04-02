@@ -7231,13 +7231,17 @@ static void inject_char_to_stdin(char ch) {
 	INPUT_RECORD ir[2];
 	DWORD dw;
 	int vkey = VkKeyScan(ch);
+
 	for (int i = 0; i<2; i++) {
 		KEY_EVENT_RECORD *kev = &ir[i].Event.KeyEvent;
 		ir[i].EventType = KEY_EVENT;
-		kev->bKeyDown = i == 0;    //<-true, than false
+		kev->bKeyDown = (i == 0);    // first true, then false
 		kev->dwControlKeyState = 0;
-		kev->wRepeatCount = 1;
-		kev->uChar.UnicodeChar = vkey;
+        kev->wRepeatCount = 1;
+        if (ch < 32) // trial&error JH
+            kev->uChar.UnicodeChar = vkey; // the '\n' !
+        else kev->uChar.UnicodeChar = ch;
+        //kev->uChar.AsciiChar = ch;
 		kev->wVirtualKeyCode = vkey;
 		kev->wVirtualScanCode = MapVirtualKey(vkey, MAPVK_VK_TO_VSC);
 	}

@@ -20,10 +20,12 @@
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
- 23-Feb-2016  JH      added PANEL_MODE_POWERLESS
- logic for input controls with constant value
- 17-Feb-2012  JH      created
+  1-Apr-2016    JH      clean interface to blinkenbus over cache pages
+ 23-Feb-2016    JH      added PANEL_MODE_POWERLESS
+                         logic for input controls with constant value
+ 17-Feb-2012    JH      created
  */
+#ifndef WIN32
 
 #define BLINKENBUS_C_
 
@@ -56,22 +58,28 @@
 #include "blinkenbus.h" // own definitions
 int blinkenbus_fd; // file descriptor for interface to driver
 
-
 // mask with output registers marked as 0xff
 static blinkenbus_map_t blinkenbus_map_used_output;
-// mask with intput registers marked as 0xff
+// mask with input registers marked as 0xff
 static blinkenbus_map_t blinkenbus_map_used_input;
 
 // Output: cached state of registers
-static blinkenbus_map_t blinkenbus_map_out_cache;
-
-// input: bits read
-static blinkenbus_map_t blinkenbus_map_in_cache;
+static blinkenbus_map_t blinkenbus_out_cache;
 
 #ifdef DEBUG_BLINKENBUSFILE_LOCAL
 // simulated data for read() is incrementing sequence
 unsigned debug_blinkenbusfile_local_read_data_source;
 #endif
+
+/*
+ * Dump the image of the BlinkenBus register space
+ * only first 4 16 byte pages = blinkenboards with addr 0..3
+ */
+void blinkenbus_map_dump(unsigned char *map, char *info)
+{
+    print_memdump(LOG_DEBUG, info, 0, 4 * 16, map);
+}
+
 /*
  * Algorithm to output:
  * 1) init
@@ -103,8 +111,6 @@ unsigned debug_blinkenbusfile_local_read_data_source;
  * 		set "value_previous"
  *
  */
-
-
 
 /*
  * read value of board control register
@@ -187,20 +193,14 @@ static void board_control_write(unsigned board_addr, unsigned char regval)
  * if "clear": write all value bits as 0
  * if "as_mask": write all value bits as 1
  */
-void blinkenbus_control_to_cache(unsigned char *blinkenbus_cache, blinkenlight_control_t *c,
-        int clear, int as_mask)
+void blinkenbus_outputcontrol_to_cache(unsigned char *blinkenbus_cache, blinkenlight_control_t *c,
+        uint64_t value)
 {
     unsigned i_register_wiring;
     blinkenlight_control_blinkenbus_register_wiring_t *bbrw;
-    uint64_t value;
-    if (clear)
-        value = 0;
-    else if (as_mask)
-        value = BitmaskFromLen64[c->value_bitlen]; // all '1'
-    else if (c->mirrored_bit_order)
-        value = mirror_bits(c->value, c->value_bitlen);
-    else
-        value = c->value;
+
+    if (c->mirrored_bit_order)
+            value = mirror_bits(value, c->value_bitlen);
 
     for (i_register_wiring = 0; i_register_wiring < c->blinkenbus_register_wiring_count;
             i_register_wiring++) {
@@ -263,8 +263,11 @@ void blinkenbus_control_from_cache(unsigned char *blinkenbus_cache, blinkenlight
  * if mode = 1: selftest display
  * if mode = 3: all off
  * force_all: no optimization
+ *
+ * OBSOLETE, use blinkenbus_outputcontrol_to_cache()
+ *  with panel mode logic by caller
  */
-void blinkenbus_panel_to_cache(unsigned char *blinkenbus_cache, blinkenlight_panel_t *p)
+void blinkenbus_outputcontrols_to_cache(unsigned char *blinkenbus_cache, blinkenlight_panel_t *p)
 {
     unsigned i_control;
     blinkenlight_control_t *c;
@@ -273,15 +276,16 @@ void blinkenbus_panel_to_cache(unsigned char *blinkenbus_cache, blinkenlight_pan
     for (i_control = 0; i_control < p->controls_count; i_control++) {
         c = &(p->controls[i_control]);
         if (!c->is_input) {
-            int all_ones = 0;
-            int all_zeros = 0;
+            uint64_t value ;
             if (p->mode == RPC_PARAM_VALUE_PANEL_MODE_ALLTEST
                     || (p->mode == RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST && c->type == output_lamp))
-                all_ones = 1; // selftest:
+                value = 0xffffffffffffffff; // selftest:
             else if (p->mode == RPC_PARAM_VALUE_PANEL_MODE_POWERLESS && c->type == output_lamp)
-                all_zeros = 1; // all OFF
+                value = 0; // all OFF
+            else
+                value = c->value ;
 
-            blinkenbus_control_to_cache(blinkenbus_map_used_output, c, all_zeros, all_ones);
+            blinkenbus_outputcontrol_to_cache(blinkenbus_cache, c, value);
             // "write as mask": all ones, if self test
         }
     }
@@ -289,7 +293,7 @@ void blinkenbus_panel_to_cache(unsigned char *blinkenbus_cache, blinkenlight_pan
 }
 
 /* set all panel inputcontrols from cache */
-void blinkenbus_panel_from_cache(unsigned char *blinkenbus_cache, blinkenlight_panel_t *p)
+void blinkenbus_inputcontrols_from_cache(unsigned char *blinkenbus_cache, blinkenlight_panel_t *p)
 {
     unsigned i_control;
     blinkenlight_control_t *c;
@@ -301,15 +305,13 @@ void blinkenbus_panel_from_cache(unsigned char *blinkenbus_cache, blinkenlight_p
     }
 }
 
-
 /* init an cache with current output vaules,
  * before it is updated with new values
  */
 void blinkenbus_cache_from_blinkenboards_outputs(unsigned char *blinkenbus_cache)
 {
-    memcpy(blinkenbus_cache, blinkenbus_map_out_cache, sizeof(blinkenbus_map_t)) ;
+    memcpy(blinkenbus_cache, blinkenbus_out_cache, sizeof(blinkenbus_map_t));
 }
-
 
 /*
  * write cache optimized to blinkenbus file device
@@ -317,7 +319,7 @@ void blinkenbus_cache_from_blinkenboards_outputs(unsigned char *blinkenbus_cache
 void blinkenbus_cache_to_blinkenboards_outputs(unsigned char *blinkenbus_cache, int force_all)
 {
     // Output: new state of registers, to be written into file device
-    static blinkenbus_map_t blinkenbus_map_out_values_new;
+    // static blinkenbus_map_t blinkenbus_map_out_values_new;
 
     unsigned i_control;
     unsigned regaddr, regaddr_block_start, regaddr_block_end;
@@ -343,7 +345,7 @@ void blinkenbus_cache_to_blinkenboards_outputs(unsigned char *blinkenbus_cache, 
     while (regaddr_block_start <= BLINKENBUS_MAX_REGISTER_ADDR) {
 // true if
 #define OUTPUT_TO_UPDATE(regaddr) ( force_all \
-	||	 (blinkenbus_cache[regaddr] != blinkenbus_map_out_cache[regaddr])	\
+	||	 (blinkenbus_cache[regaddr] != blinkenbus_out_cache[regaddr])	\
     )
         // 1) find start of next register block to write
         while (regaddr_block_start <= BLINKENBUS_MAX_REGISTER_ADDR //
@@ -360,7 +362,7 @@ void blinkenbus_cache_to_blinkenboards_outputs(unsigned char *blinkenbus_cache, 
             regaddr_block_end++;
         // 2) write current block
         bytes_to_write = regaddr_block_end - regaddr_block_start;
-        data_block_start = blinkenbus_map_out_values_new + regaddr_block_start;
+        data_block_start = blinkenbus_cache + regaddr_block_start;
         if (bytes_to_write > 0) {
             print_memdump(LOG_DEBUG, "  writing output registers:", regaddr_block_start,
                     bytes_to_write, data_block_start);
@@ -375,7 +377,7 @@ void blinkenbus_cache_to_blinkenboards_outputs(unsigned char *blinkenbus_cache, 
                 sprintf(buff, "  write() %d bytes: ", bytes_to_write);
                 for (regaddr = regaddr_block_start; regaddr < regaddr_block_end; regaddr++)
                 {
-                    sprintf(buff1, "%02x ", (int) blinkenbus_map_out_values_new[regaddr]);
+                    sprintf(buff1, "%02x ", (int) blinkenbus_cache[regaddr]);
                     strcat(buff, buff1);
                 }
                 print(LOG_DEBUG, "%s\n", buff);
@@ -402,59 +404,61 @@ void blinkenbus_cache_to_blinkenboards_outputs(unsigned char *blinkenbus_cache, 
         regaddr_block_start = regaddr_block_end + 1;
     }
     // update cache
-    memcpy(blinkenbus_map_out_cache, blinkenbus_cache, sizeof(blinkenbus_map_t));
+    memcpy(blinkenbus_out_cache, blinkenbus_cache, sizeof(blinkenbus_map_t));
 }
 
 /*
- * read inputs for one panel from blinkenbus into cache
+ * read inputs for all panels from blinkenbus into cache
+ * blinkenbus_map_used_input[] marks regsiters used by some panel controls
  */
-void blinkenbus_cache_from_blinkenboards_inputs(unsigned char *blinkenbus_cache, blinkenlight_panel_t *p)
+void blinkenbus_cache_from_blinkenboards_inputs(unsigned char *blinkenbus_cache)
 {
-    blinkenbus_map_t blinkenbus_map_in_mask;
-    // input: bits to be read are marked with 1
     unsigned regaddr;
-    unsigned i_control;
-    blinkenlight_control_t *c;
-    unsigned i_register_wiring;
-    blinkenlight_control_blinkenbus_register_wiring_t *bbrw;
+    //unsigned i_control;
+    //blinkenlight_control_t *c;
+    //unsigned i_register_wiring;
+    // blinkenlight_control_blinkenbus_register_wiring_t *bbrw;
     unsigned regaddr_block_start, regaddr_block_end;
     int ret_val;
     unsigned bytes_to_read, bytes_read;
 
-    print(LOG_DEBUG, "blinkenbus_read_panel_input_controls(panel=%s)\n", p->name);
+    print(LOG_DEBUG, "blinkenbus_read_panel_input_controls()\n");
+    /*
 
-    // 1) mark all used input registers
-    for (regaddr = 0; regaddr <= BLINKENBUS_MAX_REGISTER_ADDR; regaddr++)
-        blinkenbus_map_in_mask[regaddr] = 0;
+     // 1) mark all used input registers
+     for (regaddr = 0; regaddr <= BLINKENBUS_MAX_REGISTER_ADDR; regaddr++)
+     blinkenbus_map_in_mask[regaddr] = 0;
+     for (i_control = 0; i_control < p->controls_count; i_control++) {
+     c = &(p->controls[i_control]);
+     if (c->is_input) {
+     for (i_register_wiring = 0; i_register_wiring < c->blinkenbus_register_wiring_count;
+     i_register_wiring++) {
+     // mark all registers used by control
+     bbrw = &(c->blinkenbus_register_wiring[i_register_wiring]);
+     blinkenbus_map_in_mask[bbrw->blinkenbus_register_address] = 0xff;
+     }
+     }
 
-    for (i_control = 0; i_control < p->controls_count; i_control++) {
-        c = &(p->controls[i_control]);
-        if (c->is_input) {
-            for (i_register_wiring = 0; i_register_wiring < c->blinkenbus_register_wiring_count;
-                    i_register_wiring++) {
-                // mark all registers used by control
-                bbrw = &(c->blinkenbus_register_wiring[i_register_wiring]);
-                blinkenbus_map_in_mask[bbrw->blinkenbus_register_address] = 0xff;
-            }
-        }
+     }
+     */
 
-    }
-    // 2) load used registers in blocks into cache
+    // 1) load used registers in blocks into cache
     regaddr_block_start = 0;
     while (regaddr_block_start <= BLINKENBUS_MAX_REGISTER_ADDR) {
         // 1) find start of next register block to write
         while (regaddr_block_start <= BLINKENBUS_MAX_REGISTER_ADDR //
         && (!blinkenbus_map_used_input[regaddr_block_start] // wait for valid input
-        || !blinkenbus_map_in_mask[regaddr_block_start] // and used by controls
-        ))
+//        || !blinkenbus_map_in_mask[regaddr_block_start] // and used by controls
+                ))
             regaddr_block_start++;
         // find end of register block
         regaddr_block_end = regaddr_block_start; // block_end NOT part of block
         while (regaddr_block_end <= BLINKENBUS_MAX_REGISTER_ADDR //
         && blinkenbus_map_used_input[regaddr_block_end] // must be valid input
-                && blinkenbus_map_in_mask[regaddr_block_end]) // and used by controls
+//                && blinkenbus_map_in_mask[regaddr_block_end]
+        )// and used by controls
             regaddr_block_end++;
-        // 3) read current block
+        // 2) read current block
         bytes_to_read = regaddr_block_end - regaddr_block_start;
         if (bytes_to_read > 0) {
             print(LOG_DEBUG, "  reading input registers 0x%x .. 0x%x\n", regaddr_block_start,
@@ -468,8 +472,8 @@ void blinkenbus_cache_from_blinkenboards_inputs(unsigned char *blinkenbus_cache,
                 for (regaddr = regaddr_block_start; regaddr < regaddr_block_end; regaddr++)
                 {
                     // inc values from gloabl sequence
-                    blinkenbus_map_in_cache[regaddr] = (debug_blinkenbusfile_local_read_data_source++) & 0xff;
-                    sprintf(buff1, "%02x ", (int) blinkenbus_map_in_cache[regaddr]);
+                    blinkenbus_cache[regaddr] = (debug_blinkenbusfile_local_read_data_source++) & 0xff;
+                    sprintf(buff1, "%02x ", (int) blinkenbus_cache[regaddr]);
                     strcat(buff, buff1);
                 }
                 print(LOG_DEBUG, "%s\n", buff);
@@ -481,8 +485,7 @@ void blinkenbus_cache_from_blinkenboards_inputs(unsigned char *blinkenbus_cache,
                 print(LOG_ERR, "blinkenbus_read_panel_input_controls() - lseek() failed!\n");
                 exit(1);
             }
-            bytes_read = read(blinkenbus_fd, blinkenbus_map_in_cache + regaddr_block_start,
-                    bytes_to_read);
+            bytes_read = read(blinkenbus_fd, blinkenbus_cache + regaddr_block_start, bytes_to_read);
 #endif
             if (bytes_read != bytes_to_read) {
                 print(LOG_ERR, "blinkenbus_read_panel_input_controls() - read() failed\n");
@@ -492,7 +495,7 @@ void blinkenbus_cache_from_blinkenboards_inputs(unsigned char *blinkenbus_cache,
             }
         }
 
-        // 4) find next block
+        // 3) find next block
         regaddr_block_start = regaddr_block_end + 1;
     }
 }
@@ -655,11 +658,13 @@ void blinkenbus_init()
 
     // initialize all panel output controls with default values
     for (i_panel = 0; i_panel < blinkenlight_panel_list->panels_count; i_panel++) {
-        blinkenbus_map_t cache ;
+        blinkenbus_map_t cache;
         p = &(blinkenlight_panel_list->panels[i_panel]);
-        blinkenbus_cache_from_blinkenboards_outputs(cache) ;
-        blinkenbus_panel_to_cache(cache, p) ;
-        blinkenbus_cache_to_blinkenboards_outputs(cache, /*force_all=*/1) ;
+        blinkenbus_cache_from_blinkenboards_outputs(cache);
+        blinkenbus_outputcontrols_to_cache(cache, p);
+        // Thread must not be running yet !!
+        blinkenbus_cache_to_blinkenboards_outputs(cache, /*force_all=*/1);
     }
 }
 
+#endif

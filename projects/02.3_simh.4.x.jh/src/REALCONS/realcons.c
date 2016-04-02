@@ -132,7 +132,7 @@ void realcons_init(realcons_t *_this)
 	int i;
 
 	// clear all data, including the interface
-	memset(_this, sizeof(_this), 0);
+	memset(_this, 0, sizeof(_this));
 
 	strcpy(_this->application_server_hostname, "localhost");
 	_this->console_logic_name[0] = '\0';
@@ -188,7 +188,7 @@ t_stat realcons_connect(realcons_t *_this, char *consolelogic_name, char *server
 	_this->console_model = NULL;
 	_this->console_controller = NULL;
 	// invalidate interface.
-	memset(&(_this->console_controller_interface), sizeof(_this->console_controller_interface), 0);
+	memset(&(_this->console_controller_interface), 0, sizeof(_this->console_controller_interface));
 
 	_this->force_output_update = 0;
 	_this->service_highspeed_prescaler = 0;
@@ -380,7 +380,7 @@ t_stat realcons_disconnect(realcons_t *_this)
 	_this->console_controller_interface.destructor_func(_this->console_controller);
 	_this->console_controller = NULL;
 	// invalidate interface.
-	memset(&(_this->console_controller_interface), sizeof(_this->console_controller_interface), 0);
+	memset(&(_this->console_controller_interface), 0, sizeof(_this->console_controller_interface));
 
 	_this->blinkenlight_api_client = NULL;
 

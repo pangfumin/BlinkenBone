@@ -11,7 +11,11 @@ USE_REALCONS=1
 # lib extension is ".so" on all linuxes
 CC_DEFS = -DHAVE_DLOPEN=so
 
-
+ifeq ($(MAKE_CONFIGURATION),RELEASE)
+CC_DBG_FLAGS = -O2 -Wno-unused-result
+else
+CC_DBG_FLAGS = -ggdb3 -O0
+endif
 
 # REALCONS: default for all targets is -UUSE_REALCONS, REALCONS_OPT override for PDP11
 ifeq ($(USE_REALCONS),1)
@@ -89,8 +93,8 @@ ifneq (,$(filter $(MAKE_TARGET_ARCH),X86 X64))
   	BIN=$(SRC)/../bin-ubuntu-x64/
   	OS_CCDEFS += -m64
   endif
-  CC = gcc -std=c99 -U__STRICT_ANSI__ -g  $(CC_DEFS) $(OS_CCDEFS)\
-  	-I $(SRC)  -UUSE_REALCONS
+  CC = gcc -std=c99 -U__STRICT_ANSI__  $(CC_DEFS) $(OS_CCDEFS)\
+  	-I $(SRC) $(CC_DBG_FLAGS) -UUSE_REALCONS
 
   ifeq ($(USE_NETWORK),)
   else
@@ -109,8 +113,8 @@ ifeq ($(MAKE_TARGET_ARCH),BEAGLEBONE)
   LDFLAGS = -lrt -lm  -lpthread  -ldl
   # SYSROOTS is / for cross compile environment
   # comes from .profile, like PATH for  arm-angstrom-linux-gnueabi-gcc
-  CC = arm-angstrom-linux-gnueabi-gcc -mthumb -march=armv7-a -std=c99 -U__STRICT_ANSI__  $(CC_DEFS) -O2 -g $(OS_CCDEFS) \
-  	-I $(SRC)  -UUSE_REALCONS
+  CC = arm-angstrom-linux-gnueabi-gcc -mthumb -march=armv7-a -std=c99 -U__STRICT_ANSI__  $(CC_DEFS) $(OS_CCDEFS) \
+  	-I $(SRC)  $(CC_DBG_FLAGS) -UUSE_REALCONS
   NETWORK_OPT = -DUSE_NETWORK -isystem $(SYSROOTS)/usr/local/include -lpcap
   # DO NOT FORGET: "opkg install libpcap" on target
   BIN=$(SRC)/../bin-beaglebone/
@@ -120,9 +124,8 @@ ifeq ($(MAKE_TARGET_ARCH),RPI)
   # fuer beaglebone und sourcery codebench lite
   ### override all compiler settings for ARM cross compilation
   OS_CCDEFS = -D_GNU_SOURCE
-  CC_DBG_FLAGS = -ggdb3 -O0
   LDFLAGS = -lrt -lm  -lpthread -ldl
-  CC = arm-linux-gnueabihf-gcc -std=c99 -U__STRICT_ANSI__  $(CC_DEFS) -O2 -g $(OS_CCDEFS) \
+  CC = arm-linux-gnueabihf-gcc -std=c99 -U__STRICT_ANSI__  $(CC_DEFS) $(OS_CCDEFS) \
   	-I $(SRC) $(CC_DBG_FLAGS) -UUSE_REALCONS
   LIBPCAP=$(SRC)/../rpi-build/libpcap.a
   NETWORK_OPT = -DUSE_NETWORK -isystem $(SYSROOTS)/usr/local/include $(LIBPCAP)
@@ -134,7 +137,7 @@ endif
 ifneq ($(WIN32),)
   #Win32 Environments
   LDFLAGS = -lm -lwsock32 -lwinmm  -ldl
-  CC = gcc -std=c99 -U__STRICT_ANSI__  $(CC_DEFS) -O2 -I $(SRC)
+  CC = gcc -std=c99 -U__STRICT_ANSI__  $(CC_DEFS) -I $(SRC)
   EXE = .exe
   ifeq ($(USE_NETWORK),)
   else

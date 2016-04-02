@@ -20,7 +20,7 @@
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
+ 01-Apr-2016  OV    almost perfect before VCF SE
  14-Mar-2016  JH      created
 
 
@@ -98,6 +98,11 @@ int gpiopattern_ledstatus_phases_writeidx = 1; // writepage page, written from B
 // context for thread.
 // thread functional if != nULL
 blinkenlight_panel_t *gpiopattern_blinkenlight_panel = NULL;
+
+
+
+extern int knobValue[2];
+
 
 /*
  * old definitions
@@ -259,11 +264,137 @@ static void value2gpio_ledstatus_value(blinkenlight_panel_t *p, blinkenlight_con
     unsigned i_register_wiring;
     extern blinkenlight_control_t * leds_MMR0_MODE ;
     extern blinkenlight_control_t * switch_LAMPTEST ;
+
+
+//-----------------------------------------------------------------------
+    extern blinkenlight_control_t * leds_ADDR_SELECT ;
+    extern blinkenlight_control_t * leds_DATA_SELECT ;
+//-----------------------------------------------------------------------
+
+
+
     int panel_mode = p->mode ;
 
     // local LAMPTEST overrides mode set over API
     if (switch_LAMPTEST->value)
         panel_mode = RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST ;
+
+
+
+
+
+//-----------------------------------------------------------------------
+    if (c == leds_ADDR_SELECT) {
+        // circumvent wiring defintions, hard coded logic here:
+        // val:   UD  SD  KD CPHY     UI  SI  KI PPHY
+        // leds: 4.6 4.7 4.8 4.9     5.5 5.6 5.7 5.8
+#define REGMASK_LED_USER_D 0x40
+#define REGMASK_LED_SUPER_D 0x80
+#define REGMASK_LED_KERNEL_D 0x100
+#define REGMASK_LED_CONS_PHY 0x200
+#define REGMASK_ADDR_ALL4 0x3C0
+
+#define REGMASK_LED_USER_I 0x40
+#define REGMASK_LED_SUPER_I 0x80
+#define REGMASK_LED_KERNEL_I 0x100
+#define REGMASK_LED_PROG_PHY 0x200
+#define REGMASK_ADDR_ALL5 0x3C0
+
+        int mask4 = 0;
+        int mask5 = 0;
+        switch (panel_mode) {
+        case RPC_PARAM_VALUE_PANEL_MODE_NORMAL:
+
+//            switch(value) {
+            switch(knobValue[0]) {
+            case 0: mask5 |= REGMASK_LED_PROG_PHY; break ;
+            case 1: mask4 |= REGMASK_LED_CONS_PHY; break ;
+            case 2: mask4 |= REGMASK_LED_KERNEL_D; break ;
+            case 3: mask4 |= REGMASK_LED_SUPER_D ; break ;
+            case 4: mask4 |= REGMASK_LED_USER_D ; break ;
+            case 5: mask5 |= REGMASK_LED_USER_I ; break ;
+            case 6: mask5 |= REGMASK_LED_SUPER_I ; break ;
+            case 7: mask5 |= REGMASK_LED_KERNEL_I; break ;
+            }
+		break;
+	
+        case RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST:
+        case RPC_PARAM_VALUE_PANEL_MODE_ALLTEST:
+            mask4 = REGMASK_ADDR_ALL4 ; // all ON
+            mask5 = REGMASK_ADDR_ALL5 ; // all ON
+            break;
+
+
+        case RPC_PARAM_VALUE_PANEL_MODE_POWERLESS:
+            mask4 = 0 ; // all off
+		mask5 =0;
+            break;
+        }
+        // mask all out and set selective
+        gpio_ledstatus[4] = (gpio_ledstatus[4] & ~REGMASK_ADDR_ALL4) | mask4 ;
+        gpio_ledstatus[5] = (gpio_ledstatus[5] & ~REGMASK_ADDR_ALL5) | mask5 ;
+
+        //
+        return ;
+    }
+	
+//-------------------------------------------------------------------------
+//-----------------------------------------------------------------------
+    if (c == leds_DATA_SELECT) {
+        // circumvent wiring defintions, hard coded logic here:
+        // val:   DP  BR   uAD DR
+        // leds: 4.10 4.11 5.10 5.11
+#define REGMASK_LED_DATA_PATHS 0x400
+#define REGMASK_LED_BUS_REG 0x800
+#define REGMASK_DATA_ALL4 0xC00
+
+#define REGMASK_LED_UADR 0x400
+#define REGMASK_LED_DISREG 0x800
+#define REGMASK_DATA_ALL5 0xC00
+
+        int mask4 = 0;
+        int mask5 = 0;
+        switch (panel_mode) {
+        case RPC_PARAM_VALUE_PANEL_MODE_NORMAL:
+
+//            switch(value) {
+            switch(knobValue[1]) {
+
+            	case 0:
+		case 4: mask4 |= REGMASK_LED_BUS_REG ; break ;
+            	case 1:
+		case 5: mask4 |= REGMASK_LED_DATA_PATHS ; break ;
+            	case 2:
+		case 6: mask5 |= REGMASK_LED_UADR; break ;
+            	case 3: 
+		case 7: mask5 |= REGMASK_LED_DISREG; break ;
+            }
+		break;
+	
+        case RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST:
+        case RPC_PARAM_VALUE_PANEL_MODE_ALLTEST:
+            mask4 = REGMASK_DATA_ALL4 ; // all ON
+            mask5 = REGMASK_DATA_ALL5 ; // all ON
+            break;
+
+
+        case RPC_PARAM_VALUE_PANEL_MODE_POWERLESS:
+            mask4 = 0 ; // all off
+		mask5 =0;
+            break;
+        }
+        // mask all out and set selective
+        gpio_ledstatus[4] = (gpio_ledstatus[4] & ~REGMASK_DATA_ALL4) | mask4 ;
+        gpio_ledstatus[5] = (gpio_ledstatus[5] & ~REGMASK_DATA_ALL5) | mask5 ;
+
+        //
+        return ;
+    }
+	
+//-------------------------------------------------------------------------
+
+
+
 
     if (c == leds_MMR0_MODE) {
         // circumevent wiring defintions, hard coded logic here:
@@ -279,13 +410,21 @@ static void value2gpio_ledstatus_value(blinkenlight_panel_t *p, blinkenlight_con
 
             switch(value) {
             case 0: mask |= REGMASK_LED_KERNEL ; break ;
+// maybe this stops ghosting of kernel led:
+case 1: mask |= 0 ; break;
+// update - no, does nothing.
             case 2: mask |= REGMASK_LED_SUPER; break ;
             case 3: mask |= REGMASK_LED_USER; break ;
             }
-            case RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST:
+// BUGFIX 20130323: break was missing:
+		break;
+
+        case RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST:
         case RPC_PARAM_VALUE_PANEL_MODE_ALLTEST:
             mask = REGMASK_LEDS_K_S_U ; // all ON
             break;
+
+
         case RPC_PARAM_VALUE_PANEL_MODE_POWERLESS:
             mask = 0 ; // all off
             break;
@@ -299,7 +438,9 @@ static void value2gpio_ledstatus_value(blinkenlight_panel_t *p, blinkenlight_con
 	switch (panel_mode) {
 	case RPC_PARAM_VALUE_PANEL_MODE_NORMAL:
         if (c->mirrored_bit_order)
+{ printf(":");
             value = mirror_bits(value, c->value_bitlen);
+}
 		break;
 	case RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST:
 	case RPC_PARAM_VALUE_PANEL_MODE_ALLTEST:

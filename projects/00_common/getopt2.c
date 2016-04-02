@@ -543,30 +543,30 @@ static char *getopt_getoptionsyntax(getopt_option_descr_t *odesc, int style)
 	else { // both names comma separated: "-short, --long"
 		buffer[0] = 0;
 		if (odesc->short_name) {
-			strncat(buffer, "-", sizeof(buffer));
-			strncat(buffer, odesc->short_name, sizeof(buffer));
+			strncat(buffer, "-", sizeof(buffer)-1);
+			strncat(buffer, odesc->short_name, sizeof(buffer)-1);
 		}
 		if (odesc->long_name) {
 			if (odesc->short_name)
-				strncat(buffer, " | ", sizeof(buffer));
-			strncat(buffer, "--", sizeof(buffer));
-			strncat(buffer, odesc->long_name, sizeof(buffer));
+				strncat(buffer, " | ", sizeof(buffer)-1);
+			strncat(buffer, "--", sizeof(buffer)-1);
+			strncat(buffer, odesc->long_name, sizeof(buffer)-1);
 		}
 	}
 
 	for (i = 0; s = odesc->fix_args[i]; i++) {
-		strncat(buffer, " <", sizeof(buffer));
-		strncat(buffer, s, sizeof(buffer));
-		strncat(buffer, ">", sizeof(buffer));
+		strncat(buffer, " <", sizeof(buffer)-1);
+		strncat(buffer, s, sizeof(buffer)-1);
+		strncat(buffer, ">", sizeof(buffer)-1);
 	}
 	for (i = 0; s = odesc->var_args[i]; i++) {
-		strncat(buffer, " ", sizeof(buffer));
-		if (i == 0) strncat(buffer, "[", sizeof(buffer));
-		strncat(buffer, "<", sizeof(buffer));
-		strncat(buffer, s, sizeof(buffer));
-		strncat(buffer, ">", sizeof(buffer));
+		strncat(buffer, " ", sizeof(buffer)-1);
+		if (i == 0) strncat(buffer, "[", sizeof(buffer)-1);
+		strncat(buffer, "<", sizeof(buffer)-1);
+		strncat(buffer, s, sizeof(buffer)-1);
+		strncat(buffer, ">", sizeof(buffer)-1);
 	}
-	if (i > 0) strncat(buffer, "]", sizeof(buffer));
+	if (i > 0) strncat(buffer, "]", sizeof(buffer)-1);
 
 	return buffer;
 }

@@ -159,6 +159,7 @@ blinkenlight_control_t *blinkenlight_add_control(blinkenlight_panel_list_t *_thi
 	assert(p->controls_count < MAX_BLINKENLIGHT_PANEL_CONTROLS);
 	i = p->controls_count++; // handle is list index
 	c = &(p->controls[i]);
+	c->panel = p ;
 	c->index = i;
 	c->radix = p->default_radix;
 	c->is_input = 1;

@@ -1,45 +1,61 @@
-#
-# CC Command
-#
+# Prototypic makefile for multi-architecture builds
 
-OS_CCDEFS = -lrt -lm -D_GNU_SOURCE
+ifeq ($(MAKE_CONFIGURATION),RELEASE)
+CC_DBG_FLAGS = -O2 -Wno-unused-result
+else
+CC_DBG_FLAGS = -ggdb3 -O0
+endif
+OS_CCDEFS =
 
-# PATH=/home/joerg/angstrom_distro/setup-scripts/build/tmp-angstrom_2010_x-eglibc/sysroots/i686-linux/usr/bin/armv7a-angstrom-linux-gnueabi:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games
-
-# fuer beaglebone und sourcery codebench lite
-#CCARM = arm-none-linux-gnueabi-gcc -mthumb -march=armv7-a -std=c99 -U__STRICT_ANSI__ -O2 -g $(OS_CCDEFS) -I.
-CCARM = arm-angstrom-linux-gnueabi-gcc -mthumb -march=armv7-a -std=c99 -U__STRICT_ANSI__ -O2 -g $(OS_CCDEFS) -I.
-CCX64 = gcc -std=c99 -m64 -U__STRICT_ANSI__ -O2 -g $(OS_CCDEFS) -I.
-CCX86 = gcc -std=c99 -m32 -U__STRICT_ANSI__ -O2 -g $(OS_CCDEFS) -I.
-CCRPI = arm-linux-gnueabihf-gcc -O2 -g $(OS_CCDEFS)
+LDFLAGS= -lrt -lm -pthread
 
 
+ifeq ($(MAKE_TARGET_ARCH),BEAGLEBONE)
+	#### !!! when cross compiling !!!!
+	# fuer beaglebone und angstrom stand alone toolchain
+	CC=arm-angstrom-linux-gnueabi-gcc -mthumb -march=armv7-a -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) $(OS_CCDEFS) -I.
+	OBJDIR=bin-beaglebone
+else ifeq ($(MAKE_TARGET_ARCH),RPI)
+	CC=arm-linux-gnueabihf-gcc -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) $(OS_CCDEFS) -I.
+	OBJDIR=bin-rpi
+else ifeq ($(MAKE_TARGET_ARCH),X86)
+    OS_CCDEFS=-m32 $(CC_DBG_FLAGS)
+	OBJDIR=bin-ubuntu-x86
+else ifeq ($(MAKE_TARGET_ARCH),X64)
+    OS_CCDEFS=-m64 $(CC_DBG_FLAGS)
+	OBJDIR=bin-ubuntu-x64
+else
+	$error("MAKE_TARGET_ARCH not set!")
+endif
 
-#
-# Build everything
-#
+
+# includes and defines go here
+CCDEFS= \
+	-I.	\
+	-D_GNU_SOURCE	\
+	$(CC_DBG_FLAGS) $(OS_CCDEFS)
 
 
-all:    hello_x64 hello_x86 hello_bb hello_rpi
+SOURCES.h =
+
+SOURCES.c = \
+	hello.c
+
+OBJECTS = $(SOURCES.c:%.c=%.o)
+
+# assembly listings, see http://www.delorie.com/djgpp/v2faq/faq8_20.html
+# always with symbol info (-ggdb), without link stage (-c)
+%.lst:	%.c
+	${CC} $(CCDEFS) -ggdb3 -c -Wa,-a,-ad $^ >$@ 
+	rm -f a.out *.o  ; mkdir -p $(OBJDIR) ; mv $@ $(OBJDIR)
+
 
 clean:
-	rm hello_x64 hello_x86 hello_bb hello_rpi
+	rm -f a.out core $(OBJDIR)/*.lst $(OBJDIR)/hello $(OBJECTS)
 
-hello_x64:	makefile hello.c
-	${CCX64} hello.c -ggdb3 -O0 -o $@
-	file $@
+all: hello
 
-hello_x86:	makefile hello.c
-	${CCX86} hello.c -ggdb3 -O0 -o $@
-	file $@
-
-hello_bb:	makefile hello.c
-#	${CC} hello.c -o $@
-	${CCARM} hello.c -ggdb3 -O0 -o $@
-	file $@
-#	scp hello root@beaglebone:
-
-hello_rpi: makefile hello.c
-	${CCRPI} hello.c -ggdb3 -O0 -o $@
-	file $@
-
+hello:	$(SOURCES.c) $(SOURCES.h)
+	${CC} $^ -o $@ $(CCDEFS) ${LDFLAGS}
+	# move to architecture out dir and check .. was it x86 or ARM or waht?
+	mkdir -p $(OBJDIR) ; mv $@ $(OBJDIR) ; file $(OBJDIR)/$@
