@@ -100,6 +100,8 @@ static t_addr realcons_console_pdp11_70_addr_inc(t_addr addr)
 // - result string to be used in "sim>" exam or deposit cmd
 // - translate memory addr to register, if CPU is accessed
 // - trunc to 16 bit and add MMU space ürefixes, if ADDR SELECT knob is in virtual position
+// TODO: the "-d" option means "data space" and also "decimal ???
+// Tests indicated that -d -o could be a solution. To be investigated!
 static char *realcons_console_pdp11_70_addr_panel2simh(t_addr panel_addr, uint64_t addr_select)
 {
     static char buff[40];
@@ -108,27 +110,27 @@ static char *realcons_console_pdp11_70_addr_panel2simh(t_addr panel_addr, uint64
 
     case ADDR_SELECT_VALUE_USER_I:
         panel_addr &= 0177777; // 16 bit virtual "user mode instruction" space
-        sprintf(buff, "-v -u %o", panel_addr);
+        sprintf(buff, "-v -u -o %o", panel_addr);
         return buff;
     case ADDR_SELECT_VALUE_USER_D:
         panel_addr &= 0177777; // 16 bit virtual "user mode data" space
-        sprintf(buff, "-v -u -d %o", panel_addr);
+        sprintf(buff, "-v -u -d -o %o", panel_addr);
         return buff;
     case ADDR_SELECT_VALUE_SUPER_I:
         panel_addr &= 0177777; // 16 bit virtual "super mode instruction" space
-        sprintf(buff, "-v -s %o", panel_addr);
+        sprintf(buff, "-v -s -o %o", panel_addr);
         return buff;
     case ADDR_SELECT_VALUE_SUPER_D:
         panel_addr &= 0177777; // 16 bit virtual "super mode data" space
-        sprintf(buff, "-v -s -d %o", panel_addr);
+        sprintf(buff, "-v -s -d -o %o", panel_addr);
         return buff;
     case ADDR_SELECT_VALUE_KERNEL_I:
         panel_addr &= 0177777; // 16 bit virtual "kernel mode instruction" space
-        sprintf(buff, "-v -k %o", panel_addr);
+        sprintf(buff, "-v -k -o %o", panel_addr);
         return buff;
     case ADDR_SELECT_VALUE_KERNEL_D:
         panel_addr &= 0177777; // 16 bit virtual "kernel mode data" space
-        sprintf(buff, "-v -k -d %o", panel_addr);
+        sprintf(buff, "-v -k -d -o %o", panel_addr);
         return buff;
     default:
         // physical 22 bit address
