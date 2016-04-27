@@ -22,6 +22,9 @@
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+   21-Apr-2016  JH      dec/inc of knobs changed from "left/right mouse button" to
+                        "click coordinate left/right of image center"
+   20-Apr-2016  JH      added POWER/LOCK keyswitch
    28-Feb-2016  JH      Visualization load logic separated from image load.
    21-Feb-2016  JH      added PANEL_MODE_POWERLESS
    20-Sep-2015  JH      created
@@ -102,6 +105,11 @@ public class Panel1170 extends JPanel implements Observer {
 	public ArrayList<Panel1170Control> controls;
 
 	// links to well defined Blinkenlight Api controls
+	Panel1170Control keyswitch; // optical: OFF,POWER,LOCK.
+	// API 2 controls: 1 bit POWER, 1 bit LOCK
+	Control control_power; // update programmatically
+	Control control_panel_lock;
+
 	Panel1170Control switches_SR;
 	Panel1170Control switch_LAMPTEST; // not on physical panel
 	Panel1170Control switch_LOAD_ADRS;
@@ -174,7 +182,7 @@ public class Panel1170 extends JPanel implements Observer {
 		// Evaluation in panel1170.clearUserinput()
 		knob_ADDR_SELECT.resetState = commandlineParameters.getInt("addr_select");
 		knob_DATA_SELECT.resetState = commandlineParameters.getInt("data_select");
-		// keyswitch_power.resetState = commandlineParameters.getInt("power") ;
+		keyswitch.resetState = commandlineParameters.getInt("keyswitch");
 
 		// do state initialization
 		clearUserinput();
@@ -227,6 +235,17 @@ public class Panel1170 extends JPanel implements Observer {
 		 * this is done in the "KNOB_LEED_FEEDBACK" control
 		 */
 
+		/*
+		 * Keyswitch: One Java control, but two API controls
+		 * Update GUI -> API in code, not by special class
+		 */
+		controls.add(keyswitch = new Panel1170Control(Panel1170ControlType.PDP11_KEYSWITCH,
+				null, null, p));
+		control_power = new Control("POWER", ControlType.input_switch, 1);
+		p.addControl(control_power);
+		control_panel_lock = new Control("PANEL_LOCK", ControlType.input_switch, 1);
+		p.addControl(control_panel_lock);
+
 		controls.add(switches_SR = new Panel1170Control(Panel1170ControlType.PDP11_SWITCH,
 				new Control("SR", ControlType.input_switch, 22), null, p));
 		controls.add(switch_LAMPTEST = new Panel1170Control(Panel1170ControlType.PDP11_KEY,
@@ -235,7 +254,7 @@ public class Panel1170 extends JPanel implements Observer {
 		// Panel1170Control(Panel1170ControlType.PDP11_KEY,
 		// new Control("LAMPTEST", ControlType.input_switch, 1), null, p));
 		controls.add(switch_LOAD_ADRS = new Panel1170Control(Panel1170ControlType.PDP11_KEY,
-				new Control("LOAD ADRS", ControlType.input_switch, 1), null, p));
+				new Control("LOAD_ADRS", ControlType.input_switch, 1), null, p));
 		controls.add(switch_EXAM = new Panel1170Control(Panel1170ControlType.PDP11_KEY,
 				new Control("EXAM", ControlType.input_switch, 1), null, p));
 		controls.add(switch_DEPOSIT = new Panel1170Control(Panel1170ControlType.PDP11_KEY,
@@ -316,6 +335,16 @@ public class Panel1170 extends JPanel implements Observer {
 		}
 
 		// All coordinates must have been loaded: loadImageCoordinates()
+
+		// keyswitch: positions 0,1,2
+		MultiStateControlVisualization msvc;
+		// add knob states. no direct link to API controls
+		msvc = new MultiStateControlVisualization(keyswitch, "keyswitch");
+		keyswitch.visualization.add(msvc);
+		msvc.addStateImageFilename("keyswitch_off.png", 0); // off
+		msvc.addStateImageFilename("keyswitch_power.png", 1); // power
+		msvc.addStateImageFilename("keyswitch_lock.png", 2); // lock
+
 		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_21_up.png",
 				switches_SR, switches_SR.inputcontrol, 21));
 		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_20_up.png",
@@ -537,7 +566,6 @@ public class Panel1170 extends JPanel implements Observer {
 		// knobs: for rotation, state 0..7 must be circular.
 		// encoding of physical panel is NOT! correct in
 		// inputImageState2BlinkenlightApiControlValues()
-		MultiStateControlVisualization msvc;
 		// add knob states
 		msvc = new MultiStateControlVisualization(knob_ADDR_SELECT,
 				knob_ADDR_SELECT.inputcontrol);
@@ -656,6 +684,7 @@ public class Panel1170 extends JPanel implements Observer {
 			return csv.getStateImage(csv.maxState);
 		case PDP11_SWITCH: //
 		case PDP11_KEY: //
+		case PDP11_KEYSWITCH: //
 			switch (testmode) {
 			case rpc_blinkenlight_api.RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST:
 				return csv.getStateImage(csv.getState()); // no switch change in
@@ -755,6 +784,7 @@ public class Panel1170 extends JPanel implements Observer {
 						// background shows them already
 						cssi = null;
 						if (panelcontrol.type == Panel1170ControlType.PDP11_KNOB
+								|| panelcontrol.type == Panel1170ControlType.PDP11_KEYSWITCH
 								|| csv.getState() != 0)
 							cssi = csv.getStateImage(csv.getState());
 						// switches in state 0: image NUll -> do not paint ->
@@ -782,6 +812,27 @@ public class Panel1170 extends JPanel implements Observer {
 	}
 
 	/*
+	 * checks, whether image "cssi" of control slice "csv" was clicked
+	 * if true, save event in csv.
+	 */
+	private boolean stateImageClicked(Point clickpoint, ControlSliceVisualization csv,
+			ControlSliceStateImage cssi) {
+		if (cssi.scaledRectangle.contains(clickpoint)
+				// image transparency at clickpoint must be > 50%
+				&& cssi.getPixelAt(clickpoint).getAlpha() > 128) {
+			csv.clickedStateImage = cssi;
+			if (csv.clickedStateImagePoint == null)
+				csv.clickedStateImagePoint = new Point(); // only one needed
+			csv.clickedStateImagePoint.x = (int) (clickpoint.x
+					- cssi.scaledRectangle.getCenterX());
+			csv.clickedStateImagePoint.y = (int) (clickpoint.y
+					- cssi.scaledRectangle.getCenterY());
+			return true;
+		} else
+			return false;
+	}
+
+	/*
 	 * find ControlVisualization at position (x,y) on the screen (after Mouse
 	 * click). mouse must be clicked on currently visible state image.
 	 * Called highspeed on mouse drag!
@@ -796,33 +847,27 @@ public class Panel1170 extends JPanel implements Observer {
 		for (Panel1170Control panelcontrol : controls)
 			for (ControlSliceVisualization csv : panelcontrol.visualization) {
 				ControlSliceStateImage cssi = csv.getVisibleStateImage();
-				if (cssi != null && cssi.scaledRectangle.contains(clickpoint)
-				// image transparency at clickpoint must be > 50%
-						&& cssi.getPixelAt(clickpoint).getAlpha() > 128)
+				if (cssi != null && stateImageClicked(clickpoint, csv, cssi))
 					return csv;
 			}
 		// no visible state image was clicked
 		// but there may be the picture of an "inactive" control
 		// be painted onto the background.
 		//
-		// Check, wether any state image of a ControlSliceVisualization
+		// Check, whether any state image of a ControlSliceVisualization
 		// could be under the click point
 		for (Panel1170Control panelcontrol : controls)
-			for (ControlSliceVisualization csv : panelcontrol.visualization) {
-				for (ControlSliceStateImage cssi : csv.stateImages) {
-					if (cssi.scaledRectangle.contains(clickpoint)
-							// image transparency at clickpoint must be > 50%
-							&& cssi.getPixelAt(clickpoint).getAlpha() > 128)
+			for (ControlSliceVisualization csv : panelcontrol.visualization)
+				for (ControlSliceStateImage cssi : csv.stateImages)
+					if (stateImageClicked(clickpoint, csv, cssi))
 						return csv;
-				}
-			}
 		return null;
 	}
 
 	/*
 	 * process mouse down/up: find control image, and set it visible/invisible
-	 * The blinkenlight API control value is calcuaalted from the visible
-	 * statte.
+	 * The blinkenlight API control value is calculated from the visible
+	 * state.
 	 */
 
 	// this csv is under the mouse and the button is pressed
@@ -846,13 +891,13 @@ public class Panel1170 extends JPanel implements Observer {
 		Panel1170Control panelcontrol = (Panel1170Control) csv.panelControl;
 		switch (panelcontrol.type) {
 		case PDP11_KNOB:
-			if (mouseButton == MouseEvent.BUTTON1) {
+			if (csv.clickedStateImagePoint.x < 0) {
 				// LEFT click in Knob Image = decrement,
 				if (csv.getState() > csv.minState)
 					csv.setStateExact(csv.getNextLowerState());
 				else
 					csv.setStateExact(csv.maxState); // rotate over 0
-			} else if (mouseButton == MouseEvent.BUTTON3) {
+			} else {
 				// RIGHT click = increment
 				if (csv.getState() < csv.maxState)
 					csv.setStateExact(csv.getNextHigherState());
@@ -874,6 +919,18 @@ public class Panel1170 extends JPanel implements Observer {
 			if (panelcontrol == switch_LAMPTEST)
 				setSelftest(rpc_blinkenlight_api.RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST);
 			break;
+		case PDP11_KEYSWITCH:
+			if (csv.clickedStateImagePoint.x < 0) {
+				// click left of knob Image = decrement, no roll-around
+				if (csv.getState() > csv.minState)
+					csv.setStateExact(csv.getNextLowerState());
+			} else {
+				// click right of knob Image = increment, no roll-around
+				if (csv.getState() < csv.maxState)
+					csv.setStateExact(csv.getNextHigherState());
+			}
+			break;
+
 		default:
 			;
 		}
@@ -954,6 +1011,8 @@ public class Panel1170 extends JPanel implements Observer {
 			else if (panelcontrol == knob_DATA_SELECT)
 				knob_DATA_SELECT.visualization.get(0)
 						.setStateExact(knob_DATA_SELECT.resetState);
+			else if (panelcontrol == keyswitch)
+				keyswitch.visualization.get(0).setStateExact(keyswitch.resetState);
 			else
 				for (ControlSliceVisualization csv : panelcontrol.visualization) {
 					csv.setStateExact(0);
@@ -1070,6 +1129,20 @@ public class Panel1170 extends JPanel implements Observer {
 						}
 					}
 				}
+		}
+		{
+			// special case: the keyswitch has 2 API controls
+			// keyswitch: 1 visualisation with 3 states
+			control_power.value = control_panel_lock.value = 0; // default:
+																// OFF
+			switch (keyswitch.visualization.get(0).getState()) {
+			case 1: // POWER
+				control_power.value = 1;
+				break;
+			case 2: // LOCK
+				control_power.value = control_panel_lock.value = 1;
+				break;
+			}
 		}
 	}
 

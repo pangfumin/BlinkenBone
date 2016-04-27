@@ -579,7 +579,7 @@ static void register_controls()
     // see gpiopattern.value2gpio_ledstatus_value()
     switch_LAMPTEST    = define_switch_slice(p, "LAMPTEST", 0, 1, 2, 0); // 2, 0x01 (or should it be 1,0,0 fur null?)
 
-    switch_LOADADRS = define_switch_slice(p, "LOAD ADRS", 0, 1, 2, 1); // 2, 0x02
+    switch_LOADADRS = define_switch_slice(p, "LOAD_ADRS", 0, 1, 2, 1); // 2, 0x02
     switch_EXAM = define_switch_slice(p, "EXAM", 0, 1, 2, 2); // 2, 0x04
     switch_DEPOSIT = define_switch_slice(p, "DEPOSIT", 0, 1, 2, 3); // 2, 0x08
     switch_CONT = define_switch_slice(p, "CONT", 0, 1, 2, 4); // 2, 0x010

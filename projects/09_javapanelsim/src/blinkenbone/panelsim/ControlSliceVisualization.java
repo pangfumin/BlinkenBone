@@ -20,7 +20,9 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
+   26-Apr-2016  JH		apply optional RescaleOp() on images after load, to modify brightness/contrast
+   21-Apr-2016  JH      dec/inc of knobs changed from "left/right mouse button" to
+                        "click coordinate left/right of image center"
    17-May-2012  JH      created
 
 
@@ -41,6 +43,7 @@
 
 package blinkenbone.panelsim;
 
+import java.awt.Point;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -71,8 +74,16 @@ public abstract class ControlSliceVisualization {
 	public int maxState; // heighest state of all state images
 
 	public static int defaultAveragingInterval_ms = 100; // 1/10 sec
+	// low pass for states in millisecs. is default for constructor
 
-	// low pass for states in millsecs. is default for constructor
+	// if a mouse clicked onto an state image: last  
+	public ControlSliceStateImage clickedStateImage ;
+	public Point clickedStateImagePoint ; // relative coordinates of cick event inside  clickedStateImage 
+	
+	// after load a image from disk, these Rescaleop Params are applied
+	// this allows to modify brightness & contrast.
+	public float imageRescaleopScale ;
+	public float imageRescaleopOffset ;
 
 	// public ControlSliceStateImage visibleStateImage; // which of the state
 	// images is to display?
@@ -91,6 +102,9 @@ public abstract class ControlSliceVisualization {
 		stateExact = 0;
 		stateExactValid = true;
 		averagingInterval_us = 1000 * defaultAveragingInterval_ms;
+		
+		imageRescaleopScale = 1 ; // default: no change
+		imageRescaleopOffset = 0 ;
 	}
 
 	/*
@@ -313,7 +327,9 @@ public abstract class ControlSliceVisualization {
 	 */
 	public ControlSliceStateImage addStateImage(String imageFilename, int state) {
 		
-		ControlSliceStateImage cssi = new ControlSliceStateImage(imageFilename, state);
+		ControlSliceStateImage cssi = new ControlSliceStateImage(imageFilename, state, 
+				imageRescaleopScale, imageRescaleopOffset );
+		
 		stateImages.add(cssi);
 		if (minState > cssi.state)
 			minState = cssi.state;

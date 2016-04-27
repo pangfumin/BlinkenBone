@@ -43,10 +43,22 @@ public class DimmableLightbulbVisualization extends ControlSliceVisualization {
 	static final int brightnessLevels = 16;
 	String imageFilename;
 	boolean useTransparency;
+	
+	// after load a image from disk, these Rescaleop Params are applied
+	// this allows to modify brightness & contrast.
+	// Here static defaults for all new visualizations
+	public static float defaultImageRescaleopScale = 1 ;
+	public static float defaultImageRescaleopOffset = 0 ;
+
 
 	public DimmableLightbulbVisualization(String imageFilename, PanelControl panelControl,
 			Control c, int bitpos, boolean useTransparency) {
 		super(c.name + "." + bitpos, panelControl, c, bitpos);
+
+		// take image parameters from class 
+		imageRescaleopScale = defaultImageRescaleopScale ;
+		imageRescaleopOffset = defaultImageRescaleopOffset ;
+		
 		this.imageFilename = imageFilename; // single file for all
 											// brightness states
 		this.useTransparency = useTransparency;

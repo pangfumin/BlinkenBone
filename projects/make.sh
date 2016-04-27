@@ -19,6 +19,7 @@ export MAKEOPTIONS=--silent
 export MAKETARGETS="clean all"
 
 # optimize all compiles, see makefiles 
+#export MAKE_CONFIGURATION=DEBUG
 export MAKE_CONFIGURATION=RELEASE
 
 
@@ -34,8 +35,11 @@ ant -f build.xml compile jar
 # the Blinkenligt API server for BlinkenBus is only useful on BEAGLEBONE
 # Simulation and syntax test modes work also on desktop Linuxes
 cd 07.1_blinkenlight_server
+echo ; echo "*** blinkenlight_server for BeagleBone"
 MAKE_TARGET_ARCH=BEAGLEBONE make $MAKEOPTIONS $MAKETARGETS
+echo ; echo "*** blinkenlight_server for x86"
 MAKE_TARGET_ARCH=X86 make $MAKEOPTIONS $MAKETARGETS
+echo ; echo "*** blinkenlight_server for x64"
 MAKE_TARGET_ARCH=X64 make $MAKEOPTIONS $MAKETARGETS
 )
 
@@ -43,20 +47,26 @@ MAKE_TARGET_ARCH=X64 make $MAKEOPTIONS $MAKETARGETS
 (
 # the Blinkenligt API server for Oscar Vermeulen's PiDP8
 cd 11_pidp_server/pidp8
+echo ; echo "*** blinkenlight_server for PiDP8"
 MAKE_TARGET_ARCH=RPI make $MAKEOPTIONS $MAKETARGETS
 )
 (
 # the Blinkenligt API server for Oscar Vermeulen's PiDP11
 cd 11_pidp_server/pidp11
+echo ; echo "*** blinkenlight_server for PiDP11"
 MAKE_TARGET_ARCH=RPI make $MAKEOPTIONS $MAKETARGETS
 )
 
 (
 # The Blinkenligt API test client for all platforms
 cd 07.2_blinkenlight_test
+echo ; echo "*** blinkenlight_test for x86"
 MAKE_TARGET_ARCH=X86 make $MAKEOPTIONS $MAKETARGETS
+echo ; echo "*** blinkenlight_test for x64"
 MAKE_TARGET_ARCH=X64 make $MAKEOPTIONS $MAKETARGETS
+echo ; echo "*** blinkenlight_test for RaspberryPi"
 MAKE_TARGET_ARCH=RPI make $MAKEOPTIONS $MAKETARGETS
+echo ; echo "*** blinkenlight_test for BeagleBone"
 MAKE_TARGET_ARCH=BEAGLEBONE make $MAKEOPTIONS $MAKETARGETS
 )
 
@@ -64,9 +74,13 @@ MAKE_TARGET_ARCH=BEAGLEBONE make $MAKEOPTIONS $MAKETARGETS
 (
 # SimH for all platforms
 cd 02.3_simh.4.x.jh/src
+echo ; echo "*** SimH 4.x for x86"
 MAKE_TARGET_ARCH=X86 make $MAKEOPTIONS $MAKETARGETS
+echo ; echo "*** SimH 4.x for x64"
 MAKE_TARGET_ARCH=X64 make $MAKEOPTIONS $MAKETARGETS
+echo ; echo "*** SimH 4.x for BeagleBone"
 MAKE_TARGET_ARCH=BEAGLEBONE make $MAKEOPTIONS $MAKETARGETS
+echo ; echo "*** SimH 4.x for RaspberryPi"
 MAKE_TARGET_ARCH=RPI make $MAKEOPTIONS $MAKETARGETS
 )
 

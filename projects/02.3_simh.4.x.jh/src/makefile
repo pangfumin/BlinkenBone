@@ -33,6 +33,7 @@ REALCONS= \
         $(BLINKENLIGHT_COMMON_DIR)bitcalc.c
 # PDP11 part
 REALCONS_PDP11= \
+	    $(REALCONS_DIR)realcons_console_pdp11_20.c \
 	    $(REALCONS_DIR)realcons_console_pdp11_40.c \
 	    $(REALCONS_DIR)realcons_console_pdp11_70.c
 

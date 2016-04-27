@@ -276,6 +276,9 @@
     <ClCompile Include="..\..\..\07.0_blinkenlight_api\rpcgen_linux\rpc_blinkenlight_api_xdr.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\REALCONS\realcons_console_pdp11_20.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\slirp\bootp.h">
@@ -441,6 +444,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\windows-build\pthreads\pthread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\REALCONS\realcons_console_pdp11_20.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

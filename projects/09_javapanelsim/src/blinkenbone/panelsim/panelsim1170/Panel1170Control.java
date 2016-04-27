@@ -20,7 +20,7 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
+   20-Apr-2016  JH      added POWER/LOCK keyswitch
    20-Sep-2015  JH      created
 
 
@@ -51,7 +51,8 @@ public class Panel1170Control extends PanelControl {
 		PDP11_KEY, // switch with auto return to inactve psoition,
 					// "momentary action"
 		PDP11_LAMP, // pure LED, binary coded
-		PDP11_KNOB // rotating knob with LED indicating the position
+		PDP11_KNOB, // rotating knob with LED indicating the position
+		PDP11_KEYSWITCH // rotating key switch for POWER, LOCK. no roll around
 	}
 
 	Panel1170ControlType type; // different behaviour on click actions

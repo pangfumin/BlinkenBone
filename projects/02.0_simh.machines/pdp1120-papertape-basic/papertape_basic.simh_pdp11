@@ -1,0 +1,155 @@
+
+set cpu 11/20
+
+set tto 8b
+set tti 8b
+
+; enable only papertape reader and puncher
+set ptr enabled
+set ptp enabled
+
+; disable all other devices
+set tm disabled
+set tq disabled
+set rk disabled
+set hk disabled
+set rx disabled
+set dz disabled
+set lpt disabled
+set cr disabled
+set rl disabled
+set rp disabled
+set rq disabled
+
+
+; realisticv cpu/io timing
+set throttle 1m
+deposit tto time 1000
+deposit tti time 1000
+
+
+; connect to real panel
+set realcons host=vmubuprog
+;set realcons host=blinkenbone
+;set realcons host=localhost
+set realcons panel=11/20
+set realcons connected
+;set realcons debug
+show realcons
+
+
+; Prefill memory with "rotating light" program @ 1000
+; This is a PDP-11/20 minicomputer running a program to move a bit across the
+; console panel from right to left.
+; 001000: clr     r0                      [005000]
+; 001002: inc     r0                      [005200]
+; 001004: rol     r0                      [006100]
+; 001006: halt                            [000000]
+; 001010: br      001004                  [000775]
+d 1000 005000
+d 1002 005200
+d 1004 006100
+d 1006 000005
+d 1010 000775
+
+
+; ------------------------------------------------------------
+; this is the primary papertape bootloader, as documented in
+; http://iamvirtual.ca/PDP-11/Basic-11/PaperTapeBootstrap.htm
+;   and else where.
+;
+; Paper Tape Bootstrap Listing
+; Location  Instruction
+; xx7744    016701  START:  MOV DEVICE,R1
+; xx7746    000026
+; xx7750    012702  LOOP:   MOV (PC)+,R2
+; xx7752    000352  DSPMNT:
+; xx7754    005211      INC @R1
+; xx7756    105711  WAIT:   TSTB @R1
+; xx7760    100376      BPL WAIT
+; xx7762    116162      MOVB 2(R1),LOAD(R2)
+; xx7764    000002
+; xx7766    xx7400
+; xx7770    005267      INC DSPMNT
+; xx7772    177756
+; xx7774    000765      BR LOOP
+; xx7776    yyyyyy  DEVICE: yyyyyy
+;
+; xx    Memory Bank Memory Size
+; 01    0           4K
+; 03    1           8K
+; 05    2           12K
+; 07    3           16K
+; 11    4           20K
+; 13    5           24K
+; 15    6           28K
+;
+;
+; yyyyyy
+; Device                        Address
+; Teletype Paper Tape Reader    177560
+; High Speed Paper Tape Reader  177550
+;
+; This loader is self-modifying and very tricky:
+; Phase 1: bytes read from tape modify the offset DSPMNT.
+;   while DISPMNT=352 = <tape fill byte>+1,  bytes (351 on start) from tape are written to DISPMNT.
+;   So DISPMNT is kept constant at 352, until a byte other than 351 is read.
+; Phase 2: The first non-351 byte from tape sets DISPMNT not to point to itself, so copying of data starts.
+;   Data is copied before this code with increasing addresses.
+; Phase 3: Finally the loaded program overwrites this loader-loop!
+;   Label "loop:" is overwritten with a branch to the start of the program, and execution
+;   is transfered.
+;
+
+
+
+; We set xx = 15 (direct below 28KWord border, just below IOpage)
+;   and yyyyyy = 177550 for SimH PTR device
+
+dep 157744  016701
+dep 157746  000026
+dep 157750  012702
+dep 157752  000352
+dep 157754  005211
+dep 157756  105711
+dep 157760  100376
+dep 157762  116162
+dep 157764  000002
+dep 157766  157400
+dep 157770  005267
+dep 157772  177756
+dep 157774  000765
+dep 157776  177550
+
+
+; mount the papertape strip with absolute loader and BASIC punched in order
+; start bootloader
+; c:\>copy /b dec-11-uabla-a-po.bin + 16nulls.bin + DEC-11-AJPB-PB.ptap absloader+basic.ptap
+; dec-11-uabla-a-po.bin
+; 16nulls.bin
+; DEC-11-AJPB-PB.ptap
+;         1 Datei(en) kopiert.
+; c:\>
+
+; "Insert" the papertape into the reader
+attach ptr absloader+basic.ptap
+
+; check we're at start of strip: position is 0
+examine ptr pos
+
+
+; Start the bootloader to load and execute the absolute loader.
+run 157744
+; The absolute loader HALTs at 157500 and is waiting to load a program file.
+
+; Check the papertape strip position, the abs loader has been read from it.
+examine ptr pos
+
+; User should now insert the program to be loaded
+; We "punched" the BASIC already behind the loader onto the same strip,
+; so no other "attach ptr ..." is necessary.
+continue
+
+; now BASIC is loaded and started
+
+

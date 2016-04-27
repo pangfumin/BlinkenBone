@@ -55,7 +55,7 @@
 //		When lit, the interrupt control is enabled for
 //		information exchange with an I / O device.
 // Pause indicates the 1 status of the PAUSE flip - flop when lit.
-//		The PAUSE flip - flop is set for 2.75 µs by any IOT
+//		The PAUSE flip - flop is set for 2.75 micro secs by any IOT
 //		instruction that requires generation of IOP pulses or by
 //		any EAE instruction that require shifting of information.
 // Run	indicates the 1 status of the RUN flip - flop. When lit,
@@ -103,6 +103,9 @@ typedef struct
 
 	// see  ...\projects\11pidp8\src\
     // input controls on the panel
+    blinkenlight_control_t *keyswitch_power;
+    blinkenlight_control_t *keyswitch_panel_lock;
+
 	blinkenlight_control_t *switch_start;
 	blinkenlight_control_t *switch_load_address;
 	blinkenlight_control_t *switch_deposit;
@@ -114,9 +117,6 @@ typedef struct
 	blinkenlight_control_t *switch_switch_register;
 	blinkenlight_control_t *switch_data_field;
 	blinkenlight_control_t *switch_instruction_field;
-
-	blinkenlight_control_t *keyswitch_power;
-	blinkenlight_control_t *keyswitch_panel_lock;
 
 	// output controls on the panel
 	blinkenlight_control_t *led_program_counter;

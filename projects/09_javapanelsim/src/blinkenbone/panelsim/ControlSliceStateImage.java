@@ -42,6 +42,7 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
+import java.awt.image.RescaleOp;
 import java.awt.image.WritableRaster;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -50,9 +51,8 @@ import javax.swing.table.TableModel;
 
 import blinkenbone.CSVParser;
 
-
-
 public class ControlSliceStateImage extends Object {
+
 	public static ResourceManager resourceManager;
 	public static int xxunscaledBackgroundWidth = 0; // image positions are
 														// based
@@ -76,16 +76,13 @@ public class ControlSliceStateImage extends Object {
 	public Point scaledPosition; // x/y of left top corner on screen
 	public Rectangle scaledRectangle; // bounding box in image
 
-
 	public BufferedImage scaledStateImage; // calculated : rescale, fixup
 
 	public Color getPixelAt(Point clickpoint) {
-		int rgb = scaledStateImage.getRGB(
-		clickpoint.x - scaledRectangle.x,
-		clickpoint.y - scaledRectangle.y ) ;
-		return new Color(rgb, true) ; // preserve alpha
+		int rgb = scaledStateImage.getRGB(clickpoint.x - scaledRectangle.x,
+				clickpoint.y - scaledRectangle.y);
+		return new Color(rgb, true); // preserve alpha
 	}
-
 
 	// public int scaled_left; // left x position, calculated from ref_width,
 	// ref_center_x and img.getWidth()
@@ -93,10 +90,11 @@ public class ControlSliceStateImage extends Object {
 	// and
 	// img.getHeigth()
 
-
 	// transparency of this image. Used before drawImage()
-	//  see https://www.teialehrbuch.de/Kostenlose-Kurse/JAVA/6693-Transparenz-in-Java2D.html
-	public AlphaComposite alphaComposite = null ;
+	// see
+	// https://www.teialehrbuch.de/Kostenlose-Kurse/JAVA/6693-Transparenz-in-Java2D.html
+	public AlphaComposite alphaComposite = null;
+
 	/*
 	 * load image for a state
 	 *
@@ -114,12 +112,13 @@ public class ControlSliceStateImage extends Object {
 	 * scaledReferenceWidth: target size of total image (backgroudn) is used to
 	 * load right image file
 	 *
-	 * unscledLeft, unscaledTop: coordianten of state image in unscaled
+	 * unscaledLeft, unscaledTop: coordianten of state image in unscaled
 	 * background image.
 	 *
 	 * ref_left/top is typically large, as picture taken from DSLR: 4300 pixels
 	 */
-	public ControlSliceStateImage(String imageFilepathSuffix, int state) {
+	public ControlSliceStateImage(String imageFilepathSuffix, int state, float rescaleOpScale,
+			float rescaleopOffset) {
 
 		this.state = state;
 
@@ -129,6 +128,17 @@ public class ControlSliceStateImage extends Object {
 		// System.out.printf("Loading state image %s ...",
 		// this.resourceFilepath);
 		scaledStateImage = resourceManager.createBufferedImage(this.resourceFilepath);
+
+		// apply current brightness/contrast settings
+		if (rescaleOpScale != 1 || rescaleopOffset != 0) {
+			// RescaleOp rescaleOp = new RescaleOp(rescaleOpScale,
+			// rescaleopOffset, null) ;
+			RescaleOp rescaleOp = new RescaleOp(
+					new float[] { rescaleOpScale, rescaleOpScale, rescaleOpScale, 1f },
+					new float[] { rescaleopOffset, rescaleopOffset, rescaleopOffset, 0 }, null);
+			rescaleOp.filter(scaledStateImage, scaledStateImage);
+		}
+
 		// System.out.printf("done.%n");
 		String pureFilename = resourceImageFileNamePrefix + imageFilepathSuffix;
 		// use external Photoshop coordinates
@@ -193,14 +203,15 @@ public class ControlSliceStateImage extends Object {
 		String resourceFilePath = resourceImageFilePathPrefix + resourceImageFileNamePrefix
 				+ csvFilepathSuffix;
 		TableModel t = null;
-		//System.out.printf("path = %s\n", resourceFilePath);
-		java.lang.ClassLoader cl = Thread.currentThread().getContextClassLoader() ;
-		/* Show search path list
-		URL[] urls = ((URLClassLoader) cl).getURLs();
-		for (URL url: urls) {
-		    System.out.println(url.getFile());
-		}
-		*/
+		// System.out.printf("path = %s\n", resourceFilePath);
+		java.lang.ClassLoader cl = Thread.currentThread().getContextClassLoader();
+		/*
+		 * Show search path list
+		 * URL[] urls = ((URLClassLoader) cl).getURLs();
+		 * for (URL url: urls) {
+		 * System.out.println(url.getFile());
+		 * }
+		 */
 
 		InputStream is = cl.getResourceAsStream(resourceFilePath);
 		t = CSVParser.parse(is, ";");

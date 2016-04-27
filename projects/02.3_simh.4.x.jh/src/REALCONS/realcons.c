@@ -20,7 +20,8 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-   19-Feb-2016  JH		bugfix in call to event_connect/disconnect
+   23-Apr-2016  JH      added PDP-11/20
+   19-Feb-2016  JH      bugfix in call to event_connect/disconnect
    25-Mar-2012  JH      created
 
 
@@ -220,7 +221,16 @@ t_stat realcons_connect(realcons_t *_this, char *consolelogic_name, char *server
 		realcons_console_controller_interface_t *intf = &(_this->console_controller_interface);
 		_this->console_controller = NULL;
 #ifdef VM_PDP11
-		if (!strcmp(consolelogic_name, "11/40")) {
+        if (!strcmp(consolelogic_name, "11/20")) {
+			realcons_console_logic_pdp11_20_t *console_logic;
+			// 1. create
+			console_logic = realcons_console_pdp11_20_constructor(_this);
+			// 2. connect
+			realcons_console_pdp11_20_interface_connect(console_logic,
+				&(_this->console_controller_interface), consolelogic_name);
+			_this->console_controller = console_logic;
+		}
+		else if (!strcmp(consolelogic_name, "11/40")) {
 			realcons_console_logic_pdp11_40_t *console_logic;
 			// 1. create
 			console_logic = realcons_console_pdp11_40_constructor(_this);
@@ -643,7 +653,7 @@ void realcons_lamp_test(realcons_t *_this, int testmode)
 void realcons_power_mode(realcons_t *_this, int power_on) {
 	if (power_on)
 	  _this->console_model->mode = RPC_PARAM_VALUE_PANEL_MODE_NORMAL;
-	else 
+	else
 	_this->console_model->mode = RPC_PARAM_VALUE_PANEL_MODE_POWERLESS;
 blinkenlight_api_client_set_object_param(_this->blinkenlight_api_client,
 	RPC_PARAM_CLASS_PANEL, _this->console_model->index, RPC_PARAM_HANDLE_PANEL_MODE,

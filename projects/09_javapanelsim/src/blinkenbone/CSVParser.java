@@ -121,6 +121,8 @@ public class CSVParser {
 				data[y][x] = oneDdata.remove(0);
 			}
 
+			s.close(); 
+			lineScan.close();
 		// Create a table and return it.
 		return new DefaultTableModel(data, headers.toArray());
 	}

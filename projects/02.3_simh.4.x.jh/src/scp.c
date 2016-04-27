@@ -6030,7 +6030,7 @@ if ((flag == RU_RUN) || (flag == RU_GO)) {              /* run or go */
 	//	if (cpu_realcons->connected && !realcons_machine_set_state(cpu_realcons,REALCONS_MS_GENERIC_CPU_RUN_START)) {
 		if (cpu_realcons->connected) {
 			if (realcons_console_halt) {
-				fprintf (stderr, "Can not start: real console HALT.\n") ;
+				fprintf (stderr, "Can not start: real console HALT or OFF.\n") ;
 				return SCPE_STOP ;
 			}
 			REALCONS_EVENT(cpu_realcons, realcons_event_run_start) ;
@@ -6110,7 +6110,7 @@ else if (flag == RU_BOOT) {                             /* boot */
 		// if (cpu_realcons->connected &&  !realcons_machine_set_state(cpu_realcons,REALCONS_MS_GENERIC_CPU_RUN_START)) {
 		if (cpu_realcons->connected) {
 			if (realcons_console_halt) {
-				fprintf (stderr, "Can not boot: real console HALT.\n") ;
+				fprintf (stderr, "Can not boot: real console HALT or OFF.\n") ;
 				return SCPE_STOP ;
 			}
 			REALCONS_EVENT(cpu_realcons, realcons_event_run_start) ;
@@ -6125,7 +6125,7 @@ else if (flag != RU_CONT)                               /* must be cont */
 	if (flag == RU_CONT && cpu_realcons->connected) {
 //		if (cpu_realcons->connected && !realcons_machine_set_state(cpu_realcons,REALCONS_MS_GENERIC_CPU_RUN_START)) {
 		if (realcons_console_halt) {
-			fprintf (stderr, "Can not continue: real console HALT.\n") ;
+			fprintf (stderr, "Can not continue: real console HALT or OFF.\n") ;
 			return SCPE_STOP ;
 		}
         REALCONS_EVENT(cpu_realcons, realcons_event_run_start) ;

@@ -20,6 +20,7 @@
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+ 22-Apr-2016    JH      added POWER and PANEL_LOCK logic
  01-Apr-2016    JH      added ADRESSING 16/18/22, ADDR SELECT knob VIRTUAL positions
  18-Mar-2016    JH      access to SimHs I/O page and CPU registers (18->22bit addr)
  21-Feb-2016    JH      added PANEL_MODE_POWERLESS
@@ -506,9 +507,14 @@ t_stat realcons_console_pdp11_70_reset(realcons_console_logic_pdp11_70_t *_this)
      * direct links to all required controls.
      * Also check of config file
      */
+    if (!(_this->keyswitch_power = realcons_console_get_input_control(_this->realcons, "POWER")))
+        return SCPE_NOATT;
+    if (!(_this->keyswitch_panel_lock = realcons_console_get_input_control(_this->realcons, "PANEL_LOCK")))
+        return SCPE_NOATT;
+
     if (!(_this->switch_SR = realcons_console_get_input_control(_this->realcons, "SR")))
         return SCPE_NOATT;
-    if (!(_this->switch_LOADADRS = realcons_console_get_input_control(_this->realcons, "LOAD ADRS")))
+    if (!(_this->switch_LOADADRS = realcons_console_get_input_control(_this->realcons, "LOAD_ADRS")))
         return SCPE_NOATT;
     if (!(_this->switch_EXAM = realcons_console_get_input_control(_this->realcons, "EXAM")))
         return SCPE_NOATT;
@@ -631,15 +637,37 @@ static int32 console_addr_register_physical(realcons_console_logic_pdp11_70_t *_
 t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_this)
 {
     blinkenlight_panel_t *p = _this->realcons->console_model; // alias
+    int panel_lock;
     int console_mode;
     int user_mode;
 
     blinkenlight_control_t *action_switch; // current action switch
 
+    if (_this->keyswitch_power->value == 0 ) {
+        SIGNAL_SET(cpusignal_console_halt, 1); // stop execution
+        if (_this->keyswitch_power->value_previous == 1) {
+            // Power switch transition to POWER OFF: terminate SimH
+            // This is drastic, but will teach users not to twiddle with the power switch.
+            // when panel is disconnected, panel mode goes to POWERLESS and power switch goes OFF.
+            // But shutdown sequence is not initiated, because we're disconnected then.
+            sprintf(_this->realcons->simh_cmd_buffer, "quit"); // do not confirm the quit with ENTER
+        }
+        // do nothing, if power is off. else cpusignal_console_halt may be deactivate by HALT switch
+        return SCPE_OK;
+    }
+
+    /*
+    LOCK - Same as POWER, except that the LOAD ADRS, EXAM, DEP, CONT, ENABLE/HALT, S
+           INST/S BUS CYCLE and START switches are disabled. All other switches are
+           operational.
+    */
+    panel_lock = (_this->keyswitch_panel_lock->value != 0) ;
+
+
     /* test time expired? */
 
     // STOP by activating HALT?
-    if (_this->switch_HALT->value && !SIGNAL_GET(cpusignal_console_halt)) {
+    if (!panel_lock && _this->switch_HALT->value && !SIGNAL_GET(cpusignal_console_halt)) {
         // must be done by SimH.pdp11_cpu.c!
     }
 
@@ -658,10 +686,14 @@ t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_thi
     SIGNAL_SET(cpusignal_switch_register, (t_value )_this->switch_SR->value);
 
     // fetch HALT mode, must be sensed by simulated processor to produce state OPERATOR_HALT
-    SIGNAL_SET(cpusignal_console_halt, (t_value )_this->switch_HALT->value);
+    if (panel_lock)
+        SIGNAL_SET(cpusignal_console_halt,0) ;
+    else
+        SIGNAL_SET(cpusignal_console_halt, (t_value )_this->switch_HALT->value);
 
     /* which command switch was activated? Process only one of these */
     action_switch = NULL;
+    if (!panel_lock) {
     if (!action_switch && _this->switch_LOADADRS->value == 1
             && _this->switch_LOADADRS->value_previous == 0)
         action_switch = _this->switch_LOADADRS;
@@ -675,7 +707,7 @@ t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_thi
     if (!action_switch && // START actions on rising and falling edge!
             _this->switch_START->value ^ _this->switch_START->value_previous)
         action_switch = _this->switch_START;
-
+    }
     // first: reset "switch changed" condition
     if (action_switch)
         action_switch->value_previous = action_switch->value;
@@ -710,11 +742,11 @@ t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_thi
                     (realcons_machine_word_t ) (_this->switch_SR->value & 0x3fffff)); // 22 bit
             // _this->DMUX = _this->R_ADRSC; // for display on DATA, DEC docs
             SIGNAL_SET(cpusignal_ALU_result, 0); // 11/40 videos show: DATA is cleared
-            // LOAD ADR active: copy switches to R_
+            // 11/70 ?
 
             if (_this->realcons->debug)
                 printf("LOADADR %o\n", SIGNAL_GET(cpusignal_console_address_register));
-            // flash with DATA LEDs
+            // flash with DATA LEDs on 11/40. 11/70 ?
             _this->realcons->timer_running_msec[TIMER_DATA_FLASH] =
                     _this->realcons->service_cur_time_msec + TIME_DATA_FLASH_MS;
         }

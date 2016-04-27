@@ -1,6 +1,9 @@
 filename;left;top
 pdp1170_size=2400_background.png;0; 0
 pdp1170_size=2400_background.png;0; 0
+pdp1170_size=2400_keyswitch_lock.png;193; 726
+pdp1170_size=2400_keyswitch_power.png;196; 725
+pdp1170_size=2400_keyswitch_off.png;198; 726
 pdp1170_size=2400_switch_start_down.png;2156; 1014
 pdp1170_size=2400_switch_sinst_sbuscycle_down.png;2088; 1014
 pdp1170_size=2400_switch_load_adrs_down.png;1747; 1015

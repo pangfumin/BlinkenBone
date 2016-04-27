@@ -20,6 +20,7 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+   23-Apr-2016  JH      added PDP-11/20
    20-Feb-2016  JH      added PANEL_MODE_POWERLESS
    25-Mar-2012  JH      created
 */
@@ -117,6 +118,7 @@ typedef struct realcons_console_controller_interface_struct
 
 // all implemented console panels
 #ifdef VM_PDP11
+#include "realcons_console_pdp11_20.h"
 #include "realcons_console_pdp11_40.h"
 #include "realcons_console_pdp11_70.h"
 #endif

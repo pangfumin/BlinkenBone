@@ -92,13 +92,5 @@ set realcons connected
 ;set realcons debug
 show realcons
 
-; --- test with remote console etc.
-set console telnet=23
-! start putty.exe telnet://localhost:23
-set remote telnet=4000
-! start putty.exe telnet://localhost:4000
-set remote master
-
-
-; boot rl0
+boot rl0
 

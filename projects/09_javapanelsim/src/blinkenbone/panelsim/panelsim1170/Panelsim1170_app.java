@@ -20,7 +20,7 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
+   20-Apr-2016  JH      added POWER/LOCK keyswitch
    28-Feb-2016  JH v1.01 bugfix: all controls were reset on image size change.
                          Visualization load logic separated from image load.
    20-Sep-2015  JH      created
@@ -113,7 +113,10 @@ public class Panelsim1170_app {
 										"Set start position of ADDR_SELECT knob."),
 								new FlaggedOption("data_select", JSAP.INTEGER_PARSER, "0",
 										JSAP.NOT_REQUIRED, 'd', "data_select",
-										"Set start position of DATA_SELECT knob.") });
+										"Set start position of DATA_SELECT knob."),
+								 new FlaggedOption("keyswitch", JSAP.INTEGER_PARSER, "1",
+										JSAP.NOT_REQUIRED, 'k', "keyswitch",
+										"Set start position of POWER/LOCK keyswitch.") });
 				commandlineParameters = jsap.parse(args);
 				if (jsap.messagePrinted())
 					System.exit(1);

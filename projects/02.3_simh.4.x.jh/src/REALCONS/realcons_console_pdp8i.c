@@ -339,7 +339,12 @@ t_stat realcons_console_pdp8i_reset(realcons_console_logic_pdp8i_t *_this)
 	 * direct links to all required controls.
 	 * See PiDP8 Blinkenlight API server project. Control names exactly like printed onto the PDP8/I acryl
 	 */
-	if (!(_this->switch_start = realcons_console_get_input_control(_this->realcons, "Start")))
+    if (!(_this->keyswitch_power = realcons_console_get_input_control(_this->realcons, "POWER")))
+        return SCPE_NOATT;
+    if (!(_this->keyswitch_panel_lock = realcons_console_get_input_control(_this->realcons, "PANEL LOCK")))
+        return SCPE_NOATT;
+
+    if (!(_this->switch_start = realcons_console_get_input_control(_this->realcons, "Start")))
 		return SCPE_NOATT;
 	if (!(_this->switch_load_address = realcons_console_get_input_control(_this->realcons, "Load Add")))
 		return SCPE_NOATT;
@@ -360,12 +365,6 @@ t_stat realcons_console_pdp8i_reset(realcons_console_logic_pdp8i_t *_this)
 	if (!(_this->switch_data_field = realcons_console_get_input_control(_this->realcons, "DF")))
 		return SCPE_NOATT;
 	if (!(_this->switch_instruction_field = realcons_console_get_input_control(_this->realcons, "IF")))
-		return SCPE_NOATT;
-
-
-	if (!(_this->keyswitch_power = realcons_console_get_input_control(_this->realcons, "POWER")))
-		return SCPE_NOATT;
-	if (!(_this->keyswitch_panel_lock = realcons_console_get_input_control(_this->realcons, "PANEL LOCK")))
 		return SCPE_NOATT;
 
 	if (!(_this->led_program_counter = realcons_console_get_output_control(_this->realcons, "Program Counter")))
@@ -465,7 +464,7 @@ t_stat realcons_console_pdp8i_service(realcons_console_logic_pdp8i_t *_this)
 		// when panel is disconnected, panel mode goes to POWERLESS and power switch goes OFF.
 		// But shutdown seqeunce is not initialted, because we're disconnected then.
 		SIGNAL_SET(cpusignal_console_halt, 1); // stop execution
-		sprintf(_this->realcons->simh_cmd_buffer, "quit"); // do not confirm the quit
+		sprintf(_this->realcons->simh_cmd_buffer, "quit"); // do not confirm the quit with ENTER
 		return SCPE_OK;
 	}
 

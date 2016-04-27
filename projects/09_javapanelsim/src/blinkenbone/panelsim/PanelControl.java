@@ -24,7 +24,7 @@
    24-Sep-2015  JH      created
 
 
-  A  PanelControl is a complex visual control, it consists ov several "Slices",
+  A  PanelControl is a complex visual control, it consists of several "Slices",
   (example, multiple bit images for LED rows)
  */
 

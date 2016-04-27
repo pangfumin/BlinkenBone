@@ -175,6 +175,7 @@
     <ClCompile Include="..\PDP11\pdp11_xq.c" />
     <ClCompile Include="..\PDP11\pdp11_xu.c" />
     <ClCompile Include="..\REALCONS\realcons.c" />
+    <ClCompile Include="..\REALCONS\realcons_console_pdp11_20.c" />
     <ClCompile Include="..\REALCONS\realcons_console_pdp11_40.c" />
     <ClCompile Include="..\REALCONS\realcons_console_pdp11_70.c" />
     <ClCompile Include="..\REALCONS\realcons_simh.c" />
@@ -231,6 +232,7 @@
     <ClInclude Include="..\PDP11\pdp11_xq_bootrom.h" />
     <ClInclude Include="..\PDP11\pdp11_xu.h" />
     <ClInclude Include="..\REALCONS\realcons.h" />
+    <ClInclude Include="..\REALCONS\realcons_console_pdp11_20.h" />
     <ClInclude Include="..\REALCONS\realcons_console_pdp11_40.h" />
     <ClInclude Include="..\REALCONS\realcons_console_pdp11_70.h" />
     <ClInclude Include="..\REALCONS\realcons_simh.h" />

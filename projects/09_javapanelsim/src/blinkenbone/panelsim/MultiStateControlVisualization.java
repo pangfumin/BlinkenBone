@@ -46,6 +46,14 @@ public class MultiStateControlVisualization extends ControlSliceVisualization {
 		maxState = -1;
 	}
 
+	// if no API control is assigned
+	public MultiStateControlVisualization(PanelControl panelControl, String name) {
+		super(name, panelControl, null, 0);
+		imageFilenames = new Hashtable<Integer, String>();
+		maxState = -1;
+	}
+
+	
 	// define a image filename for a state
 	// later this filename is compeleted with width-prefix and loaded
 	// see "TwoStateControlVisualization", but variable list of states

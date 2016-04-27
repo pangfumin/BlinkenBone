@@ -91,6 +91,9 @@ typedef struct
 
 	/* 11/70 specific */
 	// input controls on the panel
+	    blinkenlight_control_t *keyswitch_power;
+	    blinkenlight_control_t *keyswitch_panel_lock;
+
 	blinkenlight_control_t *switch_SR, *switch_LOADADRS, *switch_EXAM, *switch_DEPOSIT,
 			*switch_CONT, *switch_HALT, *switch_S_BUS_CYCLE, *switch_START, *switch_DATA_SELECT,
 			*switch_ADDR_SELECT, *switch_PANEL_LOCK;
