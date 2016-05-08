@@ -21,6 +21,7 @@
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+ 08-May-2016  JH      new event "set_controlvalue"
  22-Feb-2016  JH	  added panel mode set/get callbacks
  13-Nov-2015  JH      created
 
@@ -57,6 +58,7 @@ blinkenlight_panel_list_t *blinkenlight_panel_list;
 /*** call backs triggered by RPC server ***/
 // called before new values for panel are sent to client
 blinkenlight_api_panel_get_controlvalues_evt_t blinkenlight_api_panel_get_controlvalues_evt = NULL;
+blinkenlight_api_panel_set_controlvalue_evt_t blinkenlight_api_panel_set_controlvalue_evt = NULL;
 // called  after new values for panel where transmitted by client
 blinkenlight_api_panel_set_controlvalues_evt_t blinkenlight_api_panel_set_controlvalues_evt = NULL;
 // set/get panel state
@@ -241,6 +243,9 @@ rpc_blinkenlight_api_setpanel_controlvalues_1_svc(u_int i_panel,
                 // trunc to valid bits
                 c->value &= BitmaskFromLen64[c->value_bitlen];
 
+                // callback before lowpass
+                if (blinkenlight_api_panel_set_controlvalue_evt)
+                    blinkenlight_api_panel_set_controlvalue_evt(p, c);
 
                 if (c->fmax > 0) {
                     // low pass requested.

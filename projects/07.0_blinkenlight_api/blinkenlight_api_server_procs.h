@@ -20,7 +20,7 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
+   08-May-2016  JH      new event "set_controlvalue"
    22-Feb-2016	JH		added panel mode set/get callbacks
    13-Nov-2015  JH      created
  */
@@ -32,6 +32,7 @@
 
 
 		// type for panel control value set/get events
+typedef void (*blinkenlight_api_panel_set_controlvalue_evt_t) (blinkenlight_panel_t *, blinkenlight_control_t *) ;
 typedef void (*blinkenlight_api_panel_set_controlvalues_evt_t) (blinkenlight_panel_t *, /*force all*/int) ;
 typedef void (*blinkenlight_api_panel_get_controlvalues_evt_t) (blinkenlight_panel_t *) ;
 typedef int (*blinkenlight_api_panel_get_state_evt_t) (blinkenlight_panel_t *) ;
@@ -47,6 +48,7 @@ extern blinkenlight_panel_list_t *blinkenlight_panel_list;
 
 
 // pointer to callbacks
+extern blinkenlight_api_panel_set_controlvalue_evt_t blinkenlight_api_panel_set_controlvalue_evt ;
 extern blinkenlight_api_panel_set_controlvalues_evt_t blinkenlight_api_panel_set_controlvalues_evt ;
 extern blinkenlight_api_panel_get_controlvalues_evt_t blinkenlight_api_panel_get_controlvalues_evt ;
 extern blinkenlight_api_panel_get_state_evt_t blinkenlight_api_panel_get_state_evt ;

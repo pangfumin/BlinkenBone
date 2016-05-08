@@ -20,8 +20,9 @@
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+ 08-May-2016  JH    fix: MMR0 converted code -> led pattern BEFORE history/low pass
  01-Apr-2016  OV    almost perfect before VCF SE
- 14-Mar-2016  JH      created
+ 14-Mar-2016  JH    created
 
 
  Oscars's gpio.c module fetches LED data from gpio_ledstatus[] array
@@ -395,9 +396,9 @@ static void value2gpio_ledstatus_value(blinkenlight_panel_t *p, blinkenlight_con
 
 
 
-
+#ifdef OLD
     if (c == leds_MMR0_MODE) {
-        // circumevent wiring defintions, hard coded logic here:
+        // circumevent wiring definitions, hard coded logic here:
         // val: 0 = Kernel, 1= off,  2 = Super, 3 = User
         // leds: kernel = reg[2].4, super= reg[2].5 user=reg[2].6
 #define REGMASK_LED_KERNEL 0x10
@@ -410,9 +411,6 @@ static void value2gpio_ledstatus_value(blinkenlight_panel_t *p, blinkenlight_con
 
             switch(value) {
             case 0: mask |= REGMASK_LED_KERNEL ; break ;
-// maybe this stops ghosting of kernel led:
-case 1: mask |= 0 ; break;
-// update - no, does nothing.
             case 2: mask |= REGMASK_LED_SUPER; break ;
             case 3: mask |= REGMASK_LED_USER; break ;
             }
@@ -429,12 +427,13 @@ case 1: mask |= 0 ; break;
             mask = 0 ; // all off
             break;
         }
+mask = 0 ;
         // mask all out and set selective
         gpio_ledstatus[2] = (gpio_ledstatus[2] & ~REGMASK_LEDS_K_S_U) | mask ;
         //
         return ;
     }
-
+#endif // OLD
 	switch (panel_mode) {
 	case RPC_PARAM_VALUE_PANEL_MODE_NORMAL:
         if (c->mirrored_bit_order)
