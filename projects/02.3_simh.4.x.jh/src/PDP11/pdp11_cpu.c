@@ -656,7 +656,7 @@ int		realcons_bus_ID_mode; // 1 = DATA space access, 0 = instruction space acces
 					 // All PDP11 console's have an internal address register, set by LOAD ADRS.
 		// See it as part of the CPU.
 t_addr realcons_console_address_register;
-t_value realcons_ALU_result; // output of ALU
+t_value realcons_DATAPATH_shifter;  // value of shifter in PDP-11 processor data paths
 t_value realcons_IR; // buffer for instruction register (opcode)
 t_value realcons_PSW; // buffer for program status word
 
@@ -2124,103 +2124,122 @@ t_stat sim_instr(void)
 			break;
 
 		case 012:                                           /* CMPB */
-			if (CPUT(IS_SDSD) && srcreg && !dstreg) {      /* R,not R */
-				src2 = ReadB(GeteaB(dstspec));
-				src = R[srcspec] & 0377;
-			}
-			else {
-				src = srcreg ? R[srcspec] & 0377 : ReadB(GeteaB(srcspec));
-				src2 = dstreg ? R[dstspec] & 0377 : ReadB(GeteaB(dstspec));
-			}
-			dst = (src - src2) & 0377;
-			N = GET_SIGN_B(dst);
-			Z = GET_Z(dst);
-			V = GET_SIGN_B((src ^ src2) & (~src2 ^ dst));
-			C = (src < src2);
-			break;
+            if (CPUT(IS_SDSD) && srcreg && !dstreg) {      /* R,not R */
+                src2 = ReadB(GeteaB(dstspec));
+                src = R[srcspec] & 0377;
+            }
+            else {
+                src = srcreg ? R[srcspec] & 0377 : ReadB(GeteaB(srcspec));
+                src2 = dstreg ? R[dstspec] & 0377 : ReadB(GeteaB(dstspec));
+            }
+            dst = (src - src2) & 0377;
+            N = GET_SIGN_B(dst);
+            Z = GET_Z(dst);
+            V = GET_SIGN_B((src ^ src2) & (~src2 ^ dst));
+            C = (src < src2);
+            break;
 
-		case 013:                                           /* BITB */
-			if (CPUT(IS_SDSD) && srcreg && !dstreg) {      /* R,not R */
-				src2 = ReadB(GeteaB(dstspec));
-				src = R[srcspec] & 0377;
-			}
-			else {
-				src = srcreg ? R[srcspec] & 0377 : ReadB(GeteaB(srcspec));
-				src2 = dstreg ? R[dstspec] & 0377 : ReadB(GeteaB(dstspec));
-			}
-			dst = (src2 & src) & 0377;
-			N = GET_SIGN_B(dst);
-			Z = GET_Z(dst);
-			V = 0;
-			break;
+        case 013:                                           /* BITB */
+            if (CPUT(IS_SDSD) && srcreg && !dstreg) {      /* R,not R */
+                src2 = ReadB(GeteaB(dstspec));
+                src = R[srcspec] & 0377;
+            }
+            else {
+                src = srcreg ? R[srcspec] & 0377 : ReadB(GeteaB(srcspec));
+                src2 = dstreg ? R[dstspec] & 0377 : ReadB(GeteaB(dstspec));
+            }
+            dst = (src2 & src) & 0377;
+            N = GET_SIGN_B(dst);
+            Z = GET_Z(dst);
+            V = 0;
+            break;
 
-		case 014:                                           /* BICB */
-			if (CPUT(IS_SDSD) && srcreg && !dstreg) {      /* R,not R */
-				src2 = ReadMB(GeteaB(dstspec));
-				src = R[srcspec];
-			}
-			else {
-				src = srcreg ? R[srcspec] : ReadB(GeteaB(srcspec));
-				src2 = dstreg ? R[dstspec] : ReadMB(GeteaB(dstspec));
-			}
-			dst = (src2 & ~src) & 0377;
-			N = GET_SIGN_B(dst);
-			Z = GET_Z(dst);
-			V = 0;
-			if (dstreg)
-				R[dstspec] = (R[dstspec] & 0177400) | dst;
-			else PWriteB(dst, last_pa);
-			break;
+        case 014:                                           /* BICB */
+            if (CPUT(IS_SDSD) && srcreg && !dstreg) {      /* R,not R */
+                src2 = ReadMB(GeteaB(dstspec));
+                src = R[srcspec];
+            }
+            else {
+                src = srcreg ? R[srcspec] : ReadB(GeteaB(srcspec));
+                src2 = dstreg ? R[dstspec] : ReadMB(GeteaB(dstspec));
+            }
+            dst = (src2 & ~src) & 0377;
+            N = GET_SIGN_B(dst);
+            Z = GET_Z(dst);
+            V = 0;
+            if (dstreg)
+                R[dstspec] = (R[dstspec] & 0177400) | dst;
+            else PWriteB(dst, last_pa);
+            break;
 
-		case 015:                                           /* BISB */
-			if (CPUT(IS_SDSD) && srcreg && !dstreg) {      /* R,not R */
-				src2 = ReadMB(GeteaB(dstspec));
-				src = R[srcspec];
-			}
-			else {
-				src = srcreg ? R[srcspec] : ReadB(GeteaB(srcspec));
-				src2 = dstreg ? R[dstspec] : ReadMB(GeteaB(dstspec));
-			}
-			dst = (src2 | src) & 0377;
-			N = GET_SIGN_B(dst);
-			Z = GET_Z(dst);
-			V = 0;
-			if (dstreg)
-				R[dstspec] = (R[dstspec] & 0177400) | dst;
-			else PWriteB(dst, last_pa);
-			break;
+        case 015:                                           /* BISB */
+            if (CPUT(IS_SDSD) && srcreg && !dstreg) {      /* R,not R */
+                src2 = ReadMB(GeteaB(dstspec));
+                src = R[srcspec];
+            }
+            else {
+                src = srcreg ? R[srcspec] : ReadB(GeteaB(srcspec));
+                src2 = dstreg ? R[dstspec] : ReadMB(GeteaB(dstspec));
+            }
+            dst = (src2 | src) & 0377;
+            N = GET_SIGN_B(dst);
+            Z = GET_Z(dst);
+            V = 0;
+            if (dstreg)
+                R[dstspec] = (R[dstspec] & 0177400) | dst;
+            else PWriteB(dst, last_pa);
+            break;
 
-		case 016:                                           /* SUB */
-			if (CPUT(IS_SDSD) && srcreg && !dstreg) {      /* R,not R */
-				src2 = ReadMW(GeteaW(dstspec));
-				src = R[srcspec];
-			}
-			else {
-				src = srcreg ? R[srcspec] : ReadW(GeteaW(srcspec));
-				src2 = dstreg ? R[dstspec] : ReadMW(GeteaW(dstspec));
-			}
-			dst = (src2 - src) & 0177777;
-			N = GET_SIGN_W(dst);
-			Z = GET_Z(dst);
-			V = GET_SIGN_W((src ^ src2) & (~src ^ dst));
-			C = (src2 < src);
-			if (dstreg)
-				R[dstspec] = dst;
-			else PWriteW(dst, last_pa);
-			break;
+        case 016:                                           /* SUB */
+            if (CPUT(IS_SDSD) && srcreg && !dstreg) {      /* R,not R */
+                src2 = ReadMW(GeteaW(dstspec));
+                src = R[srcspec];
+            }
+            else {
+                src = srcreg ? R[srcspec] : ReadW(GeteaW(srcspec));
+                src2 = dstreg ? R[dstspec] : ReadMW(GeteaW(dstspec));
+            }
+            dst = (src2 - src) & 0177777;
+            N = GET_SIGN_W(dst);
+            Z = GET_Z(dst);
+            V = GET_SIGN_W((src ^ src2) & (~src ^ dst));
+            C = (src2 < src);
+            if (dstreg)
+                R[dstspec] = dst;
+            else PWriteW(dst, last_pa);
+            break;
 
-			/* Opcode 17: floating point */
+            /* Opcode 17: floating point */
 
-		case 017:
-			if (CPUO(OPT_FPP))
-				fp11(IR);                  /* call fpp */
-			else setTRAP(TRAP_ILL);
-			break;                                          /* end case 017 */
-		}                                               /* end switch op */
+        case 017:
+            if (CPUO(OPT_FPP))
+                fp11(IR);                  /* call fpp */
+            else setTRAP(TRAP_ILL);
+            break;                                          /* end case 017 */
+        }                                               /* end switch op */
 
 #ifdef USE_REALCONS
-	// assume tmp var "dst" is holding ALU output (SHIFTER on 11/70)
-		realcons_ALU_result = dst;
+        // assume tmp var "dst" is holding the data path shifter output
+        // It is used on PDP-11/70 for DATA PATH knob position.
+        // Other PDP-11's may show different signals, or implement "shifter" in another way.
+        // The shifter usage on 11/70 is implemneted ad hoc, so the knwon "idle aptterns" appear right
+        // Tested for RSX11M, 2.11BSD, IAS
+        {
+            unsigned ir15_06 = IR & 0177700; // mask bits 15:6
+            unsigned ir15_09 = IR & 0177000; // mask bits 15:9
+            unsigned ir15_12 = IR & 0170000; // mask bits 15:9
+            if (   ir15_09 == 0072000 // ASH
+                || ir15_09 == 0073000 // ASHC
+                || ir15_06 == 0063000 // ASL
+                || ir15_06 == 0163000 // ASLB
+                || ir15_06 == 0062000 // ASR
+                || ir15_06 == 0162000 // ASRB
+                || ir15_12 == 0010000 // MOV
+                || ir15_12 == 0110000 // MOVB
+                )
+            realcons_DATAPATH_shifter = dst;
+        }
+
 		// fetch CPU state after opcode processing.
 		realcons_IR = IR; // copy: IR only local var
 		realcons_PSW = get_PSW(); // copy: PSW not atomic
@@ -3252,7 +3271,7 @@ t_stat cpu_reset(DEVICE *dptr)
 	// initialize realcons cpu state extension here
 	realcons_bus_ID_mode = 0;
 	realcons_console_address_register = 0;
-	realcons_ALU_result = 0;
+	realcons_DATAPATH_shifter = 0;
 	realcons_IR = 0;
 	realcons_PSW = 0;
 #endif

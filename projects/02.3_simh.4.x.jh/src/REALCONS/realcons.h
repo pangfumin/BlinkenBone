@@ -82,7 +82,7 @@ typedef int(*console_controller_test_func_t)(void *console_controller, int arg);
 
 // get a signal value, if connected
 // requieres realcons_console_logic_xxx_t *_this in context
-// Example: REALCONS_SIGNAL_GET(cpu_realcons, signals_cpu_pdp11.ALU_result)
+// Example: REALCONS_SIGNAL_GET(cpu_realcons, signals_cpu_pdp11.DATAPATH_shifter)
 #define REALCONS_SIGNAL_GET(console_logic,signal) \
 	( (console_logic)->signal? 	*(console_logic)->signal:0)
 #define REALCONS_SIGNAL_SET(console_logic,signal,value)	do {	\

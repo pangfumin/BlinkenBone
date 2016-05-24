@@ -204,7 +204,7 @@ void realcons_console_pdp11_20__event_opcode_any(realcons_console_logic_pdp11_20
     // SIGNAL_SET(cpu_is_running, 1);
     // after any opcode: ADDR shows PC, DATA shows IR = opcode
     SIGNAL_SET(cpusignal_memory_address_register, SIGNAL_GET(cpusignal_PC));
-    _this->DATA_reg = SIGNAL_GET(cpusignal_ALU_result); // show internal data
+    _this->DATA_reg = SIGNAL_GET(cpusignal_DATAPATH_shifter); // show internal data
 
     // opcode fetch: ALU_output already set
     SIGNAL_SET(cpusignal_memory_data_register, SIGNAL_GET(cpusignal_instruction_register));
@@ -273,7 +273,7 @@ void realcons_console_pdp11_20__event_operator_halt(realcons_console_logic_pdp11
 
 //	SIGNAL_SET(cpusignal_console_halt, 1);
 //    SIGNAL_SET(cpusignal_memory_address_register, SIGNAL_GET(cpusignal_PC));
-    // SIGNAL_SET(cpusignal_ALU_result, SIGNAL_GET(cpusignal_PSW));
+    // SIGNAL_SET(cpusignal_DATAPATH_shifter, SIGNAL_GET(cpusignal_PSW));
     _this->run_state = RUN_STATE_HALT;
 }
 
@@ -283,7 +283,7 @@ void realcons_console_pdp11_20__event_step_halt(realcons_console_logic_pdp11_20_
         printf("realcons_console_pdp11_20__event_step_halt\n");
 //	SIGNAL_SET(cpusignal_console_halt, 1);
     SIGNAL_SET(cpusignal_memory_address_register, SIGNAL_GET(cpusignal_PC)-2);
-    // SIGNAL_SET(cpusignal_ALU_result, SIGNAL_GET(cpusignal_PSW));
+    // SIGNAL_SET(cpusignal_DATAPATH_shifter, SIGNAL_GET(cpusignal_PSW));
     _this->run_state = RUN_STATE_HALT;
 }
 
@@ -368,7 +368,7 @@ void realcons_console_pdp11_20_interface_connect(realcons_console_logic_pdp11_20
         extern int32 SR; // switch register, global in pdp11_cpu_mod.c
         extern int32 sim_is_running; // global in scp.c
         //extern t_addr realcons_console_address_register; // set by LOAD ADDR
-        extern t_value realcons_ALU_result; // output of ALU 
+        extern t_value realcons_DATAPATH_shifter; // output of ALU 
         extern t_value realcons_IR; // buffer for instruction register (opcode)
         extern t_value realcons_PSW; // buffer for program status word
 
@@ -385,7 +385,7 @@ void realcons_console_pdp11_20_interface_connect(realcons_console_logic_pdp11_20
         // may cpu stops, but some device are still serviced?
         _this->cpusignal_run = &(sim_is_running);
 
-        _this->cpusignal_ALU_result = &realcons_ALU_result; // not used 
+        _this->cpusignal_DATAPATH_shifter = &realcons_DATAPATH_shifter; // not used 
         //_this->cpusignal_console_address_register = &realcons_console_address_register; // not used
         _this->cpusignal_PC = &(R[7]); // or "saved_PC" ???
 
@@ -447,7 +447,7 @@ t_stat realcons_console_pdp11_20_reset(realcons_console_logic_pdp11_20_t *_this)
 {
     _this->realcons->simh_cmd_buffer[0] = '\0';
     //SIGNAL_SET(cpusignal_console_address_register, 0);
-    SIGNAL_SET(cpusignal_ALU_result, 0); // else DATA trash is shown before first EXAM
+    SIGNAL_SET(cpusignal_DATAPATH_shifter, 0); // else DATA trash is shown before first EXAM
     _this->autoinc_addr_action_switch = NULL; // not active
     _this->DATA_reg = 0 ;
 
@@ -607,7 +607,7 @@ t_stat realcons_console_pdp11_20_service(realcons_console_logic_pdp11_20_t *_thi
         if (action_switch == _this->switch_LOAD_ADDR) {
             SIGNAL_SET(cpusignal_memory_address_register, // BAR
                     (realcons_machine_word_t ) encode_SR_addr_16_to_22(encode_SR_18_to_16((t_value)_this->switch_SR->value)));
-            SIGNAL_SET(cpusignal_ALU_result, 0); // 11/40 videos show: DATA is cleared
+            SIGNAL_SET(cpusignal_DATAPATH_shifter, 0); // 11/40 videos show: DATA is cleared
 
             if (_this->realcons->debug)
                 printf("LOADADR %o\n", SIGNAL_GET(cpusignal_memory_address_register));

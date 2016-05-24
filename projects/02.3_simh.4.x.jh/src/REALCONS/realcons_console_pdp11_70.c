@@ -303,7 +303,7 @@ void realcons_console_pdp11_70__event_operator_halt(realcons_console_logic_pdp11
         printf("realcons_console_pdp11_70__event_operator_halt\n");
 //	SIGNAL_SET(cpusignal_console_halt, 1);
     SIGNAL_SET(cpusignal_memory_address_register, SIGNAL_GET(cpusignal_PC));
-    // SIGNAL_SET(cpusignal_ALU_result, SIGNAL_GET(cpusignal_PSW));
+    // SIGNAL_SET(cpusignal_DATAPATH_shifter, SIGNAL_GET(cpusignal_PSW));
     _this->led_MASTER->value = 1; // processor fetches, is unibus master
     _this->led_PAUSE->value = 0; // see 1.3.4
     _this->run_state = RUN_STATE_HALT;
@@ -315,7 +315,7 @@ void realcons_console_pdp11_70__event_step_halt(realcons_console_logic_pdp11_70_
         printf("realcons_console_pdp11_70__event_step_halt\n");
 //	SIGNAL_SET(cpusignal_console_halt, 1);
     SIGNAL_SET(cpusignal_memory_address_register, SIGNAL_GET(cpusignal_PC));
-    // SIGNAL_SET(cpusignal_ALU_result, SIGNAL_GET(cpusignal_PSW));
+    // SIGNAL_SET(cpusignal_DATAPATH_shifter, SIGNAL_GET(cpusignal_PSW));
     _this->led_MASTER->value = 0; // sure ?
     _this->led_PAUSE->value = 0; // see 1.3.4
     _this->run_state = RUN_STATE_HALT;
@@ -341,7 +341,7 @@ void realcons_console_pdp11_70__event_operator_exam_deposit(
         SIGNAL_SET(cpusignal_console_address_register,
                 SIGNAL_GET(cpusignal_memory_address_register));
     }
-    SIGNAL_SET(cpusignal_ALU_result, SIGNAL_GET(cpusignal_memory_data_register));
+    SIGNAL_SET(cpusignal_DATAPATH_shifter, SIGNAL_GET(cpusignal_memory_data_register));
     _this->led_MASTER->value = 0; // sure ?
     _this->led_PAUSE->value = 0; // see 1.3.4
 }
@@ -414,7 +414,7 @@ void realcons_console_pdp11_70_interface_connect(realcons_console_logic_pdp11_70
         extern int32 sim_is_running; // global in scp.c
         extern int realcons_bus_ID_mode; // 1 = DATA space access, 0 = instruction space access
         extern t_addr realcons_console_address_register; // set by LOAD ADDR
-        extern t_value realcons_ALU_result; // output of ALU
+        extern t_value realcons_DATAPATH_shifter; // output of ALU
         extern t_value realcons_IR; // buffer for instruction register (opcode)
         extern t_value realcons_PSW; // buffer for program status word
 
@@ -431,7 +431,7 @@ void realcons_console_pdp11_70_interface_connect(realcons_console_logic_pdp11_70
         // may cpu stops, but some device are still serviced?
         _this->cpusignal_run = &(sim_is_running);
 
-        _this->cpusignal_ALU_result = &realcons_ALU_result; // not used
+        _this->cpusignal_DATAPATH_shifter = &realcons_DATAPATH_shifter; // not used
         _this->cpusignal_console_address_register = &realcons_console_address_register;
         _this->cpusignal_PC = &(R[7]); // or "saved_PC" ???
         // 11/70 has a bus register BR: is this the bus data register???
@@ -500,7 +500,7 @@ t_stat realcons_console_pdp11_70_reset(realcons_console_logic_pdp11_70_t *_this)
 {
     _this->realcons->simh_cmd_buffer[0] = '\0';
     SIGNAL_SET(cpusignal_console_address_register, 0);
-    SIGNAL_SET(cpusignal_ALU_result, 0); // else DATA trash is shown before first EXAM
+    SIGNAL_SET(cpusignal_DATAPATH_shifter, 0); // else DATA trash is shown before first EXAM
     _this->autoinc_addr_action_switch = NULL; // not active
 
     /*
@@ -741,7 +741,7 @@ t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_thi
             SIGNAL_SET(cpusignal_memory_address_register,
                     (realcons_machine_word_t ) (_this->switch_SR->value & 0x3fffff)); // 22 bit
             // _this->DMUX = _this->R_ADRSC; // for display on DATA, DEC docs
-            SIGNAL_SET(cpusignal_ALU_result, 0); // 11/40 videos show: DATA is cleared
+            SIGNAL_SET(cpusignal_DATAPATH_shifter, 0); // 11/40 videos show: DATA is cleared
             // 11/70 ?
 
             if (_this->realcons->debug)
@@ -878,7 +878,7 @@ t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_thi
             break;
         case DATA_SELECT_VALUE_DATA_PATH:
             // "SHIFTER" (EXAM/DEPOSIT)
-            _this->leds_DATA->value = SIGNAL_GET(cpusignal_ALU_result);
+            _this->leds_DATA->value = SIGNAL_GET(cpusignal_DATAPATH_shifter);
             break;
         case DATA_SELECT_VALUE_BUS_REG:
             _this->leds_DATA->value = SIGNAL_GET(cpusignal_memory_data_register);

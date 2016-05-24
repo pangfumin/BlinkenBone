@@ -1,0 +1,42 @@
+
+
+;  Test program for IAS idle pattern loop ...
+;  (C) 2016 by anonymous
+
+	.ENABL AMA
+	.asect
+
+	.=100		;clock vector
+	.word	3000	;interrupt routine is at 3000
+	.word	300	;new PSW
+
+	.=1000
+stack:
+	.=2000
+
+	mov	#stack,sp	;init stack ptr
+	mov	#100,@#177546	;enable clock interrupts
+
+1$:	tst	3020		;prescaler test
+	bne	3$		;if not, skip rotation
+	mov	#4,3020 	;if so, get ready for 4 more skips
+	mov	3022,r0 	;load pattern into r0
+	clc			;clear carry
+	bmi	2$		;if it was set, skip setting it
+	sec			;set carry
+2$:	rol	r0		;rotate the pattern
+	mov	r0,3022 	;save patterm
+3$:	mov	3022,r0 	;move it back to r0 to display it
+	dec	3020		;count its passage.
+	wait			;wait for the clock to tick
+	br	1$		;ad do it all over again
+
+	.=3000			;interrupt routine
+	mov	#100,@#177546	;reenable interrupts
+	rti			;and return
+
+	.=3020			;pattern and passcount stored here.
+	.word	0
+	.word	0
+
+	.end

@@ -1,0 +1,41 @@
+       1
+       2                                ;  Test program for IAS idle pattern loop ...
+       3                                ;  (C) 2016 by anonymous
+       4                                	.ENABL AMA
+       5                                	.asect
+       6
+       7 000100                         	.=100		;clock vector
+       8 000100 003000                  	.word	3000	;interrupt routine is at 3000
+       9 000102 000300                  	.word	300	;new PSW
+      10
+      11 001000                         	.=1000
+      12                                stack:
+      13 002000                         	.=2000
+      14
+      15 002000 012706  001000          	mov	#stack,sp	;init stack ptr
+      16 002004 012737  000100  177546  	mov	#100,@#177546	;enable clock interrupts
+      17
+      18 002012 005737  003020          1$:	tst	3020		;prescaler test
+      19 002016 001013                  	bne	3$		;if not, skip rotation
+      20 002020 012737  000004  003020  	mov	#4,3020 	;if so, get ready for 4 more skips
+      21 002026 013700  003022          	mov	3022,r0 	;load pattern into r0
+      22 002032 000241                  	clc			;clear carry
+      23 002034 100401                  	bmi	2$		;if it was set, skip setting it
+      24 002036 000261                  	sec			;set carry
+      25 002040 006100                  2$:	rol	r0		;rotate the pattern
+      26 002042 010037  003022          	mov	r0,3022 	;save patterm
+      27 002046 013700  003022          3$:	mov	3022,r0 	;move it back to r0 to display it
+      28 002052 005337  003020          	dec	3020		;count its passage.
+      29 002056 000001                  	wait			;wait for the clock to tick
+      30 002060 000754                  	br	1$		;ad do it all over again
+      31
+      32 003000                         	.=3000			;interrupt routine
+      33 003000 012737  000100  177546  	mov	#100,@#177546	;reenable interrupts
+      34 003006 000002                  	rti			;and return
+      35
+      36 003020                         	.=3020			;pattern and passcount stored here.
+      37 003020 000000                  	.word	0
+      38 003022 000000                  	.word	0
+      39
+      40                                	.end
+      40

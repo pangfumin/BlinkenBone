@@ -1,0 +1,41 @@
+       1                                
+       2                                
+       3                                ;  Here's the source I used to make the above
+       4                                	.ENABL AMA
+       5                                	.asect
+       6                                
+       7  0040h                         	.=100		;clock vector
+       8  0040h  0600h                  	.word	3000	;interrupt routine is at 3000
+       9  0042h  00C0h                  	.word	300	;new PSW
+      10                                
+      11  0200h                         	.=1000
+      12                                stack:
+      13  0400h                         	.=2000
+      14                                
+      15  0400h  15C6h   0200h          	mov	#stack,sp	;init stack ptr
+      16  0404h  15DFh   0040h   FF66h  	mov	#100,@#177546	;enable clock interrupts
+      17                                
+      18  040Ah  0BDFh   0610h          1$:	tst	3020		;prescaler test
+      19  040Eh  020Bh                  	bne	3$		;if not, skip rotation
+      20  0410h  15DFh   0004h   0610h  	mov	#4,3020 	;if so, get ready for 4 more skips
+      21  0416h  17C0h   0612h          	mov	3022,r0 	;load pattern into r0
+      22  041Ah  00A1h                  	clc			;clear carry
+      23  041Ch  8101h                  	bmi	2$		;if it was set, skip setting it
+      24  041Eh  00B1h                  	sec			;set carry
+      25  0420h  0C40h                  2$:	rol	r0		;rotate the pattern
+      26  0422h  101Fh   0612h          	mov	r0,3022 	;save patterm
+      27  0426h  17C0h   0612h          3$:	mov	3022,r0 	;move it back to r0 to display it
+      28  042Ah  0ADFh   0610h          	dec	3020		;count its passage.
+      29  042Eh  0001h                  	wait			;wait for the clock to tick
+      30  0430h  01ECh                  	br	1$		;ad do it all over again
+      31                                
+      32  0600h                         	.=3000			;interrupt routine
+      33  0600h  15DFh   0040h   FF66h  	mov	#100,@#177546	;reenable interrupts
+      34  0606h  0002h                  	rti			;and return
+      35                                
+      36  0610h                         	.=3020			;pattern and passcount stored here.
+      37  0610h  0000h                  	.word	0
+      38  0612h  0000h                  	.word	0
+      39                                
+      40                                	.end
+      40                                

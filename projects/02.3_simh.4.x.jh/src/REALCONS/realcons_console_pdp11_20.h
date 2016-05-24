@@ -59,7 +59,7 @@ typedef struct
 	/* Signals for SimH's PDP11 cpu. */
 		t_addr *cpusignal_console_address_register; // set by LOAD ADDR, on all PDP11's
 
-		t_value *cpusignal_ALU_result; // processor internal ALU output
+		t_value *cpusignal_DATAPATH_shifter; // value of shifter in PDP-11 processor data paths
 	//	t_value *bus_register; // 11/70: BR - DATA of UNIBUS access
 		int 	*cpusignal_bus_ID_mode ; // ID mode of last bus access. 1 = DATA space access, 0 = instruction space access
 		unsigned *cpusignal_cpu_mode; // cpu run mode. which memory mode to display? REALCONS_CPU_PDP11_MEMMODE_*, MD_SUP,MD_KER,MD_USR,MD_UND

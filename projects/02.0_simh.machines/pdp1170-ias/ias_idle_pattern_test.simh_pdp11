@@ -1,0 +1,63 @@
+
+set console log=./console.log
+set cpu 11/70, 4M
+
+; under SimH 4, "throttling" results in a disturbed "idle pattern"
+;set throttle 1m
+;set cpu idle
+set nothrottle
+set noidle
+
+
+
+; connect to real panel
+set realcons host=bigfoot
+set realcons host=localhost
+; set realcons panel=11/70
+; We're running on a desktop PC with connection to localhost: max speed!
+set realcons interval=1
+set realcons connected
+;set realcons debug
+show realcons
+
+; init stack pointer
+dep sp 1000
+
+dep ipl 0
+dep 100 3000
+dep 102 300
+
+dep 002000 012706
+dep 002002 001000
+dep 002004 012737
+dep 002006 000100
+dep 002010 177546
+
+dep 002012 005737
+dep 002014 003020
+dep 002016 001013
+dep 002020 012737
+dep 002022 000004
+dep 002024 003020
+dep 002026 013700
+dep 002030 003022
+dep 002032 000241
+dep 002034 100401
+dep 002036 000261
+dep 002040 006100
+dep 002042 010037
+dep 002044 003022
+dep 002046 013700
+dep 002050 003022
+dep 002052 005337
+dep 002054 003020
+dep 002056 000001
+dep 002060 000754
+
+dep 003000 012737
+dep 003002 000100
+dep 003004 177546
+dep 003006 000002
+
+
+; run 2000

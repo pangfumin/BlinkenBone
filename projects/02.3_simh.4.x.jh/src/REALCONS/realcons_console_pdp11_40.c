@@ -332,7 +332,7 @@ void realcons_console_pdp11_40_interface_connect(realcons_console_logic_pdp11_40
 		extern int32 sim_is_running; // global in scp.c
 		extern int 	realcons_bus_ID_mode; // 1 = DATA space access, 0 = instruction space access
 		extern t_addr realcons_console_address_register; // set by LOAD ADDR
-		extern t_value realcons_ALU_result; // output of ALU
+		extern t_value realcons_DATAPATH_shifter; // output of ALU
 		extern t_value realcons_IR; // buffer for instruction register (opcode)
 		extern t_value realcons_PSW; // buffer for program status word
 
@@ -349,7 +349,7 @@ void realcons_console_pdp11_40_interface_connect(realcons_console_logic_pdp11_40
 	// may cpu stops, but some device are still serviced?
 		_this->cpusignal_run = &(sim_is_running);
 
-		_this->cpusignal_ALU_result = &realcons_ALU_result; // not used
+		_this->cpusignal_DATAPATH_shifter = &realcons_DATAPATH_shifter; // not used
 		_this->cpusignal_console_address_register = &realcons_console_address_register;
 		_this->cpusignal_PC = &(R[7]); // or "saved_PC" ???
 		// 11/70 has a bus register BR: is this the bus data register???
