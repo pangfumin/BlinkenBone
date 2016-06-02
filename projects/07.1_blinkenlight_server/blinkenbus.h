@@ -51,6 +51,13 @@ extern int blinkenbus_fd; // file descriptor for interface to driver
 typedef unsigned char blinkenbus_map_t[BLINKENBUS_MAX_REGISTER_ADDR + 1];
 
 void blinkenbus_init(void);
+
+unsigned char blinkenbus_register_read(unsigned board_addr, unsigned reg_addr) ;
+void blinkenbus_register_write(unsigned board_addr, unsigned reg_addr, unsigned char regval) ;
+
+unsigned char blinkenbus_board_control_read(unsigned board_addr) ;
+void blinkenbus_board_control_write(unsigned board_addr, unsigned char regval) ;
+
 void blinkenbus_outputcontrol_to_cache(unsigned char *blinkenbus_cache, blinkenlight_control_t *c,
         uint64_t value);
 void blinkenbus_control_from_cache(unsigned char *blinkenbus_cache, blinkenlight_control_t *c) ;

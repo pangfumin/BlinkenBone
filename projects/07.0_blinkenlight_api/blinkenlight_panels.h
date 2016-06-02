@@ -20,6 +20,7 @@
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+ 25-May-2016  JH      added mux_code to register_wiring (control slice)
  22-Mar-2016  JH      allow non-BlinkenBoard hardware registers
  23-Feb-2016  JH      coding of const dummy input controls defined
  02-Feb-2012  JH      created
@@ -100,7 +101,6 @@ typedef enum blinkenlight_register_space_enum blinkenlight_register_space_t;
 char *blinkenlight_register_space_t_text(blinkenlight_register_space_t x);
 
 #ifdef BLINKENLIGHT_SERVER
-//#if defined(BLINKENLIGHT_SERVER)
 // Mapping between wires connected to BLINKENBUS registers
 //	and bits for the value of a control.
 // BlinkenBus has 512 input/output registers, each with 8 bit width
@@ -111,6 +111,11 @@ char *blinkenlight_register_space_t_text(blinkenlight_register_space_t x);
 //
 // If other hardware is used (PiDP), hardware registers are not grouped by
 //  "boards", and width of a register may be up to 32 sizeof(unsigned)
+//
+// If the panel lamps/switches are arranged in a multiplexing matrix (PDP-15)
+// additional a "mux_code" must be defined.
+// A control can consist of several slices (each a "wiring") accessed
+// over different multiplexing rows.
 typedef struct blinkenlight_control_blinkenbus_register_wiring_struct
 {
 	unsigned index; // index of this record in parent list
@@ -124,6 +129,10 @@ typedef struct blinkenlight_control_blinkenbus_register_wiring_struct
 	unsigned char blinkenbus_msb;// highest bit no of blinkenbus register
 	int blinkenbus_levels_active_low;// 1, if bit levels are LOW active (key word "LEVELS = ACTIVE_HIGH | ACTIVE_LOW)
 
+    //// if the panel has several rows selected by a multiplexer port:
+    // value to access this "wiring". No generic function, must be interpreted by actual server application.
+	unsigned   mux_code ;
+
 	/////  these members are calculated:
 	int blinkenbus_reversed;// 1, if bits between lsb and msb are to be reversed
 	// then highest bit in blinkenbus is lowest bit in value,
@@ -133,7 +142,9 @@ typedef struct blinkenlight_control_blinkenbus_register_wiring_struct
 	unsigned blinkenbus_bitmask;// mask with bitmask_len bits from blinkenbus register
 	// if in blinkenbus_bitmask <n> bits are set,
 	// this struct defines the value bits <offset>:<offset+n-1>
-}blinkenlight_control_blinkenbus_register_wiring_t;
+
+
+} blinkenlight_control_blinkenbus_register_wiring_t;
 
 typedef enum blinkenlight_control_value_encoding_enum
 {

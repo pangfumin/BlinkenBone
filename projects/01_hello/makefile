@@ -51,11 +51,14 @@ OBJECTS = $(SOURCES.c:%.c=%.o)
 
 
 clean:
-	rm -f a.out core $(OBJDIR)/*.lst $(OBJDIR)/hello $(OBJECTS)
+	rm -f a.out core $(OBJDIR)/*.lst hello $(OBJDIR)/hello $(OBJECTS)
 
 all: hello
 
 hello:	$(SOURCES.c) $(SOURCES.h)
 	${CC} $^ -o $@ $(CCDEFS) ${LDFLAGS}
+	pwd
 	# move to architecture out dir and check .. was it x86 or ARM or waht?
-	mkdir -p $(OBJDIR) ; mv $@ $(OBJDIR) ; file $(OBJDIR)/$@
+	mkdir -p $(OBJDIR)
+	mv $@ $(OBJDIR)
+	file $(OBJDIR)/$@

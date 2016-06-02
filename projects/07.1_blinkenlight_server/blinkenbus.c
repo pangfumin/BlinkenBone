@@ -20,10 +20,19 @@
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-  1-Apr-2016    JH      clean interface to blinkenbus over cache pages
+ 1-Apr-2016    JH      clean interface to blinkenbus over cache pages
  23-Feb-2016    JH      added PANEL_MODE_POWERLESS
-                         logic for input controls with constant value
+ logic for input controls with constant value
  17-Feb-2012    JH      created
+
+ Multiplexing:
+ If a panel (PDP-15) uses multiplexing, than the register_wiring struct defines a
+ mux code for each control slice.
+ A single cache is used to access the BlinkenBus I/O space.
+ For full MUX functionality a cache for every MUX code should be used.
+ Current limitation:
+ a control value is completely assembled from the same cache
+ and can not span several MUX rows.
  */
 #ifndef WIN32
 
@@ -115,9 +124,8 @@ void blinkenbus_map_dump(unsigned char *map, char *info)
 /*
  * read value of board control register
  */
-static unsigned char board_control_read(unsigned board_addr)
+unsigned char blinkenbus_register_read(unsigned board_addr, unsigned reg_addr)
 {
-    unsigned regaddr;
     int ret_val;
     int bytes_read;
     unsigned char regval;
@@ -125,24 +133,26 @@ static unsigned char board_control_read(unsigned board_addr)
     assert(board_addr >= 0);
     assert(board_addr <= BLINKENBUS_MAX_BOARD_ADDR);
 
-    regaddr = BLINKENBUS_ADDRESS_CONTROL(board_addr);
+    print(LOG_DEBUG, "blinkenbus_register_read() - reading board %d register 0x%x\n", board_addr,
+            reg_addr);
 
-    print(LOG_DEBUG, "board_control_read() - reading board %d control registers at 0x%x\n",
-            board_addr, regaddr);
+    // transform to linear addr
+    reg_addr = BLINKENBUS_ADDRESS_IO(board_addr, reg_addr);
+
 #ifdef	DEBUG_BLINKENBUSFILE_LOCAL
-    print(LOG_DEBUG, "  lseek(0x%x, SEEK_SET\n", (int) regaddr);
+    print(LOG_DEBUG, "  lseek(0x%x, SEEK_SET\n", (int) reg_addr);
     regval = 0x30; //
     print(LOG_DEBUG, "  read() %d bytes: 0x%x\n", 1, regval);
 
 #else
-    ret_val = lseek(blinkenbus_fd, regaddr, SEEK_SET);
+    ret_val = lseek(blinkenbus_fd, reg_addr, SEEK_SET);
     if (ret_val < 0) {
-        print(LOG_ERR, "board_control_read() - lseek() failed!\n");
+        print(LOG_ERR, "blinkenbus_register_read() - lseek() failed!\n");
         exit(1);
     }
     bytes_read = read(blinkenbus_fd, &regval, sizeof(regval));
-    if (bytes_read != sizeof(regval)) {
-        print(LOG_ERR, "board_control_read() - read() failed\n");
+    if (bytes_read != 1) {
+        print(LOG_ERR, "blinkenbus_register_read() - read() failed\n");
         print(LOG_ERR, "  bytes to read: %d, actual read: %d, errno %d = %s!\n", sizeof(regval),
                 bytes_read, errno, errno2txt(errno));
         exit(1);
@@ -152,36 +162,36 @@ static unsigned char board_control_read(unsigned board_addr)
 }
 
 /*
- * write the board control register
+ * write a board register
  */
-static void board_control_write(unsigned board_addr, unsigned char regval)
+void blinkenbus_register_write(unsigned board_addr, unsigned reg_addr, unsigned char regval)
 {
-    unsigned regaddr;
     int ret_val;
     int bytes_written;
 
     assert(board_addr >= 0);
     assert(board_addr <= BLINKENBUS_MAX_BOARD_ADDR);
 
-    regaddr = BLINKENBUS_ADDRESS_CONTROL(board_addr);
+    print(LOG_DEBUG, "blinkenbus_register_write() -  writing board %u, register 0x%x\n", board_addr,
+            reg_addr);
 
-    print(LOG_DEBUG, "board_control_write() -  writing board %d control registers at 0x%x\n",
-            board_addr, regaddr);
+    // transform to linear addr
+    reg_addr = BLINKENBUS_ADDRESS_IO(board_addr, reg_addr);
 #ifdef DEBUG_BLINKENBUSFILE_LOCAL
-    print(LOG_DEBUG, "  lseek(0x%x, SEEK_SET\n", (int) regaddr);
+    print(LOG_DEBUG, "  lseek(0x%x, SEEK_SET\n", (int) reg_addr);
     bytes_written = 1;
     print(LOG_DEBUG, "  write() %d bytes: 0x%x\n", bytes_written, regval);
 #else
 
-    ret_val = lseek(blinkenbus_fd, regaddr, SEEK_SET);
+    ret_val = lseek(blinkenbus_fd, reg_addr, SEEK_SET);
     if (ret_val < 0) {
-        print(LOG_ERR, "board_control_write() - lseek() failed!\n");
+        print(LOG_ERR, "blinkenbus_register_write() - lseek() failed!\n");
         exit(1);
     }
     bytes_written = write(blinkenbus_fd, &regval, sizeof(regval));
 #endif
-    if (bytes_written != sizeof(regval)) {
-        print(LOG_ERR, "board_control_write() - read() failed\n");
+    if (bytes_written != 1) {
+        print(LOG_ERR, "blinkenbus_register_write() - write() failed\n");
         print(LOG_ERR, "  bytes to write: %d, bytes written: %d, errno %d = %s!\n", sizeof(regval),
                 bytes_written, errno, errno2txt(errno));
         exit(1);
@@ -189,9 +199,28 @@ static void board_control_write(unsigned board_addr, unsigned char regval)
 }
 
 /*
+ * read value of board control register
+ */
+unsigned char blinkenbus_board_control_read(unsigned board_addr)
+{
+    unsigned regaddr = 0xf;
+    return blinkenbus_register_read(board_addr, regaddr);
+}
+
+/*
+ * write the board control register
+ */
+void blinkenbus_board_control_write(unsigned board_addr, unsigned char regval)
+{
+    unsigned regaddr = 0xf;
+    blinkenbus_register_write(board_addr, regaddr, regval);
+}
+
+/*
  * write control value to register bits into cached blinkenbus address range
- * if "clear": write all value bits as 0
- * if "as_mask": write all value bits as 1
+ *
+ * Limitation: control MUST NOT span mutiple mux rows, else multiple caches
+ *  would be required.
  */
 void blinkenbus_outputcontrol_to_cache(unsigned char *blinkenbus_cache, blinkenlight_control_t *c,
         uint64_t value)
@@ -200,7 +229,7 @@ void blinkenbus_outputcontrol_to_cache(unsigned char *blinkenbus_cache, blinkenl
     blinkenlight_control_blinkenbus_register_wiring_t *bbrw;
 
     if (c->mirrored_bit_order)
-            value = mirror_bits(value, c->value_bitlen);
+        value = mirror_bits(value, c->value_bitlen);
 
     for (i_register_wiring = 0; i_register_wiring < c->blinkenbus_register_wiring_count;
             i_register_wiring++) {
@@ -225,6 +254,10 @@ void blinkenbus_outputcontrol_to_cache(unsigned char *blinkenbus_cache, blinkenl
 /*
  * read control value from register bits from cached blinkenbus address range
  * set also "value_previous"
+ *
+ * Limitation: control MUST NOT span mutiple mux rows, else multiple caches
+ *   would be required.
+ *
  */
 void blinkenbus_control_from_cache(unsigned char *blinkenbus_cache, blinkenlight_control_t *c)
 {
@@ -266,6 +299,9 @@ void blinkenbus_control_from_cache(unsigned char *blinkenbus_cache, blinkenlight
  *
  * OBSOLETE, use blinkenbus_outputcontrol_to_cache()
  *  with panel mode logic by caller
+ *
+ * Limitation: control MUST NOT span mutiple mux rows, else multiple caches
+ *  would be required.
  */
 void blinkenbus_outputcontrols_to_cache(unsigned char *blinkenbus_cache, blinkenlight_panel_t *p)
 {
@@ -276,14 +312,14 @@ void blinkenbus_outputcontrols_to_cache(unsigned char *blinkenbus_cache, blinken
     for (i_control = 0; i_control < p->controls_count; i_control++) {
         c = &(p->controls[i_control]);
         if (!c->is_input) {
-            uint64_t value ;
+            uint64_t value;
             if (p->mode == RPC_PARAM_VALUE_PANEL_MODE_ALLTEST
                     || (p->mode == RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST && c->type == output_lamp))
                 value = 0xffffffffffffffff; // selftest:
             else if (p->mode == RPC_PARAM_VALUE_PANEL_MODE_POWERLESS && c->type == output_lamp)
                 value = 0; // all OFF
             else
-                value = c->value ;
+                value = c->value;
 
             blinkenbus_outputcontrol_to_cache(blinkenbus_cache, c, value);
             // "write as mask": all ones, if self test
@@ -292,7 +328,11 @@ void blinkenbus_outputcontrols_to_cache(unsigned char *blinkenbus_cache, blinken
 
 }
 
-/* set all panel inputcontrols from cache */
+/* set all panel inputcontrols from cache
+ *
+ *  Limitation: control MUST NOT span mutiple mux rows, else multiple caches
+ *  would be required.
+ * */
 void blinkenbus_inputcontrols_from_cache(unsigned char *blinkenbus_cache, blinkenlight_panel_t *p)
 {
     unsigned i_control;
@@ -409,7 +449,7 @@ void blinkenbus_cache_to_blinkenboards_outputs(unsigned char *blinkenbus_cache, 
 
 /*
  * read inputs for all panels from blinkenbus into cache
- * blinkenbus_map_used_input[] marks regsiters used by some panel controls
+ * blinkenbus_map_used_input[] marks registers used by some panel controls
  */
 void blinkenbus_cache_from_blinkenboards_inputs(unsigned char *blinkenbus_cache)
 {
@@ -546,7 +586,7 @@ int blinkenbus_get_blinkenboards_state(blinkenlight_panel_t *p)
 
     for (board_addr = 0; board_addr <= BLINKENBUS_MAX_BOARD_ADDR; board_addr++)
         if (blinkenbus_used_boards[board_addr]) {
-            unsigned char regval = board_control_read(board_addr);
+            unsigned char regval = blinkenbus_board_control_read(board_addr);
             if (regval == 0xff) // empty bus address
                 return RPC_PARAM_VALUE_PANEL_BLINKENBOARDS_STATE_OFF;
             if (regval & 0x01) // "disable bit" for this board is set
@@ -577,12 +617,12 @@ void blinkenbus_set_blinkenboards_state(blinkenlight_panel_t *p, int new_state)
             //enable/disable this board
             unsigned char regval;
             // disable reset bit in board control register
-            regval = board_control_read(board_addr);
+            regval = blinkenbus_board_control_read(board_addr);
             if (new_state == RPC_PARAM_VALUE_PANEL_BLINKENBOARDS_STATE_ACTIVE)
                 regval &= ~0x01; // clear "disable" bit
             else
                 regval |= 0x01; // all other: set "disable" bit
-            board_control_write(board_addr, regval);
+            blinkenbus_board_control_write(board_addr, regval);
         }
 }
 
@@ -651,9 +691,9 @@ void blinkenbus_init()
         if (blinkenbus_used_boards[board_addr]) {
             unsigned char regval;
             // disable reset bit in board control register
-            regval = board_control_read(board_addr);
+            regval = blinkenbus_board_control_read(board_addr);
             regval &= ~0x01; // clear disable bit
-            board_control_write(board_addr, regval);
+            blinkenbus_board_control_write(board_addr, regval);
         }
 
     // initialize all panel output controls with default values

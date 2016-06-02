@@ -532,7 +532,7 @@ static blinkenlight_control_t *define_switch_slice(blinkenlight_panel_t *p, char
     // shift and mask data are saved in the "register wiring" struct.
     bbrw = blinkenlight_add_register_wiring(c);
     bbrw->blinkenbus_board_address = 0; // simulate 1 board with unlimited registers
-    bbrw->board_register_address = gpio_switchstatus_index;
+    bbrw->board_register_address = gpio_switchstatus_index; // register here mux row
     bbrw->control_value_bit_offset = control_value_bit_offset;
     bbrw->blinkenbus_lsb = bit_offset;
     bbrw->blinkenbus_msb = bbrw->blinkenbus_lsb + bitlen - 1;
@@ -563,7 +563,7 @@ static blinkenlight_control_t *define_led_slice(blinkenlight_panel_t *p, char *n
     }
     bbrw = blinkenlight_add_register_wiring(c);
     bbrw->blinkenbus_board_address = 0; // simulate 1 board with unlimited registers
-    bbrw->board_register_address = gpio_ledstatus_index;
+    bbrw->board_register_address = gpio_ledstatus_index; // register here mux row
     bbrw->control_value_bit_offset = control_value_bit_offset;
     bbrw->blinkenbus_lsb = bit_offset;
     bbrw->blinkenbus_msb = bbrw->blinkenbus_lsb + bitlen - 1;

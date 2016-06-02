@@ -18,7 +18,7 @@ LDFLAGS = -pthread
 ifeq ($(MAKE_TARGET_ARCH),BEAGLEBONE)
 	#### !!! when cross compiling !!!!
 	# fuer beaglebone und angstrom stand alone toolchain
-	CC=arm-angstrom-linux-gnueabi-gcc  --version -mthumb -march=armv7-a -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) $(OS_CCDEFS) -I.
+	CC=arm-angstrom-linux-gnueabi-gcc -mthumb -march=armv7-a -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) $(OS_CCDEFS) -I.
 	OBJDIR=bin-beaglebone
 	SSHTARGET=root@beaglebone
 	LDFLAGS += -lrt

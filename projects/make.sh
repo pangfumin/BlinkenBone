@@ -43,7 +43,14 @@ echo ; echo "*** blinkenlight_server for x64"
 MAKE_TARGET_ARCH=X64 make $MAKEOPTIONS $MAKETARGETS
 )
 
+(
+# the Blinkenligt API server for BlinkenBoard PDP-15
+cd 07.3_blinkenlight_server_pdp15
+echo ; echo "*** blinkenlight_server for PDP-15"
+MAKE_TARGET_ARCH=BEAGLEBONE make $MAKEOPTIONS $MAKETARGETS
+)
 
+	
 (
 # the Blinkenligt API server for Oscar Vermeulen's PiDP8
 cd 11_pidp_server/pidp8

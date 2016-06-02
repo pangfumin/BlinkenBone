@@ -1,6 +1,6 @@
-/* main.c: Blinkenlight API server to run on "PiDP8" replica
+/* main.c: Blinkenlight API server for PDP-15 on BlinkenBoard
 
- Copyright (c) 2015-2016, Joerg Hoppe
+ Copyright (c) 2016, Joerg Hoppe
  j_hoppe@t-online.de, www.retrocmp.com
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,40 +21,24 @@
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
- 22-Mar-2016  JH    allow a control value to be distributed over several hw registers
- 15-Mar-2016  JH	V 1.3 Low-pass for SimH output, display patterns for brightness levels
- 09-Mar-2016  JH	V 1.2 inverted "Deposit" switch
- 06-Mar-2016  JH    renamed from "blinkenlightd" to "pidp8_blinkenlightd"
- 22-Feb-2016  JH	V 1.1 added panel modes LAMPTEST, POWERLESS
- 13-Nov-2015  JH    V 1.0 created
+ 18-May-2016  JH    V 1.0 created
 
 
- Blinkenlight API server, which controls lamps and switches
- on the Raspberry based "PiPDP8 replica from Oscar Vermeulen.
-
- Like the generic blinkenlightd,
- - PiDP8 controls are fix wired in, no config file
- - Hardware interface to Raspberry is original "gpio.c" from Oscar
-
- DEC names for switches and LEDs : see
- PDP-8 FAMILY SYSTEM USER'S GUIDE
- dec-08-ngcb-d-.pdf, pdf;  page INTRO-5, pdpf page 19
+ Blinkenlight API server, which controls lamps and switches of the PDP-15
+ panel connected to BlinkenBus/BlinkenBoard.
+ The generic configurable "07.1 blinkenlightd" server can not be used here, because
+ the PDP-15 panel accesses lamps and switches in a multiplexed manner.
 
 
  Timing & CPU load:
- There are 2 threads:
- a) the LED MUX loop, in gpio.c, long intervl
- b) the averaging loop in gpiopattern.c
- (and SimH is the 3rd process running)
-
- To fine trim cpu load, use web based "rCPU"
- https://github.com/davidsblog/rCPU
+ There is one  threads:
+ a) the LED & switch MUX loop, in gpio.c, long intervl
 
  */
 
 #define MAIN_C_
 
-#define VERSION	"v1.3.0"
+#define VERSION	"v1.0.0"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -79,7 +63,13 @@
 
 #include "main.h"
 #include "gpio.h"
-#include "gpiopattern.h"
+
+
+// all data structs work on this panel
+volatile blinkenlight_panel_t *pdp15_panel ;
+
+// "blinkenlight_panel_list" from blinkenlight_api_server_procs
+
 
 char program_info[1024];
 char program_name[1024]; // argv[0]
@@ -88,112 +78,87 @@ int opt_test = 0;
 int opt_background = 0;
 
 /*
- *	PiDP8 controls wich are accessible over Blinkenlight API
+ *	PDP-15 controls wich are accessible over Blinkenlight API
  */
-blinkenlight_control_t *control_raw_switchstatus[2];
-blinkenlight_control_t *control_raw_ledstatus[8];
 
-blinkenlight_control_t *switch_start;
-blinkenlight_control_t *switch_load_address;
-blinkenlight_control_t *switch_deposit;
-blinkenlight_control_t *switch_examine;
-blinkenlight_control_t *switch_continue;
-blinkenlight_control_t *switch_stop;
-blinkenlight_control_t *switch_single_step;
-blinkenlight_control_t *switch_single_instruction;
-blinkenlight_control_t *switch_switch_register;
-blinkenlight_control_t *switch_data_field;
-blinkenlight_control_t *switch_instruction_field;
+// *** Indicator Board ***
+// Comments: schematic indicator component number & name
+blinkenlight_control_t *lamp_dch_active ; // I1  "DCH ACTIVE"
+blinkenlight_control_t *lamps_api_states_active; // I2-I6,I8-I10 "PL00-07"
+blinkenlight_control_t *lamp_api_enable; // I11 "API ENABLE"
+blinkenlight_control_t *lamp_pi_active; // I12 "PI ACTIVE"
+blinkenlight_control_t *lamp_pi_enable ; // I13 "PI ENABLE"
+blinkenlight_control_t *lamp_mode_index ; // I14 "INDEX MODE"
+blinkenlight_control_t *lamp_major_state_fetch ; // I15 "FETCH"
+blinkenlight_control_t *lamp_major_state_inc ; // I16 "INC"
+blinkenlight_control_t *lamp_major_state_defer ; // I17 "DEFER"
+blinkenlight_control_t *lamp_major_state_eae ; // I18 "EAE"
+blinkenlight_control_t *lamp_major_state_exec ; // I19 "EXECUTE"
+blinkenlight_control_t *lamps_time_states ; // I20-I22 "TS1-TS3"
 
-blinkenlight_control_t *keyswitch_power; // dummy
-blinkenlight_control_t *keyswitch_panel_lock; // dummy
+blinkenlight_control_t *lamp_extd ; // I25 "EXTD"
+blinkenlight_control_t *lamp_clock ; // I26 "CLOCK"
+blinkenlight_control_t *lamp_error ; // I27 "ERROR"
+blinkenlight_control_t *lamp_prot ; // I28 "PRTCT"  "protect"
+blinkenlight_control_t *lamp_link ; // I7 "LINK"
+blinkenlight_control_t *lamp_register ; // I29-I46 "R00-R17"
 
-blinkenlight_control_t *led_program_counter;
-blinkenlight_control_t *led_inst_field;
-blinkenlight_control_t *led_data_field;
-blinkenlight_control_t *led_memory_address;
-blinkenlight_control_t *led_memory_buffer;
-blinkenlight_control_t *led_accumulator;
-blinkenlight_control_t *led_link;
-blinkenlight_control_t *led_multiplier_quotient;
-blinkenlight_control_t *led_and;
-blinkenlight_control_t *led_tad;
-blinkenlight_control_t *led_isz;
-blinkenlight_control_t *led_dca;
-blinkenlight_control_t *led_jms;
-blinkenlight_control_t *led_jmp;
-blinkenlight_control_t *led_iot;
-blinkenlight_control_t *led_opr;
-blinkenlight_control_t *led_fetch;
-blinkenlight_control_t *led_execute;
-blinkenlight_control_t *led_defer;
-blinkenlight_control_t *led_word_count;
-blinkenlight_control_t *led_current_address;
-blinkenlight_control_t *led_break;
-blinkenlight_control_t *led_ion;
-blinkenlight_control_t *led_pause;
-blinkenlight_control_t *led_run;
-blinkenlight_control_t *led_step_counter;
+blinkenlight_control_t *lamp_power ;  // I24 "POWER"
+blinkenlight_control_t *lamp_run ; // I23 "RUN"
+blinkenlight_control_t *lamps_instruction ; // I47-I50 "IR00-IR03"
+blinkenlight_control_t *lamp_instruction_defer ; // I51 "OP DEFER"
+blinkenlight_control_t *lamp_instruction_index ; // I52 "OP INDEX"
+blinkenlight_control_t *lamp_memory_buffer ; // I53-I70 "MB00..17"
+
+// *** Switch Board ***
+blinkenlight_control_t *switch_power; // dummy, always ON
+
+blinkenlight_control_t *switch_stop; // S1 "STOP"
+blinkenlight_control_t *switch_reset ; // S2 "RESET"
+blinkenlight_control_t *switch_read_in ; // S3 "READ IN"
+blinkenlight_control_t *switch_reg_group ; // S4 "REG GROUP"
+blinkenlight_control_t *switch_clock ; // S5 "CLK"
+blinkenlight_control_t *switch_bank_mode ; // S6 "BANK MODE"
+blinkenlight_control_t *switch_rept ; // S7 "REPT"
+blinkenlight_control_t *switch_prot ; // S8 "PROT"
+blinkenlight_control_t *switch_sing_time ; // S9 "SING TIME"
+blinkenlight_control_t *switch_sing_step ; // S10 "SING STEP"
+blinkenlight_control_t *switch_sing_inst ; // S11 "SING INST"
+blinkenlight_control_t *switch_address ;  // S12-S26  "ADSW03-17"
+
+blinkenlight_control_t *switch_start ; // S27 "START"
+blinkenlight_control_t *switch_exec ; // S28 "EXECUTE"
+blinkenlight_control_t *switch_cont ; // S29 "CONT"
+blinkenlight_control_t *switch_deposit_this ; // S30 "DEP THIS"
+blinkenlight_control_t *switch_examine_this ; // S32 "EXAMINE THIS"
+// S31 "DEP NEXT" & S33 "EXAMINE NEXT" is one signal, combines with EXAM/DEPOSIT THIS
+blinkenlight_control_t *switch_deposit_examine_next;
+blinkenlight_control_t *switch_data ;     // S34-S51 "DSW0-17"
+
+blinkenlight_control_t *switch_power; // S53
+blinkenlight_control_t *potentiometer_speed;
+
+blinkenlight_control_t *switch_register_select ;  // S52
+
 
 /*
  *	RPC server callbacks:
- *	here conversion between PiDP8 gpio and Blinkenlight API is done!
  */
 static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
 {
     // gets called when RPC client wants panel input control values
-    //- converts gpio switches to Blinkenlight API switch conrols (RPI->Blinkenlight API)
     unsigned i;
     for (i = 0; i < p->controls_count; i++) {
         blinkenlight_control_t *c = &p->controls[i];
         if (c->is_input) {
-            if (c == keyswitch_power)
-                c->value = 1; // send "power"" switch as ON
-            else if (c == keyswitch_panel_lock)
-                c->value = 0; // send "panel lock" switch as OFF
-            else {
-                // mount switch value from register bit fields
-                unsigned i_register_wiring;
-                blinkenlight_control_blinkenbus_register_wiring_t *bbrw;
-                c->value = 0;
-                for (i_register_wiring = 0; i_register_wiring < c->blinkenbus_register_wiring_count;
-                        i_register_wiring++) {
-                    uint32_t regvalbits; // value of current register
-                    // for all registers assigned whole or in part to control
-                    bbrw = &(c->blinkenbus_register_wiring[i_register_wiring]);
-
-                    regvalbits = gpio_switchstatus[bbrw->blinkenbus_register_address];
-                    if (bbrw->blinkenbus_levels_active_low) //  inputs "low active"
-                        regvalbits = ~regvalbits;
-                    regvalbits &= bbrw->blinkenbus_bitmask; // bits of value, unshiftet
-                    regvalbits >>= bbrw->blinkenbus_lsb;
-                    // OR in the bits of current register
-                    c->value |= (uint64_t) regvalbits << bbrw->control_value_bit_offset;
-                }
-                if (c->mirrored_bit_order)
-                    c->value = mirror_bits(c->value, c->value_bitlen);
-
-                // individual fixup/logic
-                // the deposit switch must be inverted, PiDP8 electronics doesn't handle this
-                if (c == switch_deposit)
-                    c->value = !c->value;
-            }
+            if (c == switch_power)
+                c->value = 1; // send "power" switch as ON
         }
     }
 }
 
 static void on_blinkenlight_api_panel_set_controlvalues(blinkenlight_panel_t *p, int force_all)
 {
-    // gets called when RPC client updated panel control values
-    // converts Blinkenlight API leds to gpio (Blinkenligt API -> RPI)
-
-    // the averaging thread needs to be informed about the panel
-    // THIS WORKS ONLY BECAUSE ONLY ONE PANEL is provided by this server!
-    // NO PANEL SWITCH ALLOWED!
-    gpiopattern_blinkenlight_panel = p;
-    // this also start the thread on first transmission, if gpiopattern_blinkenlight_panel gets != NULL
-
-    // gpiopattern_update_leds() ; // just forward to pattern generator
 }
 
 static int on_blinkenlight_api_panel_get_state(blinkenlight_panel_t *p)
@@ -236,19 +201,15 @@ static char *on_blinkenlight_api_get_info()
 /*
  * Start the parallel thread which operates the GPIO mux.
  */
-void *blink(void *ptr); // the real-time GPIO multiplexing process to start up
-void *gpiopattern_update_leds(void *ptr); // the averaging thread
+void *mux(void *ptr); // the real-time GPIO multiplexing process to start up
 
-pthread_t blink_thread;
-int blink_thread_terminate = 0;
-pthread_t gpiopattern_thread;
-int gpiopattern_thread_terminate = 0;
+pthread_t mux_thread;
+int mux_thread_terminate = 0;
 
 static void gpio_mux_thread_start()
 {
     int res;
-//	printf("\nPiDP FP driver 3\n");
-    res = pthread_create(&blink_thread, NULL, blink, &blink_thread_terminate);
+    res = pthread_create(&mux_thread, NULL, mux, &mux_thread_terminate);
     if (res) {
         fprintf(stderr, "Error creating gpio_mux thread, return code %d\n", res);
         exit(EXIT_FAILURE);
@@ -256,20 +217,6 @@ static void gpio_mux_thread_start()
     printf("Created \"gpio_mux\" thread\n");
 
     sleep(2); // allow 2 sec for multiplex to start
-}
-
-static void gpiopattern_start_thread()
-{
-    int res;
-    gpiopattern_blinkenlight_panel = NULL; // wait for first API transmission to start
-
-    res = pthread_create(&gpiopattern_thread, NULL, gpiopattern_update_leds,
-            &gpiopattern_thread_terminate);
-    if (res) {
-        fprintf(stderr, "Error creating gpiopattern thread, return code %d\n", res);
-        exit(EXIT_FAILURE);
-    }
-    printf("Created \"gpiopattern_update_leds\" thread\n");
 }
 
 /******************************************************
@@ -348,9 +295,9 @@ void blinkenlight_api_server(void)
 void info(void)
 {
     print(LOG_INFO, "\n");
-    print(LOG_NOTICE, "*** pidp8_blinkenlightd %s - server for PiDP8 ***\n", VERSION);
+    print(LOG_NOTICE, "*** pdp15_blinkenlightd %s - server for BlinkenBone PDP-15 console panel ***\n", VERSION);
     print(LOG_NOTICE, "    Compiled " __DATE__ " " __TIME__ "\n");
-    print(LOG_NOTICE, "    Copyright (C) 2015-2016 Joerg Hoppe, Oscar Vermeulen.\n");
+    print(LOG_NOTICE, "    Copyright (C) 2016 Joerg Hoppe.\n");
     print(LOG_NOTICE, "    Contact: j_hoppe@t-online.de, www.retrocmp.com\n");
     print(LOG_NOTICE, "\n");
 }
@@ -361,12 +308,12 @@ void info(void)
 static void help(void)
 {
     fprintf(stderr, "\n");
-    fprintf(stderr, "pidp8_blinkenlightd %s - Blinkenlight RPC server for PiDP8 \n",
+    fprintf(stderr, "pdp15_blinkenlightd %s - Blinkenlight RPC server for BlinkenBone PDP-15 console panel \n",
     VERSION);
     fprintf(stderr, "  (compiled " __DATE__ " " __TIME__ ")\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Call:\n");
-    fprintf(stderr, "pidp8_blinkenlightd [-b] [-v] [-t]\n");
+    fprintf(stderr, "pdp15_blinkenlightd [-b] [-v] [-t]\n");
     fprintf(stderr, "\n");
 //	fprintf(stderr, "- <port>:               TCP port for RCP access.\n") ;
     fprintf(stderr, "-b               : background operation: print to syslog (view with dmesg)\n");
@@ -395,8 +342,10 @@ static int parse_commandline(int argc, char **argv)
 
     opterr = 0;
 
-    while ((c = getopt(argc, argv, "bvt")) != -1)
+    while ((c = getopt(argc, argv, "bcvt")) != -1)
         switch (c) {
+        case 'c': // ignore, comapt for std demon
+            break;
         case 'v':
             print_level = LOG_DEBUG;
             break;
@@ -428,17 +377,20 @@ static int parse_commandline(int argc, char **argv)
 }
 
 /*
- * Define part of the fix controls of the PiDP11 == PDP11/70
+ * Define part of the fix controls of the PDP15
  * for the Blinkenlight API interface structs
  * - control_value_bit_offset: position of bitfield in final control value
  * - bitlen: count of bits in status register to be mounted into value
- * - gpio_switchstatus_index: gpio_switchstatus[idx] is mounted here
- * - bit_offset: LSB of bitfield in gpio_switchstatus[] to be shifted this much
+ * - mux_code: active if mux code at this value
+ * - reg_addr: register address on BlinkenBoard #0
+ * - bit_offset: LSB of bitfield, to be shifted this much
  *
  * See http://retrocmp.com/projects/blinkenbone/blinkenbone-physical-panels/173-blinkenbone-blinkenlightd-patch-field-decoding-and-console-panel-simulator
  */
 static blinkenlight_control_t *define_switch_slice(blinkenlight_panel_t *p, char *name,
-        unsigned control_value_bit_offset, unsigned bitlen, unsigned gpio_switchstatus_index,
+        unsigned control_value_bit_offset, unsigned bitlen,
+        unsigned mux_code,
+        unsigned reg_addr,
         unsigned bit_offset)
 {
     blinkenlight_control_t *c;
@@ -457,11 +409,13 @@ static blinkenlight_control_t *define_switch_slice(blinkenlight_panel_t *p, char
     // shift and mask data are saved in the "register wiring" struct.
     bbrw = blinkenlight_add_register_wiring(c);
     bbrw->blinkenbus_board_address = 0; // simulate 1 board with unlimited registers
-    bbrw->board_register_address = gpio_switchstatus_index; // register here mux row
+    bbrw->mux_code = mux_code;
+    bbrw->board_register_space = input_register ;
+    bbrw->board_register_address = reg_addr;
     bbrw->control_value_bit_offset = control_value_bit_offset;
     bbrw->blinkenbus_lsb = bit_offset;
     bbrw->blinkenbus_msb = bbrw->blinkenbus_lsb + bitlen - 1;
-    // all switches invers: bit 1 => switch up in "0" position
+    // all switches inverted: bit 1 => switch up in "0" position
     bbrw->blinkenbus_levels_active_low = 1;
 
     return c;
@@ -469,7 +423,9 @@ static blinkenlight_control_t *define_switch_slice(blinkenlight_panel_t *p, char
 
 // define outputs, see register_switch_slice()
 static blinkenlight_control_t *define_lamp_slice(blinkenlight_panel_t *p, char *name,
-        unsigned control_value_bit_offset, unsigned bitlen, unsigned gpio_ledstatus_index,
+        unsigned control_value_bit_offset, unsigned bitlen,
+        unsigned mux_code,
+        unsigned reg_addr,
         unsigned bit_offset)
 {
     blinkenlight_control_t *c;
@@ -487,77 +443,120 @@ static blinkenlight_control_t *define_lamp_slice(blinkenlight_panel_t *p, char *
     }
     bbrw = blinkenlight_add_register_wiring(c);
     bbrw->blinkenbus_board_address = 0; // simulate 1 board with unlimited registers
-    bbrw->board_register_address = gpio_ledstatus_index; // register here mux row
+    bbrw->mux_code = mux_code;
+    bbrw->board_register_space = output_register ;
+    bbrw->board_register_address = reg_addr;
     bbrw->control_value_bit_offset = control_value_bit_offset;
     bbrw->blinkenbus_lsb = bit_offset;
     bbrw->blinkenbus_msb = bbrw->blinkenbus_lsb + bitlen - 1;
-    bbrw->blinkenbus_levels_active_low = 0; // LED drivers not inverting
+    bbrw->blinkenbus_levels_active_low = 1; // all lampdrivers inverting
 
     return c;
 }
 
 static void register_controls()
 {
-    blinkenlight_panel_t *p;
+    blinkenlight_panel_t *p ;
 
     // one global panel list ...
     blinkenlight_panel_list = blinkenlight_panels_constructor();
     // ... with one panel
     p = blinkenlight_add_panel(blinkenlight_panel_list);
-    strcpy(p->name, "PiDP8");
-    strcpy(p->info, "PiDP8 replica made by Oscar Vermeulen");
+    pdp15_panel = p ;
+    strcpy(p->name, "PDP15");
+    strcpy(p->info, "PDP-15 console panel");
 
     /*
      * Construct high-level Blinkenlight API controls from
      * hardware switch- and led-registers
      */
+    // *** Indicator Board ***
+    // params: value offset, bitlen, muxcode, OUT register, register bit offset
+    // see panels/pdp15/schematic.txt
+#define MUX1    1   // gives some optical structure
+#define MUX2    2
+#define MUX3    3
+#define MUX5    5
+#define MUX6    6
+#define MUX7    7
 
-    switch_start = define_switch_slice(p, "Start", 0, 1, 2, 11); // 2, 0x800
-    switch_load_address = define_switch_slice(p, "Load Add", 0, 1, 2, 10); // 2, 0x400
-    switch_deposit = define_switch_slice(p, "Dep", 0, 1, 2, 9); // 2, 0x200
-    switch_examine = define_switch_slice(p, "Exam", 0, 1, 2, 8); // 2, 0x100
-    switch_continue = define_switch_slice(p, "Cont", 0, 1, 2, 7); // 2, 0x80
-    switch_stop = define_switch_slice(p, "Stop", 0, 1, 2, 6); // 2, 0x40
-    switch_single_step = define_switch_slice(p, "Sing Step", 0, 1, 2, 5); // 2, 0x20
-    switch_single_instruction = define_switch_slice(p, "Sing Inst", 0, 1, 2, 4); // 2, 0x10
-    switch_switch_register = define_switch_slice(p, "SR", 0, 12, 0, 0); // 0, 0xfff
-    switch_data_field = define_switch_slice(p, "DF", 0, 3, 1, 9); // 1, 0xe00
-    switch_instruction_field = define_switch_slice(p, "IF", 0, 3, 1, 6); // 1, 0x1c0
+    lamp_dch_active = define_lamp_slice(p, "DCH_ACTIVE", 0, 1,  MUX7, 8, 0); // Out 8.0
+    lamps_api_states_active = define_lamp_slice(p, "API_STATES_ACTIVE", 0, 5, MUX7, 8, 1); // Out8.1:5 "PL00-04"
+    lamps_api_states_active = define_lamp_slice(p, "API_STATES_ACTIVE", 5, 3, MUX7, 9, 1); // Out9.1:3 "PL05-07"
+    lamp_api_enable = define_lamp_slice(p, "API_ENABLE", 0, 1, MUX7, 9, 4); // Out9.4
+    lamp_pi_active = define_lamp_slice(p, "PI_ACTIVE", 0, 1, MUX7, 9, 5); // Out9.5
+    lamp_pi_enable = define_lamp_slice(p, "PI_ENABLE", 0, 1, MUX7, 9, 6); // Out9.6
+    lamp_mode_index = define_lamp_slice(p, "MODE_INDEX", 0, 1, MUX7, 10, 0); // Out10.0
+    lamp_major_state_fetch = define_lamp_slice(p, "STATE_FETCH",  0, 1, MUX7, 6, 0); // Out6.0
+    lamp_major_state_inc = define_lamp_slice(p, "STATE_INC", 0, 1, MUX7, 6, 1); // Out6.1
+    lamp_major_state_defer = define_lamp_slice(p, "STATE_DEFER", 0, 1, MUX7, 6, 2); // Out6.2
+    lamp_major_state_eae = define_lamp_slice(p, "STATE_EAE", 0, 1, MUX7, 6, 3); // Out6.3
+    lamp_major_state_exec = define_lamp_slice(p, "STATE_EXEC", 0, 1, MUX7, 6, 4); // Out6.4
+    lamps_time_states = define_lamp_slice(p, "TIME_STATES", 0, 3, MUX7, 6, 5); // Out6.5:7 "TS1-TS3"
 
-    keyswitch_power = define_switch_slice(p, "POWER", 0, 1, 0, 0); // dummy, always 1
-    keyswitch_panel_lock = define_switch_slice(p, "PANEL LOCK", 0, 1, 0, 0); // dummy, always 0
+    lamp_extd = define_lamp_slice(p, "EXTD", 0, 1, MUX3, 8, 2); // Out 8.2
+    lamp_clock = define_lamp_slice(p, "CLOCK", 0, 1, MUX3, 8, 3); // Out 8.3
+    lamp_error= define_lamp_slice(p, "ERROR", 0, 1, MUX3, 8, 4); // Out 8.4
+    lamp_prot = define_lamp_slice(p, "PROT", 0, 1, MUX3, 8, 5); // Out 8.5 "PRTCT"  "protect"
+    lamp_link = define_lamp_slice(p, "LINK", 0, 1, MUX7, 9, 0); // Out 9.0, MUX 7
+    lamp_register = define_lamp_slice(p, "REGISTER", 0, 8, MUX3, 9, 0); // Out 9.0:7 "R00-R07"
+    lamp_register = define_lamp_slice(p, "REGISTER", 8, 2, MUX3, 10, 0); // Out 10.0:1 "R08-R09"
+    lamp_register = define_lamp_slice(p, "REGISTER", 10, 8, MUX3, 6, 0); // Out 6.0:7 "R10-R17"
+    lamp_power = define_lamp_slice(p, "POWER", 0, 1, MUX3, 8, 1); // Out 8.1
+    lamp_run = define_lamp_slice(p, "RUN", 0, 1, MUX3, 8, 0); // Out 8.0
+
+    lamps_instruction  = define_lamp_slice(p, "INSTRUCTION", 0, 4, MUX5, 8, 0); // Out 8.0:3 "IR00-IR03"
+    lamp_instruction_defer  = define_lamp_slice(p, "INSTRUCTION_DEFER", 0, 1, MUX5, 8, 4); // Out 8.4 "OP DEFER"
+    lamp_instruction_index  = define_lamp_slice(p, "INSTRUCTION_INDEX", 0, 1, MUX5, 8, 5); // Out 8.5 "OP INDEX"
+    lamp_memory_buffer = define_lamp_slice(p, "MEMORY_BUFFER", 0, 8, MUX5, 9, 0); // Out 9.0:7 "MB00-MB07"
+    lamp_memory_buffer = define_lamp_slice(p, "MEMORY_BUFFER", 8, 2, MUX5, 10, 0); // Out 10.0:1 "MB08-MB09"
+    lamp_memory_buffer = define_lamp_slice(p, "MEMORY_BUFFER", 10, 8, MUX5, 6, 0); // Out 6.0:7 "MB10-MB17"
+
+
+
+
+    // *** Indicator Board ***
+    // params: value offset, bitlen, muxcode, OUT register, register bit offset
+    // see panels/pdp15/schematic.txt
+
+    switch_stop = define_switch_slice(p, "STOP", 0, 1, MUX1, 1, 1) ; // In1.1 "STOP"
+    switch_reset = define_switch_slice(p, "RESET", 0, 1, MUX1, 2, 0) ; // In2.0 "RESET"
+    switch_read_in = define_switch_slice(p, "READ_IN", 0, 1, MUX1, 1, 2) ; // In1.2 "READ IN"
+    switch_reg_group = define_switch_slice(p, "REG_GROUP", 0, 1, MUX6, 1, 0) ; // In 1.0 "REG GROUP"
+    switch_clock = define_switch_slice(p, "CLOCK", 0, 1, MUX6, 1, 1) ; // In1.1 "CLK"
+    switch_bank_mode = define_switch_slice(p, "BANK_MODE", 0, 1, MUX6, 1, 2) ; // In1.2 "BANK MODE"
+    switch_rept = define_switch_slice(p, "REPT", 0, 1, MUX6, 1, 3) ; // In1.3 "REPT"
+    switch_prot  = define_switch_slice(p, "PROT", 0, 1, MUX6, 1, 4) ; // In1.4 "PROT"
+    switch_sing_time = define_switch_slice(p, "SING_TIME", 0, 1, MUX6, 1, 5) ; // In 1.5 "SING TIME"
+    switch_sing_step = define_switch_slice(p, "SING_STEP", 0, 1, MUX6, 2, 0) ; // In2.0 "SING STEP"
+    switch_sing_inst = define_switch_slice(p, "SING_INST", 0, 1, MUX6, 2, 1) ; // In2.1 "SING INST"
+    switch_address  = define_switch_slice(p, "ADDRESS", 0, 5, MUX6, 2, 3) ; // In2.3:7 "ADSW03-07"
+    switch_address  = define_switch_slice(p, "ADDRESS", 5, 2, MUX6, 3, 0) ; // In3.0:1 "ADSW08-09"
+    switch_address  = define_switch_slice(p, "ADDRESS", 7, 8, MUX6, 0, 0) ; // In0.0:7 "ADSW10-17"
+
+    switch_start  = define_switch_slice(p, "START", 0, 1, MUX1, 2, 3) ; // In2.3 "START"
+    switch_exec  = define_switch_slice(p, "EXECUTE", 0, 1, MUX1, 1, 3) ; // In1.3 "EXECUTE"
+    switch_cont = define_switch_slice(p, "CONT", 0, 1, MUX1, 1, 5) ; // In1.5 "CONT"
+    switch_deposit_this = define_switch_slice(p, "DEPOSIT_THIS", 0, 1, MUX1, 2, 2) ; // In 2.2 "DEP THIS", combines with NEXT
+    switch_examine_this = define_switch_slice(p, "EXAMINE_THIS", 0, 1, MUX1, 2, 1) ; // In2.1 "EXAMINE THIS" , combines with NEXT
+    switch_deposit_examine_next = define_switch_slice(p, "DEP_EXAM_NEXT", 0, 1, MUX1, 1, 0) ; // In 1.0 "DEPOSIT/EXAMINE NEXT"
+
+    switch_data  = define_switch_slice(p, "DATA", 0, 8, MUX2, 2, 0) ; // In2.0:7 "DSW00-07"
+    switch_data  = define_switch_slice(p, "DATA", 8, 2, MUX2, 3, 0) ; // In3.0:1 "DSW08-09"
+    switch_data  = define_switch_slice(p, "DATA", 10, 8, MUX2, 0,0) ; // In0.0:7 "DSW10-17"
+
+    // coded as moving bit
+    switch_register_select = define_switch_slice(p, "REGISTER_SELECT", 0, 1, MUX1, 2, 5) ; // In2.5 "REGSEL.1"
+    switch_register_select = define_switch_slice(p, "REGISTER_SELECT", 1, 1, MUX1, 2, 7) ; // In2.7 "REGSEL.2"
+    switch_register_select = define_switch_slice(p, "REGISTER_SELECT", 2, 2, MUX1, 3, 0) ; // In3.0 "REGSEL.3:4"
+    switch_register_select = define_switch_slice(p, "REGISTER_SELECT", 4, 8, MUX1, 0, 0) ; // In0.0 "REGSEL.5:12"
+
+    switch_power = define_switch_slice(p, "POWER", 0, 1, 0, 0, 0); // dummy, always 1
     // Constant values set in on_blinkenlight_api_panel_get_controlvalues()
 
-    // Fun: define pc in two slices:  bits 11:7, 6:0
-    led_program_counter = define_lamp_slice(p, "Program Counter", 0, 7, 0, 0); // bits 0:6
-    led_program_counter = define_lamp_slice(p, "Program Counter", 7, 5, 0, 7); // bits 7:11
-    // led_program_counter = register_lamp_slice(p, "Program Counter", 0, 12, 0, 0); // 0, 0xfff
+    // the poentiometer is tied to IN4, non-muxed = all MUX codes
+    potentiometer_speed = define_switch_slice(p, "SPEED", 0, 8, MUX1, 4, 0 ) ; // In4.0:7
 
-    led_inst_field = define_lamp_slice(p, "Inst Field", 0, 3, 7, 6); // 7, 0x1c0
-    led_data_field = define_lamp_slice(p, "Data Field", 0, 3, 7, 9); // 7, 0xe00
-    led_memory_address = define_lamp_slice(p, "Memory Address", 0, 12, 1, 0); // 1, 0xfff
-    led_memory_buffer = define_lamp_slice(p, "Memory Buffer", 0, 12, 2, 0); // 2, 0xfff
-    led_accumulator = define_lamp_slice(p, "Accumulator", 0, 12, 3, 0); // 3, 0xfff
-    led_link = define_lamp_slice(p, "Link", 0, 1, 7, 5); // 7, 0x20
-    led_multiplier_quotient = define_lamp_slice(p, "Multiplier Quotient", 0, 12, 4, 0); // 4, 0xfff
-    led_and = define_lamp_slice(p, "And", 0, 1, 5, 11); // 5, 0x800
-    led_tad = define_lamp_slice(p, "Tad", 0, 1, 5, 10); // 5, 0x400
-    led_isz = define_lamp_slice(p, "Isz", 0, 1, 5, 9); // 5, 0x200
-    led_dca = define_lamp_slice(p, "Dca", 0, 1, 5, 8); // 5, 0x100
-    led_jms = define_lamp_slice(p, "Jms", 0, 1, 5, 7); // 5, 0x80
-    led_jmp = define_lamp_slice(p, "Jmp", 0, 1, 5, 6); // 5, 0x40
-    led_iot = define_lamp_slice(p, "Iot", 0, 1, 5, 5); // 5, 0x20
-    led_opr = define_lamp_slice(p, "Opr", 0, 1, 5, 4); // 5, 0x10
-    led_fetch = define_lamp_slice(p, "Fetch", 0, 1, 5, 3); // 5, 0x8
-    led_execute = define_lamp_slice(p, "Execute", 0, 1, 5, 2); // 5, 0x4
-    led_defer = define_lamp_slice(p, "Defer", 0, 1, 5, 1); // 5, 0x2
-    led_word_count = define_lamp_slice(p, "Word Count", 0, 1, 5, 0); // 5, 0x1
-    led_current_address = define_lamp_slice(p, "Current Address", 0, 1, 6, 11); // 6, 0x800
-    led_break = define_lamp_slice(p, "Break", 0, 1, 6, 10); // 6, 0x400
-    led_ion = define_lamp_slice(p, "Ion", 0, 1, 6, 9); // 6, 0x200
-    led_pause = define_lamp_slice(p, "Pause", 0, 1, 6, 8); // 6, 0x100
-    led_run = define_lamp_slice(p, "Run", 0, 1, 6, 7); // 6, 0x80
-    led_step_counter = define_lamp_slice(p, "Step Counter", 0, 5, 6, 2); // 6,  0x7c
 
     // calculate dependent values
     blinkenlight_panels_config_fixup(blinkenlight_panel_list);
@@ -575,19 +574,21 @@ int main(int argc, char *argv[])
         help();
         return 1;
     }
-    sprintf(program_info, "pidp8_blinkenlightd - Blinkenlight API server daemon for PiDP8 %s",
+    sprintf(program_info, "PDP-15 blinkenlightd - Blinkenlight API server daemon for PDP-15 %s",
     VERSION);
 
     info();
 
-    /*
-     {struct sched_param sp;
-     sp.sched_priority = 10; // maybe 99, 32, 31?
-     if (pthread_setschedparam(pthread_self(), SCHED_FIFO, &sp))
-     fprintf(stderr, "warning: failed to set RT priority\n");
-     }
-     */
     print(LOG_INFO, "Start\n");
+#ifdef TEST
+    while(1) {
+            struct timespec ts;
+            ts.tv_sec = 0;
+            ts.tv_nsec = 1000 * 100000/*microsecs*/;
+            nanosleep(&ts, NULL);
+    }
+    exit(0) ;
+#endif
 
     // link set/get events
     blinkenlight_api_panel_get_controlvalues_evt = on_blinkenlight_api_panel_get_controlvalues;
@@ -607,17 +608,7 @@ int main(int argc, char *argv[])
     }
 
     gpio_mux_thread_start();
-    gpiopattern_start_thread();
-
-    /** /
-     {
-     int i, j;
-     //		for (j = 0; j < 100000000; j++)
-     for (i = 0; i < 8; i++)
-     gpio_ledstatus[i] = 0x11111111;
-     //		return 0;
-     }
-     /**/
+    // does never end!
 
     blinkenlight_api_server();
     // does never end!

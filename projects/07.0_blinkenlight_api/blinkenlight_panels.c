@@ -200,6 +200,7 @@ blinkenlight_control_blinkenbus_register_wiring_t *blinkenlight_add_register_wir
     bbrw->board_register_address = 0;
     bbrw->board_register_space = 0;
 	bbrw->blinkenbus_reversed = 0 ;
+    bbrw->mux_code = 0;
 	return bbrw;
 }
 #endif
