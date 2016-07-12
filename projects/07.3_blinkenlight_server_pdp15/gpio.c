@@ -50,6 +50,7 @@
 #include "blinkenbus.h" // from std server
 
 #include "main.h"   // pdp15_panel
+#include "print.h"
 #include "gpio.h"
 
 static blinkenbus_map_t blinkenbus_output_cache;
@@ -162,11 +163,37 @@ static void inputcontrols_from_mux_row(unsigned mux_code)
 void mux(int * terminate)
 {
 #define PHASES  3 // 3 lamp phases, some idle phases
+    unsigned mux_sleep_us ;
     unsigned phase = 0;
     unsigned mux_code;
     unsigned regaddr;
 
+    // default
+    if (opt_mux_frequency)
+        mux_sleep_us = 1000000 / opt_mux_frequency ;
+    else mux_sleep_us = 1000 ; // 1 kHz
+    print(LOG_NOTICE, "Multiplexing period = %u us.\n", mux_sleep_us) ;
+
     blinkenbus_init();
+
+    // set thread to real time priority
+    // seems not to work under BeagleBone Angstrom: now realtime-kernel?
+    {
+        struct sched_param sp;
+        int policy, prio ;
+        int res ;
+        sp.sched_priority = 10 ;
+        // sp.sched_priority = 98; // maybe 99, 32, 31?
+        //res = pthread_setschedparam(pthread_self(), SCHED_RR, &sp) ;
+        pthread_getschedparam(pthread_self(), &policy, &sp) ;
+        prio = sp.sched_priority+1 ;
+        res = pthread_setschedprio(pthread_self(), prio) ;
+        // res = pthread_setschedparam(pthread_self(), SCHED_FIFO, &sp) ;
+        if (res)
+            print(LOG_ERR, "Warning: failed to set RT priority to %d, pthread_setschedparam() returned %d\n", prio, res);
+        // 1 = EPERM
+        // 22 = EINVAL
+    }
 
     while (!*terminate) {
         phase = (phase + 1) % PHASES;
@@ -222,7 +249,7 @@ void mux(int * terminate)
         // 4. thread wait 1 millisecond
         // the ATmega samples the MUX signal with 10kHz,
         // we must generated here max of that half frequency.
-        microsleep(1000) ;
+        microsleep(mux_sleep_us) ;
 
         if (mux_code)
             // 3.2. read delayed, after mux has settled

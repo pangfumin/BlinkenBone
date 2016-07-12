@@ -40,6 +40,7 @@ extern char configfilename[MAX_FILENAME_LEN];
 // global flags
 extern int mode_test; // no server, just test config
 extern int mode_panelsim; // do not access BLINKENBUS, no daemon, user oeprates simualted panel
+extern unsigned opt_mux_frequency ;
 
 //extern int stmode; // no server, just test config
 extern char program_info[];

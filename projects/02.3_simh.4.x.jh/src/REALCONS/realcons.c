@@ -20,6 +20,7 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+   18-Jun-2016  JH      added PDP-15, with param "bootimage" file path
    23-Apr-2016  JH      added PDP-11/20
    19-Feb-2016  JH      bugfix in call to event_connect/disconnect
    25-Mar-2012  JH      created
@@ -138,6 +139,7 @@ void realcons_init(realcons_t *_this)
 	strcpy(_this->application_server_hostname, "localhost");
 	_this->console_logic_name[0] = '\0';
 	_this->application_panel_name[0] = '\0';
+    _this->boot_image_filepath[0] = '\0';
 	_this->blinkenlight_api_client = NULL; /// created in connect()
 	_this->connected = 0;
 
@@ -167,6 +169,11 @@ void realcons_init(realcons_t *_this)
 	// name of the panel: defaults to "PiDP8" for Oscars device.
 	strcpy(_this->console_logic_name, "PDP8"); // overwritten by const
 	strcpy(_this->application_panel_name, "PiDP8");
+#endif
+#ifdef PDP15
+	// name of the panel: defaults to "PDP15" for blinkenlight server
+	strcpy(_this->console_logic_name, "PDP15");
+	strcpy(_this->application_panel_name, "PDP15");
 #endif
 }
 
@@ -269,6 +276,18 @@ t_stat realcons_connect(realcons_t *_this, char *consolelogic_name, char *server
 			console_logic = realcons_console_pdp8i_constructor(_this);
 			// 2. connect
 			realcons_console_pdp8i_interface_connect(console_logic,
+				&(_this->console_controller_interface), consolelogic_name);
+			_this->console_controller = console_logic;
+		}
+#endif
+#ifdef PDP15
+		// no selection, always "PDP15"
+		{
+			realcons_console_logic_pdp15_t *console_logic;
+			// 1. create
+			console_logic = realcons_console_pdp15_constructor(_this);
+			// 2. connect
+			realcons_console_pdp15_interface_connect(console_logic,
 				&(_this->console_controller_interface), consolelogic_name);
 			_this->console_controller = console_logic;
 		}
@@ -564,6 +583,17 @@ void	realcons_console_clear_output_controls(realcons_t *_this)
  * this function returns the content line by line.
  * cmd is cleared after call!
  */
+
+// for console emulator: add cmd string. caller must set "\n"
+void realcons_simh_add_cmd(realcons_t *_this, char *format, ...) {
+    char    cmd[256];
+    va_list argptr;
+    va_start(argptr, format);
+    vsprintf(cmd, format, argptr);
+    strcat(_this->simh_cmd_buffer, cmd);
+}
+
+
 char *realcons_simh_get_cmd(realcons_t *_this)
 {
 	static char buffer[SIMH_CMDBUFFER_SIZE]; // static buffer for result

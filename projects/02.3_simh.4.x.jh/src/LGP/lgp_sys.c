@@ -29,7 +29,7 @@
 #include "lgp_defs.h"
 #include <ctype.h>
 
-t_stat parse_sym_m (char *cptr, t_value *val, int32 sw);
+t_stat parse_sym_m (CONST char *cptr, t_value *val, int32 sw);
 void lgp_init (void);
 
 extern DEVICE cpu_dev;
@@ -40,7 +40,6 @@ extern REG cpu_reg[];
 extern uint32 M[];
 extern uint32 PC;
 extern uint32 ts_flag;
-extern int32 flex_to_ascii[128], ascii_to_flex[128];
 
 /* SCP data structures and interface routines
 
@@ -135,7 +134,7 @@ return SCPE_OK;
 
 /* Loader proper */
 
-t_stat sim_load (FILE *fi, char *cptr, char *fnam, int flag)
+t_stat sim_load (FILE *fi, CONST char *cptr, CONST char *fnam, int flag)
 {
 uint32 wd, origin, amod, csum, cnt, tr, sc, ad, cmd;
 
@@ -237,21 +236,21 @@ else fprint_val (st, addr, dptr->aradix, dptr->awidth, PV_LEFT);
 return;
 }
 
-t_addr lgp_parse_addr (DEVICE *dptr, char *cptr, char **tptr)
+t_addr lgp_parse_addr (DEVICE *dptr, CONST char *cptr, CONST char **tptr)
 {
 t_addr ad, ea;
 
 if ((dptr == sim_devices[0]) &&
     ((sim_switches & SWMASK ('T')) ||
     ((cpu_unit.flags & UNIT_TTSS_D) && !(sim_switches & SWMASK ('N'))))) {
-    ad = (t_addr) strtotv (cptr, (const char **)tptr, 10);
+    ad = (t_addr) strtotv (cptr, tptr, 10);
     if (((ad / 100) >= NTK_30) || ((ad % 100) >= NSC_30)) {
         *tptr = cptr;
         return 0;
         }
     ea = ((ad / 100) * NSC_30) | (ad % 100);
     }
-else ea = (t_addr) strtotv (cptr, (const char **)tptr, dptr->aradix);
+else ea = (t_addr) strtotv (cptr, tptr, dptr->aradix);
 return ea;
 }
 
@@ -330,10 +329,10 @@ return SCPE_ARG;
         status  =       error status
 */
 
-t_stat parse_sym (char *cptr, t_addr addr, UNIT *uptr, t_value *val, int32 sw)
+t_stat parse_sym (CONST char *cptr, t_addr addr, UNIT *uptr, t_value *val, int32 sw)
 {
 int32 i, c;
-char *tptr;
+const char *tptr;
 
 while (isspace (*cptr))                                 /* absorb spaces */
     cptr++;
@@ -376,10 +375,11 @@ return SCPE_ARG;
 
 /* Instruction parse */
 
-t_stat parse_sym_m (char *cptr, t_value *val, int32 sw)
+t_stat parse_sym_m (CONST char *cptr, t_value *val, int32 sw)
 {
 uint32 ea, sgn;
-char *tptr, gbuf[CBUFSIZE];
+CONST char *tptr;
+char gbuf[CBUFSIZE];
 
 if (*cptr == '-') {
     cptr++;

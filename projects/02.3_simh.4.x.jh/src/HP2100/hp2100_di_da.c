@@ -1,6 +1,6 @@
 /* hp2100_di_da.c: HP 12821A HP-IB Disc Interface simulator for Amigo disc drives
 
-   Copyright (c) 2011-2014, J. David Bryan
+   Copyright (c) 2011-2016, J. David Bryan
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the "Software"),
@@ -25,6 +25,8 @@
 
    DA           12821A Disc Interface with Amigo disc drives
 
+   13-May-16    JDB     Modified for revised SCP API function parameter types
+   04-Mar-16    JDB     Name changed to "hp2100_disclib" until HP 3000 integration
    30-Dec-14    JDB     Added S-register parameters to ibl_copy
    24-Dec-14    JDB     Use T_ADDR_FMT with t_addr values for 64-bit compatibility
                         Removed redundant global declarations
@@ -339,7 +341,7 @@
 
 #include "hp2100_defs.h"
 #include "hp2100_di.h"
-#include "hp_disclib.h"
+#include "hp2100_disclib.h"
 
 
 
@@ -466,12 +468,12 @@ static CNTLR_VARS icd_cntlr [DA_UNITS] =                /* ICD controllers: */
 /* Amigo disc global VM routines */
 
 t_stat da_reset   (DEVICE *dptr);
-t_stat da_attach  (UNIT   *uptr, char *cptr);
+t_stat da_attach  (UNIT   *uptr, CONST char *cptr);
 t_stat da_detach  (UNIT   *uptr);
 
 /* Amigo disc global SCP routines */
 
-t_stat da_load_unload (UNIT *uptr, int32 value, char *cptr, void *desc);
+t_stat da_load_unload (UNIT *uptr, int32 value, CONST char *cptr, void *desc);
 
 /* Amigo disc local utility routines */
 
@@ -1082,7 +1084,7 @@ return status;
        validation routine.
 */
 
-t_stat da_attach (UNIT *uptr, char *cptr)
+t_stat da_attach (UNIT *uptr, CONST char *cptr)
 {
 t_stat result;
 const int32 unit = uptr - da_unit;                      /* calculate the unit number */
@@ -1252,7 +1254,7 @@ else
        we match the diagnostic expectation below.
 */
 
-t_stat da_load_unload (UNIT *uptr, int32 value, char *cptr, void *desc)
+t_stat da_load_unload (UNIT *uptr, int32 value, CONST char *cptr, void *desc)
 {
 const int32 unit = uptr - da_unit;                          /* calculate the unit number */
 const t_bool load = (value != UNIT_UNLOAD);                 /* true if the heads are loading */

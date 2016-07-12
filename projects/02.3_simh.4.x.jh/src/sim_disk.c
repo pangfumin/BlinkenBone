@@ -162,16 +162,12 @@ static void *
 _disk_io(void *arg)
 {
 UNIT* volatile uptr = (UNIT*)arg;
-int sched_policy;
-struct sched_param sched_priority;
 struct disk_context *ctx = (struct disk_context *)uptr->disk_ctx;
 
 /* Boost Priority for this I/O thread vs the CPU instruction execution
    thread which in general won't be readily yielding the processor when
    this thread needs to run */
-pthread_getschedparam (pthread_self(), &sched_policy, &sched_priority);
-++sched_priority.sched_priority;
-pthread_setschedparam (pthread_self(), sched_policy, &sched_priority);
+sim_os_set_thread_priority (PRIORITY_ABOVE_NORMAL);
 
 sim_debug (ctx->dbit, ctx->dptr, "_disk_io(unit=%d) starting\n", (int)(uptr-ctx->dptr->units));
 
@@ -309,7 +305,7 @@ static struct sim_disk_fmt fmts[DKUF_N_FMT] = {
 
 /* Set disk format */
 
-t_stat sim_disk_set_fmt (UNIT *uptr, int32 val, char *cptr, void *desc)
+t_stat sim_disk_set_fmt (UNIT *uptr, int32 val, CONST char *cptr, void *desc)
 {
 uint32 f;
 
@@ -331,7 +327,7 @@ return SCPE_ARG;
 
 /* Show disk format */
 
-t_stat sim_disk_show_fmt (FILE *st, UNIT *uptr, int32 val, void *desc)
+t_stat sim_disk_show_fmt (FILE *st, UNIT *uptr, int32 val, CONST void *desc)
 {
 int32 f = DK_GET_FMT (uptr);
 size_t i;
@@ -347,7 +343,7 @@ return SCPE_OK;
 
 /* Set disk capacity */
 
-t_stat sim_disk_set_capac (UNIT *uptr, int32 val, char *cptr, void *desc)
+t_stat sim_disk_set_capac (UNIT *uptr, int32 val, CONST char *cptr, void *desc)
 {
 t_offset cap;
 t_stat r;
@@ -366,7 +362,7 @@ return SCPE_OK;
 
 /* Show disk capacity */
 
-t_stat sim_disk_show_capac (FILE *st, UNIT *uptr, int32 val, void *desc)
+t_stat sim_disk_show_capac (FILE *st, UNIT *uptr, int32 val, CONST void *desc)
 {
 const char *cap_units = "B";
 DEVICE *dptr = find_dev_from_unit (uptr);
@@ -842,11 +838,12 @@ return stat;
 }
 
 
-t_stat sim_disk_attach (UNIT *uptr, char *cptr, size_t sector_size, size_t xfer_element_size, t_bool dontautosize,
+t_stat sim_disk_attach (UNIT *uptr, const char *cptr, size_t sector_size, size_t xfer_element_size, t_bool dontautosize,
                         uint32 dbit, const char *dtype, uint32 pdp11tracksize, int completion_delay)
 {
 struct disk_context *ctx;
 DEVICE *dptr;
+char tbuf[4*CBUFSIZE];
 FILE *(*open_function)(const char *filename, const char *mode) = sim_fopen;
 FILE *(*create_function)(const char *filename, t_offset desiredsize) = NULL;
 t_offset (*size_function)(FILE *file);
@@ -1010,7 +1007,9 @@ if (sim_switches & SWMASK ('C')) {                      /* create vhd disk & cop
         if (r == SCPE_OK) {
             created = TRUE;
             copied = TRUE;
-            strcpy (cptr, gbuf);
+            tbuf[sizeof(tbuf)-1] = '\0';
+            strncpy (tbuf, gbuf, sizeof(tbuf)-1);
+            cptr = tbuf;
             sim_disk_set_fmt (uptr, 0, "VHD", NULL);
             sim_switches = saved_sim_switches;
             }
@@ -1076,8 +1075,10 @@ ctx->dbit = dbit;                                       /* save debug bit */
 sim_debug (ctx->dbit, ctx->dptr, "sim_disk_attach(unit=%d,filename='%s')\n", (int)(uptr-ctx->dptr->units), uptr->filename);
 ctx->auto_format = auto_format;                         /* save that we auto selected format */
 ctx->storage_sector_size = (uint32)sector_size;         /* Default */
-if (sim_switches & SWMASK ('R')) {                      /* read only? */
-    if ((uptr->flags & UNIT_ROABLE) == 0)               /* allowed? */
+if ((sim_switches & SWMASK ('R')) ||                    /* read only? */
+    ((uptr->flags & UNIT_RO) != 0)) {
+    if (((uptr->flags & UNIT_ROABLE) == 0) &&           /* allowed? */
+        ((uptr->flags & UNIT_RO) == 0))
         return _err_return (uptr, SCPE_NORO);           /* no, error */
     uptr->fileref = open_function (cptr, "rb");         /* open rd only */
     if (uptr->fileref == NULL)                          /* open fail? */
@@ -1509,9 +1510,11 @@ return SCPE_OK;
 
 /* Factory bad block table creation routine
 
-   This routine writes a DEC standard 044 compliant bad block table on the
-   last track of the specified unit.  The bad block table consists of 10
-   repetitions of the same table, formatted as follows:
+   This routine writes a DEC standard 144 compliant bad block table on the
+   last track of the specified unit as described in: 
+      EL-00144_B_DEC_STD_144_Disk_Standard_for_Recording_and_Handling_Bad_Sectors_Nov76.pdf
+   The bad block table consists of 10 repetitions of the same table, 
+   formatted as follows:
 
         words 0-1       pack id number
         words 2-3       cylinder/sector/surface specifications
@@ -1550,17 +1553,13 @@ if (!get_yn ("Overwrite last track? [N]", FALSE))
     return SCPE_OK;
 if ((buf = (uint16 *) malloc (wds * sizeof (uint16))) == NULL)
     return SCPE_MEM;
-if ((namebuf = (char *) malloc (1 + strlen (uptr->filename))) == NULL) {
-    free (buf);
-    return SCPE_MEM;
-    }
-strcpy (namebuf, uptr->filename);
+namebuf = uptr->filename;
 if ((c = strrchr (namebuf, '/')))
-    memcpy (namebuf, c+1, strlen(c+1)+1);
+    namebuf = c+1;
 if ((c = strrchr (namebuf, '\\')))
-    memcpy (namebuf, c+1, strlen(c+1)+1);
+    namebuf = c+1;
 if ((c = strrchr (namebuf, ']')))
-    memcpy (namebuf, c+1, strlen(c+1)+1);
+    namebuf = c+1;
 packid = eth_crc32(0, namebuf, strlen (namebuf));
 buf[0] = (uint16)packid;
 buf[1] = (uint16)(packid >> 16) & 0x7FFF;   /* Make sure MSB is clear */
@@ -1671,9 +1670,18 @@ errno = EINVAL;
 #else
 #include <winioctl.h>
 #endif
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
+WINBASEAPI BOOL WINAPI GetFileSizeEx(HANDLE hFile, PLARGE_INTEGER lpFileSize);
+#if defined(__cplusplus)
+    }
+#endif
+
 struct _device_type {
     int32 Type;
-    char *desc;
+    const char *desc;
     } DeviceTypes[] = {
         {FILE_DEVICE_8042_PORT,             "8042_PORT"},
         {FILE_DEVICE_ACPI,                  "ACPI"},
@@ -1781,7 +1789,7 @@ if (strchr (openmode, 'w') || strchr (openmode, '+'))
    We handle the RAW device name case here by prepending paths beginning 
    with \.\ with an extra \. */
 if (!memcmp ("\\.\\", rawdevicename, 3)) {
-    char *tmpname = malloc (2 + strlen (rawdevicename));
+    char *tmpname = (char *)malloc (2 + strlen (rawdevicename));
 
     if (tmpname == NULL)
         return NULL;
@@ -1818,7 +1826,6 @@ static t_offset sim_os_disk_size_raw (FILE *Disk)
 {
 DWORD IoctlReturnSize;
 LARGE_INTEGER Size;
-WINBASEAPI BOOL WINAPI GetFileSizeEx(HANDLE hFile, PLARGE_INTEGER lpFileSize);
 
 if (GetFileSizeEx((HANDLE)Disk, &Size))
     return (t_offset)(Size.QuadPart);

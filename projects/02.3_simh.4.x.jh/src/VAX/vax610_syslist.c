@@ -36,7 +36,7 @@ void vax_init(void)
 sim_savename = "MicroVAX I (KA610)";
 }
 
-void (*sim_vm_init) (void) = &vax_init;
+WEAK void (*sim_vm_init) (void) = &vax_init;
 
 extern DEVICE cpu_dev;
 extern DEVICE mctl_dev;
@@ -58,9 +58,6 @@ extern DEVICE vh_dev;
 extern DEVICE vc_dev;
 extern DEVICE lk_dev;
 extern DEVICE vs_dev;
-
-extern void WriteB (uint32 pa, int32 val);
-extern UNIT cpu_unit;
 
 DEVICE *sim_devices[] = { 
     &cpu_dev,
@@ -102,14 +99,14 @@ DEVICE *sim_devices[] = {
    -o           for memory, specify origin
 */
 
-t_stat sim_load (FILE *fileref, char *cptr, char *fnam, int flag)
+t_stat sim_load (FILE *fileref, CONST char *cptr, CONST char *fnam, int flag)
 {
 t_stat r;
 int32 i;
 uint32 origin, limit;
 
 if (flag)                                               /* dump? */
-    return SCPE_ARG;
+    return sim_messagef (SCPE_NOFNC, "Command Not Implemented\n");
 origin = 0;                                             /* memory */
 limit = (uint32) cpu_unit.capac;
 if (sim_switches & SWMASK ('O')) {                      /* origin? */

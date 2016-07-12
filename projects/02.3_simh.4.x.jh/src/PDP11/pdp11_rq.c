@@ -155,12 +155,12 @@ extern uint32 cpu_opt;
 #define RQ_MAPXFER      (1u << 31)                      /* mapped xfer */
 #define RQ_M_PFN        0x1FFFFF                        /* map entry PFN */
 
-#define UNIT_V_ONL      (UNIT_V_UF + 0)                 /* online */
-#define UNIT_V_WLK      (UNIT_V_UF + 1)                 /* hwre write lock */
-#define UNIT_V_ATP      (UNIT_V_UF + 2)                 /* attn pending */
-#define UNIT_V_DTYPE    (UNIT_V_UF + 3)                 /* drive type */
+#define UNIT_V_ONL      (DKUF_V_UF + 0)                 /* online */
+#define UNIT_V_WLK      (DKUF_V_UF + 1)                 /* hwre write lock */
+#define UNIT_V_ATP      (DKUF_V_UF + 2)                 /* attn pending */
+#define UNIT_V_DTYPE    (DKUF_V_UF + 3)                 /* drive type */
 #define UNIT_M_DTYPE    0x1F
-#define UNIT_V_NOAUTO   (UNIT_V_UF + 8)                 /* noautosize */
+#define UNIT_V_NOAUTO   (DKUF_V_UF + 8)                 /* noautosize */
 #define UNIT_ONL        (1 << UNIT_V_ONL)
 #define UNIT_WLK        (1 << UNIT_V_WLK)
 #define UNIT_ATP        (1 << UNIT_V_ATP)
@@ -754,7 +754,7 @@ static struct ctlrtyp ctlr_tab[] = {
 
 extern int32 int_req[IPL_HLVL];
 
-int32 rq_itime = 200;                                   /* init time, except */
+int32 rq_itime = 450;                                   /* init time, except */
 int32 rq_itime4 = 10;                                   /* stage 4 */
 int32 rq_qtime = RQ_QTIME;                              /* queue time */
 int32 rq_xtime = RQ_XTIME;                              /* transfer time */
@@ -839,17 +839,17 @@ t_stat rq_svc (UNIT *uptr);
 t_stat rq_tmrsvc (UNIT *uptr);
 t_stat rq_quesvc (UNIT *uptr);
 t_stat rq_reset (DEVICE *dptr);
-t_stat rq_attach (UNIT *uptr, char *cptr);
+t_stat rq_attach (UNIT *uptr, CONST char *cptr);
 t_stat rq_detach (UNIT *uptr);
 t_stat rq_boot (int32 unitno, DEVICE *dptr);
-t_stat rq_set_wlk (UNIT *uptr, int32 val, char *cptr, void *desc);
-t_stat rq_set_type (UNIT *uptr, int32 val, char *cptr, void *desc);
-t_stat rq_set_ctype (UNIT *uptr, int32 val, char *cptr, void *desc);
-t_stat rq_show_type (FILE *st, UNIT *uptr, int32 val, void *desc);
-t_stat rq_show_ctype (FILE *st, UNIT *uptr, int32 val, void *desc);
-t_stat rq_show_wlk (FILE *st, UNIT *uptr, int32 val, void *desc);
-t_stat rq_show_ctrl (FILE *st, UNIT *uptr, int32 val, void *desc);
-t_stat rq_show_unitq (FILE *st, UNIT *uptr, int32 val, void *desc);
+t_stat rq_set_wlk (UNIT *uptr, int32 val, CONST char *cptr, void *desc);
+t_stat rq_set_type (UNIT *uptr, int32 val, CONST char *cptr, void *desc);
+t_stat rq_set_ctype (UNIT *uptr, int32 val, CONST char *cptr, void *desc);
+t_stat rq_show_type (FILE *st, UNIT *uptr, int32 val, CONST void *desc);
+t_stat rq_show_ctype (FILE *st, UNIT *uptr, int32 val, CONST void *desc);
+t_stat rq_show_wlk (FILE *st, UNIT *uptr, int32 val, CONST void *desc);
+t_stat rq_show_ctrl (FILE *st, UNIT *uptr, int32 val, CONST void *desc);
+t_stat rq_show_unitq (FILE *st, UNIT *uptr, int32 val, CONST void *desc);
 t_stat rq_help (FILE *st, DEVICE *dptr, UNIT *uptr, int32 flag, const char *cptr);
 const char *rq_description (DEVICE *dptr);
 
@@ -2740,7 +2740,7 @@ return ERR;
 
 /* Set/clear hardware write lock */
 
-t_stat rq_set_wlk (UNIT *uptr, int32 val, char *cptr, void *desc)
+t_stat rq_set_wlk (UNIT *uptr, int32 val, CONST char *cptr, void *desc)
 {
 uint32 dtyp = GET_DTYPE (uptr->flags);                  /* get drive type */
 
@@ -2751,7 +2751,7 @@ return SCPE_OK;
 
 /* Show write lock status */
 
-t_stat rq_show_wlk (FILE *st, UNIT *uptr, int32 val, void *desc)
+t_stat rq_show_wlk (FILE *st, UNIT *uptr, int32 val, CONST void *desc)
 {
 uint32 dtyp = GET_DTYPE (uptr->flags);                  /* get drive type */
 
@@ -2765,7 +2765,7 @@ return SCPE_OK;
 
 /* Set unit type (and capacity if user defined) */
 
-t_stat rq_set_type (UNIT *uptr, int32 val, char *cptr, void *desc)
+t_stat rq_set_type (UNIT *uptr, int32 val, CONST char *cptr, void *desc)
 {
 uint32 cap;
 uint32 max = sim_toffset_64? RA8U_EMAXC: RA8U_MAXC;
@@ -2790,7 +2790,7 @@ return SCPE_OK;
 
 /* Show unit type */
 
-t_stat rq_show_type (FILE *st, UNIT *uptr, int32 val, void *desc)
+t_stat rq_show_type (FILE *st, UNIT *uptr, int32 val, CONST void *desc)
 {
 fprintf (st, "%s", drv_tab[GET_DTYPE (uptr->flags)].name);
 return SCPE_OK;
@@ -2798,7 +2798,7 @@ return SCPE_OK;
 
 /* Set controller type */
 
-t_stat rq_set_ctype (UNIT *uptr, int32 val, char *cptr, void *desc)
+t_stat rq_set_ctype (UNIT *uptr, int32 val, CONST char *cptr, void *desc)
 {
 MSC *cp = rq_ctxmap[uptr->cnum];
 
@@ -2810,7 +2810,7 @@ return SCPE_OK;
 
 /* Show controller type */
 
-t_stat rq_show_ctype (FILE *st, UNIT *uptr, int32 val, void *desc)
+t_stat rq_show_ctype (FILE *st, UNIT *uptr, int32 val, CONST void *desc)
 {
 MSC *cp = rq_ctxmap[uptr->cnum];
 fprintf (st, "%s", ctlr_tab[cp->ctype].name);
@@ -2819,7 +2819,7 @@ return SCPE_OK;
 
 /* Device attach */
 
-t_stat rq_attach (UNIT *uptr, char *cptr)
+t_stat rq_attach (UNIT *uptr, CONST char *cptr)
 {
 MSC *cp = rq_ctxmap[uptr->cnum];
 t_stat r;
@@ -3064,7 +3064,7 @@ for (i = 0; i < RQ_SH_MAX; i = i + RQ_SH_PPL) {
 return;
 }
 
-t_stat rq_show_unitq (FILE *st, UNIT *uptr, int32 val, void *desc)
+t_stat rq_show_unitq (FILE *st, UNIT *uptr, int32 val, CONST void *desc)
 {
 MSC *cp = rq_ctxmap[uptr->cnum];
 DEVICE *dptr = rq_devmap[uptr->cnum];
@@ -3095,7 +3095,7 @@ else fprintf (st, "Unit %d queues are empty\n", u);
 return SCPE_OK;
 }
 
-t_stat rq_show_ctrl (FILE *st, UNIT *uptr, int32 val, void *desc)
+t_stat rq_show_ctrl (FILE *st, UNIT *uptr, int32 val, CONST void *desc)
 {
 MSC *cp = rq_ctxmap[uptr->cnum];
 DEVICE *dptr = rq_devmap[uptr->cnum];

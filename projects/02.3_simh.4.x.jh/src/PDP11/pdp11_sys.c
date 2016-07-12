@@ -238,17 +238,19 @@ const char *sim_stop_messages[] = {
    the PC at which to start the program.
 */
 
-t_stat sim_load (FILE *fileref, char *cptr, char *fnam, int flag)
+t_stat sim_load (FILE *fileref, CONST char *cptr, CONST char *fnam, int flag)
 {
 int32 c[6], d, i, cnt, csum;
 uint32 org;
 
-if ((*cptr != 0) || (flag != 0))
+if (*cptr != 0)
     return SCPE_ARG;
+if (flag != 0)
+    return sim_messagef (SCPE_NOFNC, "Command Not Implemented\n");
 do {                                                    /* block loop */
     csum = 0;                                           /* init checksum */
     for (i = 0; i < 6; ) {                              /* 6 char header */
-        if ((c[i] = getc (fileref)) == EOF)
+        if ((c[i] = Fgetc (fileref)) == EOF)
             return SCPE_FMT;
         if ((i != 0) || (c[i] == 1))                    /* 1st must be 1 */
             csum = csum + c[i++];                       /* add into csum */
@@ -263,7 +265,7 @@ do {                                                    /* block loop */
         return SCPE_OK;
         }
     for (i = 6; i < cnt; i++) {                         /* exclude hdr */
-        if ((d = getc (fileref)) == EOF)                /* data char */
+        if ((d = Fgetc (fileref)) == EOF)                /* data char */
             return SCPE_FMT;
         csum = csum + d;                                /* add into csum */
         if (org >= MEMSIZE)                             /* invalid addr? */
@@ -273,7 +275,7 @@ do {                                                    /* block loop */
             (M[org >> 1] & 0177400) | (uint16)d;
         org = (org + 1) & 0177777;                      /* inc origin */
         }
-    if ((d = getc (fileref)) == EOF)                    /* get csum */
+    if ((d = Fgetc (fileref)) == EOF)                    /* get csum */
         return SCPE_FMT;
     csum = csum + d;                                    /* add in */
     } while ((csum & 0377) == 0);                       /* result mbz */
@@ -930,7 +932,7 @@ switch (pflag) {                                        /* case on syntax */
                         <= 0  -number of extra words
 */
 
-t_stat parse_sym (char *cptr, t_addr addr, UNIT *uptr, t_value *val, int32 sw)
+t_stat parse_sym (CONST char *cptr, t_addr addr, UNIT *uptr, t_value *val, int32 sw)
 {
 int32 bflag, cflag, d, i, j, reg, spec, n1, n2, disp, pflag;
 t_value by;

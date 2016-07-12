@@ -49,7 +49,7 @@ protocol (RSP), or the modified radial serial protocol (MRSP), and were designed
 by asynchronous interfaces.
 
 3.1.1 Block Number, Byte Count, and Drive Number
-The TU58 uses a drive number, block number, and byte count to write or read data. Figure 1-4 (Chapter 1)
+The TU58 uses a drive number, block number, and byte count to write or read data.  1-4 (Chapter 1)
 shows the locations of blocks on the tape. If all of the desired data is contained within a single 512-byte
 block, the byte count will be 512 or less. When the host asks for a particular block and a 512-or-Iess byte
 count, the TU58 positions the specified drive (unit) at that block and transfers the number of bytes specified.
@@ -140,7 +140,7 @@ the serial line, which normally switches between two logic states called mark an
 space condition for at least one character time. This causes the TU58's UART to set its framing error
 bit. The TU58 interprets the framing error as Break.
 
-If communications break· down, due to any transient problem, the host may restore order by sending
+If communications breakdown, due to any transient problem, the host may restore order by sending
 Break and IN IT as outlined above. The faulty operations are cancelled, and the TU58 reinitializes itself,
 returns Continue, and waits for instructions.
 
@@ -377,7 +377,7 @@ The TUS8 returns the following end packet.
     13  XXXX XXXX   CHECKSUM H
 
 OP CODE 1 INIT
-This instruction causes the TU58 controller to reset itself to· a ready state. No tape positioning results
+This instruction causes the TU58 controller to reset itself to a ready state. No tape positioning results
 from this operation. The command 'packet is tbe same as for NOP except for the op code and the resultant
 change to the low order checksum byte. The TU58 sends the same end packet as for NOP after
 reinitializing itself. There are no modifiers to IN IT.
@@ -418,7 +418,7 @@ The write operation has to cope with the fact that the TU58 only has 128 bytes o
 necessary for the host to send a data packet and wait for the TU58 to write it before sending the next data
 packet. This is accomplished using the continue flag. The continue flag is a single byte response of 000 1
 0000 from TU58 to host. The RSP write transaction for both write and write/verify operations is shown in
-Figure 3·2. The MRSP write transaction for both write and write/verify operations is shown in Figure 3·3.
+Figure 3.2. The MRSP write transaction for both write and write/verify operations is shown in Figure 3.3.
 
 OP CODE 4 (Resened)
 
@@ -577,12 +577,16 @@ static const char *tdc_regnam[] =
 #define TD_END          7                               /* empty buffer */
 #define TD_END1         8                               /* empty buffer */
 #define TD_INIT         9                               /* empty buffer */
+#define TD_BOOTSTRAP    10                              /* bootstrap read */
+#define TD_POSITION     11                              /* position */
 
-static char *td_states[] = {
-    "IDLE", "READ", "READ1", "READ2", "WRITE", "WRITE1", "WRITE2", "END", "END1", "INIT"
+static const char *td_states[] = {
+    "IDLE",     "READ",     "READ1",    "READ2", 
+    "WRITE",    "WRITE1",   "WRITE2",   "END", 
+    "END1",     "INIT",     "BOOTSTRAP","POSITION"
     };
 
-static char *td_ops[] = {
+static const char *td_ops[] = {
     "NOP", "INI",   "RD",  "WR", "004", "POS", "006", "DIA", 
     "GST", "SST", "MRSP", "013", "014", "015", "016", "017",
     "020", "021",  "022", "023", "024", "025", "026", "027",
@@ -594,7 +598,7 @@ static char *td_ops[] = {
     "END"
     };
 
-static char *td_csostates[] = {
+static const char *td_csostates[] = {
     "GETOPC", "GETLEN", "GETDATA"
     };
 
@@ -640,8 +644,9 @@ static t_stat td_rd (int32 *data, int32 PA, int32 access);
 static t_stat td_wr (int32 data, int32 PA, int32 access);
 static t_stat td_svc (UNIT *uptr);
 static t_stat td_reset (DEVICE *dptr);
-static t_stat td_set_ctrls (UNIT *uptr, int32 val, char *cptr, void *desc);
-static t_stat td_show_ctlrs (FILE *st, UNIT *uptr, int32 val, void *desc);
+static t_stat td_set_ctrls (UNIT *uptr, int32 val, CONST char *cptr, void *desc);
+static t_stat td_show_ctlrs (FILE *st, UNIT *uptr, int32 val, CONST void *desc);
+static t_stat td_boot (int32 unitno, DEVICE *dptr);
 static t_stat td_help (FILE *st, DEVICE *dptr, UNIT *uptr, int32 flag, const char *cptr);
 static void tdi_set_int (int32 ctlr, t_bool val);
 static int32 tdi_iack (void);
@@ -672,26 +677,33 @@ static UNIT td_unit[2*TD_NUMCTLR];
 
 static REG td_reg[] = {
     { DRDATAD (CTRLRS, td_ctrls,  4, "number of controllers"), REG_HRO },
-    { HRDATAD (ECODE,  td_regval, 8, "end packet success code") },
-    { HRDATAD (BLOCK,  td_regval, 8, "current block number") },
-    { HRDATAD (RX_CSR, td_regval,16, "input control/status register") },
-    { HRDATAD (RX_BUF, td_regval,16, "input buffer register") },
-    { HRDATAD (TX_CSR, td_regval,16, "output control/status register") },
-    { HRDATAD (TX_BUF, td_regval,16, "output buffer register") },
-    { DRDATAD (P_STATE,td_regval, 4, "protocol state"), REG_RO },
-    { DRDATAD (O_STATE,td_regval, 4, "output state"), REG_RO },
-    { DRDATAD (IBPTR,  td_regval, 9, "input buffer pointer")  },
-    { DRDATAD (OBPTR,  td_regval, 9, "output buffer pointer")  },
-    { DRDATAD (ILEN,   td_regval, 9, "input length")  },
-    { DRDATAD (OLEN,   td_regval, 9, "output length")  },
-    { DRDATAD (TXSIZE, td_regval, 9, "remaining transfer size")  },
-    { DRDATAD (OFFSET, td_regval, 9, "offset into current transfer")  },
-    { DRDATAD (CTIME,  td_regval,24, "command time"), PV_LEFT },
-    { DRDATAD (STIME,  td_regval,24, "seek, per block"), PV_LEFT },
-    { DRDATAD (XTIME,  td_regval,24, "tr set time"), PV_LEFT },
-    { DRDATAD (ITIME,  td_regval,24, "init time"), PV_LEFT },
-    { BRDATAD (IBUF,   &td_regval,16, 8, 512, "input buffer"), },
-    { BRDATAD (OBUF,   &td_regval,16, 8, 512, "output buffer"), },
+
+    { DRDATAD (CTIME,  td_ctime,24, "command time"), PV_LEFT },
+    { DRDATAD (STIME,  td_stime,24, "seek, per block"), PV_LEFT },
+    { DRDATAD (XTIME,  td_xtime,24, "tr set time"), PV_LEFT },
+    { DRDATAD (ITIME,  td_itime,24, "init time"), PV_LEFT },
+
+#define RDATA(nm,loc,wd,desc) STRDATAD(nm,td_ctlr[0].loc,16,wd,0,TD_NUMCTLR+1,sizeof(CTLR),REG_RO,desc)
+#define RDATAF(nm,loc,wd,desc,flds) STRDATADF(nm,td_ctlr[0].loc,16,wd,0,TD_NUMCTLR+1,sizeof(CTLR),REG_RO,desc,flds)
+
+    { RDATA  (ECODE,  ecode,  16, "end packet success code") },
+    { RDATA  (BLOCK,  block,  16, "current block number") },
+    { RDATAF (RX_CSR, rx_csr, 16, "input control/status register",  rx_csr_bits) },
+    { RDATAF (RX_BUF, rx_buf, 16, "input buffer register",          rx_buf_bits) },
+    { RDATAF (TX_CSR, tx_csr, 16, "output control/status register", tx_csr_bits) },
+    { RDATAF (TX_BUF, tx_buf, 16, "output buffer register",         tx_buf_bits) },
+    { RDATA  (P_STATE,p_state, 4, "protocol state") },
+    { RDATA  (O_STATE,o_state, 4, "output state") },
+    { RDATA  (IBPTR,  ibptr,  16, "input buffer pointer") },
+    { RDATA  (OBPTR,  obptr,  16, "output buffer pointer") },
+    { RDATA  (ILEN,   ilen,   16, "input length") },
+    { RDATA  (OLEN,   olen,   16, "output length") },
+    { RDATA  (TXSIZE, txsize, 16, "remaining transfer size") },
+    { RDATA  (OFFSET, offset, 16, "offset into current transfer") },
+    { RDATA  (UNITNO, unitno, 16, "active unit number") },
+
+    { BRDATAD (IBUF,   td_ctlr[0].ibuf,16, 8, 512, "input buffer"), },
+    { BRDATAD (OBUF,   td_ctlr[0].obuf,16, 8, 512, "output buffer"), },
     { NULL }
     };
 
@@ -708,7 +720,7 @@ DEVICE tdc_dev = {
     "TDC", td_unit, td_reg, td_mod,
     2*TD_NUMCTLR, DEV_RDX, 20, 1, DEV_RDX, 8,
     NULL, NULL, &td_reset,
-    NULL, NULL, NULL,
+    &td_boot, NULL, NULL,
     &td_dib, DEV_DISABLE | DEV_DIS | DEV_UBUS | DEV_QBUS | DEV_DEBUG, 0,
     td_deb, NULL, NULL, &td_help, NULL, NULL,
     &td_description
@@ -789,7 +801,7 @@ return SCPE_OK;
 
 t_stat td_wr_o_buf (CTLR *ctlr, int32 data)
 {
-sim_debug (TDDEB_OWR, ctlr->dptr, "td_wr_o_buf() o_state=%s, ibptr=%d, ilen=%d\n", td_csostates[ctlr->o_state], ctlr->ibptr, ctlr->ilen);
+sim_debug (TDDEB_OWR, ctlr->dptr, "td_wr_o_buf() %s o_state=%s, ibptr=%d, ilen=%d\n", (ctlr->tx_csr & DLOCSR_XBR) ? "XMT-BRK" : "", td_csostates[ctlr->o_state], ctlr->ibptr, ctlr->ilen);
 sim_debug_bits_hdr(TDDEB_OWR, ctlr->dptr, "TX_BUF", tx_buf_bits, data, data, 1);
 ctlr->tx_buf = data & BMASK;                            /* save data */
 ctlr->tx_csr &= ~CSR_DONE;                              /* clear flag */
@@ -817,7 +829,6 @@ switch (ctlr->o_state) {
             }
         break;
     }
-
 ctlr->tx_csr |= CSR_DONE;                               /* set input flag */
 if (ctlr->tx_csr & CSR_IE)
     CSO_SET_INT;
@@ -825,7 +836,7 @@ return SCPE_OK;
 }
 
 
-static char *reg_access[] = {"Word", "Byte"};
+static const char *reg_access[] = {"Read", "ReadC", "Write", "WriteC", "WriteB"};
 
 typedef t_stat (*reg_read_routine) (CTLR *ctlr, int32 *data);
 
@@ -846,7 +857,7 @@ if (ctlr > td_ctrls)                                    /* validate controller n
 if (PA & 1)                                             /* odd address reference? */
     return SCPE_OK;
 
-sim_debug (TDDEB_RRD, &tdc_dev, "td_rd(PA=%X(%s), access=%d-%s)\n", PA, tdc_regnam[(PA >> 1) & 03], access, reg_access[access]);
+sim_debug (TDDEB_RRD, &tdc_dev, "td_rd(PA=%o(%s), access=%d-%s)\n", PA, tdc_regnam[(PA >> 1) & 03], access, reg_access[access]);
 
 return (td_rd_regs[(PA >> 1) & 03])(&td_ctlr[ctlr], data);
 }
@@ -867,7 +878,7 @@ int32 ctrl = ((PA - td_dib.ba) >> 3);
 if (ctrl > td_ctrls)                                    /* validate line number */
     return SCPE_IERR;
 
-sim_debug (TDDEB_RWR, &tdc_dev, "td_wr(PA=%X(%s), access=%d-%s, data=%X)\n", PA, tdc_regnam[(PA >> 1) & 03], access, reg_access[access], data);
+sim_debug (TDDEB_RWR, &tdc_dev, "td_wr(PA=%o(%s), access=%d-%s, data=%X)\n", PA, tdc_regnam[(PA >> 1) & 03], access, reg_access[access], data);
 
 if (PA & 1)                                             /* odd address reference? */
     return SCPE_OK;
@@ -881,7 +892,7 @@ static void td_process_packet(CTLR *ctlr)
 {
 uint32 unit;
 int32 opcode = ctlr->ibuf[0];
-char *opcode_name, *command_name;
+const char *opcode_name, *command_name;
 
 switch (opcode) {
     case TD_OPDAT:
@@ -939,15 +950,13 @@ switch (opcode) {
             case TD_CMDNOP:                              /* NOP */
             case TD_CMDGST:                              /* Get status */
             case TD_CMDSST:                              /* Set status */
+            case TD_CMDINI:                              /* INIT */
+            case TD_CMDDIA:                              /* Diagnose */
                 ctlr->unitno = ctlr->ibuf[4];
                 ctlr->p_state = TD_END;                  /* All treated as NOP */
                 ctlr->ecode = TD_STSOK;
                 ctlr->offset = 0;
                 sim_activate (ctlr->uptr+ctlr->unitno, td_ctime);/* sched command */
-                break;
-               
-            case TD_CMDINI:
-                sim_printf("Warning: TU58 command 'INIT' not implemented\n");
                 break;
                
             case TD_CMDRD:
@@ -969,11 +978,12 @@ switch (opcode) {
                 break;
                
             case TD_CMDPOS:
-                sim_printf("Warning: TU58 command 'Position' not implemented\n");
-                break;
-               
-            case TD_CMDDIA:
-                sim_printf("Warning: TU58 command 'Diagnose' not implemented\n");
+                ctlr->unitno = ctlr->ibuf[4];
+                ctlr->block = ((ctlr->ibuf[11] << 8) | ctlr->ibuf[10]);
+                ctlr->txsize = 0;
+                ctlr->p_state = TD_POSITION;
+                ctlr->offset = 0;
+                sim_activate (ctlr->uptr+ctlr->unitno, td_ctime);/* sched command */
                 break;
                
             case TD_CMDMRSP:
@@ -986,7 +996,7 @@ switch (opcode) {
         break;
 
     case TD_OPINI:
-        for (unit=0; unit < ctlr->dptr->numunits; unit++)
+        for (unit=0; unit < 2; unit++)
             sim_cancel (ctlr->uptr+unit);
         ctlr->ibptr = 0;
         ctlr->obptr = 0;
@@ -999,21 +1009,34 @@ switch (opcode) {
         break;
 
     case TD_OPBOO:
-        if (ctlr->p_state != TD_IDLE) {
-            sim_printf("TU58 protocol error 3\n");
-            return;
-            }
         if (ctlr->ibptr < 2) {                          /* whole packet read? */
             ctlr->ilen = 2;
             ctlr->o_state = TD_GETDATA;                 /* get rest of packet */
             return;
             }
-        ctlr->unitno = ctlr->ibuf[4];
-        ctlr->block = 0;
-        ctlr->txsize = 512;
-        ctlr->p_state = TD_READ;
-        ctlr->offset = 0;
-        sim_activate (ctlr->uptr+ctlr->unitno, td_ctime);/* sched command */
+        else {
+            int8 *fbuf;
+            int i;
+
+            sim_debug (TDDEB_TRC, ctlr->dptr, "td_process_packet(OPBOO) Unit=%d\n", ctlr->ibuf[4]);
+            ctlr->unitno = ctlr->ibuf[1];
+            fbuf = (int8 *)ctlr->uptr[ctlr->unitno].filebuf;
+            ctlr->block = 0;
+            ctlr->txsize = 0;
+            ctlr->p_state = TD_BOOTSTRAP;
+            ctlr->offset = 0;
+            ctlr->obptr = 0;
+
+            for (i=0; i < TD_NUMBY; i++)
+                ctlr->obuf[i] = fbuf[i];
+            ctlr->olen = TD_NUMBY;
+            ctlr->rx_buf = ctlr->obuf[ctlr->obptr++];   /* get first byte */
+            ctlr->rx_csr |= CSR_DONE;                   /* set input flag */
+            if (ctlr->rx_csr & CSR_IE)                  /* interrupt if enabled */
+                CSI_SET_INT;
+            sim_data_trace(ctlr->dptr, &ctlr->uptr[ctlr->unitno], ctlr->obuf, "Boot Block Data", ctlr->olen, "", TDDEB_DAT);
+            sim_activate (ctlr->uptr+ctlr->unitno, td_ctime);/* sched command */
+            }
         break;
 
     case TD_OPCNT:
@@ -1030,7 +1053,7 @@ static t_stat td_svc (UNIT *uptr)
 int32 i, t, data_size;
 uint16 c, w;
 uint32 da;
-int8 *fbuf = uptr->filebuf;
+int8 *fbuf = (int8 *)uptr->filebuf;
 CTLR *ctlr = (CTLR *)uptr->up7;
 
 sim_debug (TDDEB_TRC, ctlr->dptr, "td_svc(%s, p_state=%s)\n", sim_uname(uptr), td_states[ctlr->p_state]);
@@ -1045,6 +1068,20 @@ switch (ctlr->p_state) {                                /* case on state */
             if (t == 0)                                 /* minimum 1 */
                 t = 1;
             ctlr->p_state++;                            /* set next state */
+            sim_activate (uptr, td_stime * t);          /* schedule seek */
+            break;
+            }
+        else 
+            ctlr->p_state = TD_END;
+        sim_activate (uptr, td_xtime);                  /* schedule next */
+        break;
+
+    case TD_POSITION:                                   /* position */
+        if (td_test_xfr (uptr, ctlr->p_state)) {        /* transfer ok? */
+            t = abs (ctlr->block - 0);                  /* # blocks to seek */
+            if (t == 0)                                 /* minimum 1 */
+                t = 1;
+            ctlr->p_state = TD_END;                     /* set next state */
             sim_activate (uptr, td_stime * t);          /* schedule seek */
             break;
             }
@@ -1077,6 +1114,7 @@ switch (ctlr->p_state) {                                /* case on state */
         ctlr->olen = ctlr->obptr;
         ctlr->obptr = 0;
         ctlr->p_state = TD_READ2;                       /* go empty */
+        sim_data_trace(ctlr->dptr, &ctlr->uptr[ctlr->unitno], ctlr->obuf, "Sending Read Data Packet", ctlr->olen, "", TDDEB_DAT);
         sim_activate (uptr, td_xtime);                  /* schedule next */
         break;
 
@@ -1132,6 +1170,20 @@ switch (ctlr->p_state) {                                /* case on state */
         sim_activate (uptr, td_xtime);                  /* schedule next */
         break;
         
+    case TD_BOOTSTRAP:                                  /* send data to host */
+        if ((ctlr->rx_csr & CSR_DONE) == 0) {           /* prev data taken? */
+            ctlr->rx_buf = ctlr->obuf[ctlr->obptr++];   /* get next byte */
+            ctlr->rx_csr |= CSR_DONE;                   /* set input flag */
+            if (ctlr->rx_csr & CSR_IE)
+                CSI_SET_INT;
+            if (ctlr->obptr >= ctlr->olen) {            /* buffer empty? */
+                ctlr->p_state = TD_IDLE;
+                break;
+                }
+            }
+        sim_activate (uptr, td_xtime);                  /* schedule next */
+        break;
+
     case TD_END:                                        /* build end packet */
         ctlr->obptr = 0;
         ctlr->obuf[ctlr->obptr++] = TD_OPCMD;           /* Command packet */
@@ -1358,6 +1410,21 @@ static t_stat td_reset (DEVICE *dptr)
 {
 CTLR *ctlr;
 int ctl;
+static t_bool td_enabled_reset = FALSE;
+
+if (dptr->flags & DEV_DIS)
+    td_enabled_reset = FALSE;
+else {
+    /* When the TDC device is just being enabled, */
+    if (!td_enabled_reset) {
+        char num[16];
+
+        td_enabled_reset = TRUE;
+        /* make sure to bound the number of DLI devices */
+        sprintf (num, "%d", td_ctrls);
+        td_set_ctrls (dptr->units, 0, num, NULL);
+        }
+    }
 
 sim_debug (TDDEB_INT, dptr, "td_reset()\n");
 for (ctl=0; ctl<TD_NUMCTLR; ctl++) {
@@ -1392,15 +1459,16 @@ return "TU58 cartridge";
 
 /* Change number of controllers */
 
-static t_stat td_set_ctrls (UNIT *uptr, int32 val, char *cptr, void *desc)
+static t_stat td_set_ctrls (UNIT *uptr, int32 val, CONST char *cptr, void *desc)
 {
 int32 newln, i;
 t_stat r;
+DEVICE *dli_dptr = find_dev ("DLI");
 
 if (cptr == NULL)
     return SCPE_ARG;
 newln = (int32)get_uint (cptr, 10, TD_NUMCTLR, &r);
-if ((r != SCPE_OK) || (newln == td_ctrls))
+if (r != SCPE_OK)
     return r;
 if (newln == 0)
     return SCPE_ARG;
@@ -1412,12 +1480,22 @@ if (newln < td_ctrls) {
     }
 td_ctrls = newln;
 td_dib.lnt = td_ctrls * td_dib.ulnt;            /* upd IO page lnt */
+/* Make sure that the number of TU58 controllers plus DL devices is 16 or less */
+if ((dli_dptr != NULL) && !(dli_dptr->flags & DEV_DIS) && 
+    ((((DIB *)dli_dptr->ctxt)->numc + td_ctrls) > 16)) { /* Too many? */
+    dli_dptr->flags |= DEV_DIS;                 /* First disable DL devices */
+    dli_dptr->reset (dli_dptr);                 /* Notify of the disable */
+    if (td_ctrls < 16) {                        /* Room for some DL devices? */
+        dli_dptr->flags &= ~DEV_DIS;            /* Re-Enable DL devices */
+        dli_dptr->reset (dli_dptr);             /* Notify of the enable which forces sizing */
+        }
+    }
 return td_reset (&tdc_dev);
 }
 
 /* Show number of controllers */
 
-t_stat td_show_ctlrs (FILE *st, UNIT *uptr, int32 val, void *desc)
+t_stat td_show_ctlrs (FILE *st, UNIT *uptr, int32 val, CONST void *desc)
 {
 fprintf (st, "controllers=%d", td_ctrls);
 return SCPE_OK;
@@ -1453,3 +1531,74 @@ ctlr->rx_set_int = rx_set_int;
 ctlr->tx_set_int = tx_set_int;
 return td_reset_ctlr (ctlr);
 }
+
+/* Device bootstrap */
+
+#if defined (VM_PDP11)
+
+#define BOOT_START      02000                           /* start */
+#define BOOT_ENTRY      (BOOT_START + 000)              /* entry */
+#define BOOT_CSR        (BOOT_START + 002)              /* CSR */
+#define BOOT_UNIT       (BOOT_START + 006)              /* unit number */
+#define BOOT_LEN        (sizeof (boot_rom) / sizeof (int16))
+
+/* PDP11 Bootstrap adapted from 23-76589.mac.txt */
+
+    static const uint16 boot_rom[] = {
+                        /* RCSR = 0 offset from CSR in R1                   */
+                        /* RBUF = 2 offset from CSR in R1                   */
+                        /* TCSR = 4 offset from CSR in R1                   */
+                        /* TBUF = 6 offset from CSR in R1                   */
+                        /* BOOT_START:                                      */
+    0012701, 0176500,   /*          MOV  #176500,R1  ; Set CSR              */
+    0012702, 0000000,   /*          MOV  #0,R0       ; Set Unit Number      */
+    0012706, BOOT_START,/*          MOV  #BOOT_START,SP ; Setup a Stack     */
+    0005261, 0000004,   /*          INC  TCSR(R1)    ; Set BRK (Init)       */
+    0005003,            /*          CLR  R3          ; data 000, 000        */
+    0004767, 0000050,   /*          JSR  PC,10$      ; transmit many NULs   */
+    0005061, 0000004,   /*          CLR  TCSR(R1)    ; Clear BRK            */
+    0105761, 0000002,   /*          TSTB RBUF(R1)    ; Flush receive char   */
+    0012703, 0004004,   /*          MOV  #<010*400>+004,r3; data 010,004    */
+    0004767, 0000034,   /*          JSR  PC,12$      ; xmit 004(init) & 010(boot)*/
+    0010003,            /*          MOV  R0,R3       ; get unit number      */
+    0004767, 0000030,   /*          JSR  PC,13$      ; xmit unit number     */
+                        /* ; setup complete, read data bytes                */
+    0005003,            /*          CLR  R3          ; init load address    */
+    0105711,            /* 1$:      TSTB RCSR(R1)    ; next ready?          */
+    0100376,            /*          BPL  1$          ; not yet?             */
+    0116123, 0000002,   /*          MOVB RBUF(R1),(R3)+ ; read next byte int memory */
+    0022703, 0001000,   /*          CMP  #1000,R3     ; all done?           */
+    0101371,            /*          BHI  1$           ; no, continue        */
+    0005007,            /*          CLR  PC           ; Jump to bootstrap at 0 */
+                        /* ; character Output routine                     */
+    004717,             /* 10$:     JSR  PC,(PC)    ; Recurs call char replicate*/
+    004717,             /* 11$:     JSR  PC,(PC)    ; Recurs call char replicate*/
+    004717,             /* 12$:     JSR  PC,(PC)    ; Recurs call char replicate*/
+    0105761, 0000004,   /* 13$:     TSTB TCSR(R1)   ; XMit Avail?               */
+    0100375,            /*          BPL  13$        ; Wait for DONE             */
+    0110361, 0000006,   /*          MOVB R3,TBUF(R1); Send Character            */
+    0000303,            /*          SWAB R3         ; swap to other char        */
+    0000207,            /*          RTS  PC         ; recurse or return         */
+    };
+
+static t_stat td_boot (int32 unitno, DEVICE *dptr)
+{
+size_t i;
+extern uint16 *M;                                       /* memory */
+
+for (i = 0; i < BOOT_LEN; i++)
+    M[(BOOT_START >> 1) + i] = boot_rom[i];
+M[BOOT_UNIT >> 1] = unitno & 1;
+M[BOOT_CSR >> 1] = (td_dib.ba & DMASK) + 000;
+cpu_set_boot (BOOT_ENTRY);
+return SCPE_OK;
+}
+
+#else
+
+static t_stat td_boot (int32 unitno, DEVICE *dptr)
+{
+return SCPE_NOFNC;
+}
+
+#endif

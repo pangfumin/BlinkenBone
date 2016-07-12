@@ -20,7 +20,7 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
+   18-Jun-2016  JH      added param "bootimage" (for PDP-15)
    25-Feb-2016  JH      disconnect on host or panel change
    25-Mar-2012  JH      created
 */
@@ -39,6 +39,7 @@ static CTAB set_realcons_tab[] =
 { "INTERVAL", &realcons_simh_set_service_interval, 1 },
 { "CONNECTED", &realcons_simh_set_connect, 1 },
 { "DISCONNECTED", &realcons_simh_set_connect, 0 },
+{ "BOOTIMAGE", &realcons_simh_set_boot_image, 0 },
 { "TEST", &realcons_simh_test, 0 },
 { "DEBUG", &realcons_simh_set_debug, 1 },
 { "NODEBUG", &realcons_simh_set_debug, 0 },
@@ -52,7 +53,8 @@ static SHTAB show_realcons_tab[] =
 { "INTERVAL", &realcons_simh_show_service_interval, 0 },
 //     { "LOG", &sim_show_log, 0 },
 		{ "CONNECTED", &realcons_simh_show_connected, 0 },
-		{ "DEBUG", &realcons_simh_show_debug, 0 },
+        { "BOOTIMAGE", &realcons_simh_show_boot_image, 0 },
+        { "DEBUG", &realcons_simh_show_debug, 0 },
 		{ "SERVER", &realcons_simh_show_server, 0 }, // the last, multiline outout
 //	{ "CYCLES", &realcons_simh_show_cycles, 0 }, // debug
 		{ NULL, NULL, 0 } };
@@ -62,11 +64,12 @@ static SHTAB show_realcons_tab[] =
  * set realcons panel=<panelname>
  * set realcons enabled
  * set realcons disabled
+ * set realcons bootimage=<filename>
  * set realcons debug
  * set realcons nodebug
 
  */
-t_stat sim_set_realcons(int32 flag, char *cptr)
+t_stat sim_set_realcons(int32 flag, CONST char *cptr)
 {
 	char *cvptr, gbuf[CBUFSIZE];
 	CTAB *ctptr;
@@ -92,7 +95,7 @@ t_stat sim_set_realcons(int32 flag, char *cptr)
 // set realcons host=<name>
 // (is initialized with "localhost")
 // changes disconnect
-t_stat realcons_simh_set_hostname(int32 flg, char *cptr)
+t_stat realcons_simh_set_hostname(int32 flg, CONST char *cptr)
 {
 	if ((cptr == NULL) || (*cptr == 0))
 		return SCPE_2FARG; /* too few arguments? */
@@ -103,7 +106,7 @@ t_stat realcons_simh_set_hostname(int32 flg, char *cptr)
 }
 
 // set realcons panel=<name>
-t_stat realcons_simh_set_panelname(int32 flg, char *cptr)
+t_stat realcons_simh_set_panelname(int32 flg, CONST char *cptr)
 {
 	if ((cptr == NULL) || (*cptr == 0))
 		return SCPE_2FARG; /* too few arguments? */
@@ -113,10 +116,21 @@ t_stat realcons_simh_set_panelname(int32 flg, char *cptr)
 	return SCPE_OK;
 }
 
+// set realcons bootimage=<filename>
+t_stat realcons_simh_set_boot_image(int32 flg, CONST char *cptr)
+{
+    if ((cptr == NULL) || (*cptr == 0))
+        return SCPE_2FARG; /* too few arguments? */
+    strcpy(cpu_realcons->boot_image_filepath, cptr);
+    return SCPE_OK;
+}
+
+
+
 /*
  * set min period between two service cycles: update frequency for GUI and servers
  */
-t_stat realcons_simh_set_service_interval(int32 flg, char *cptr)
+t_stat realcons_simh_set_service_interval(int32 flg, CONST char *cptr)
 {
 	t_value val;
 	const char *tptr;
@@ -134,7 +148,7 @@ t_stat realcons_simh_set_service_interval(int32 flg, char *cptr)
 /*
  * set realcons connected / disconnected
  */
-t_stat realcons_simh_set_connect(int32 flg, char *cptr)
+t_stat realcons_simh_set_connect(int32 flg, CONST char *cptr)
 {
 	t_stat reason;
 	if (flg) // connect to host
@@ -147,13 +161,13 @@ t_stat realcons_simh_set_connect(int32 flg, char *cptr)
 	return reason;
 }
 
-t_stat realcons_simh_test(int32 flg, char *cptr)
+t_stat realcons_simh_test(int32 flg, CONST char *cptr)
 {
 	realcons_test(cpu_realcons, 0); // panel specific self test. (1 sec lamp test)
 	return SCPE_OK;
 }
 
-t_stat realcons_simh_set_debug(int32 flg, char *cptr)
+t_stat realcons_simh_set_debug(int32 flg, CONST char *cptr)
 {
 	cpu_realcons->debug = flg;
 	return SCPE_OK;
@@ -161,7 +175,7 @@ t_stat realcons_simh_set_debug(int32 flg, char *cptr)
 
 /* SHOW realcons command */
 
-t_stat sim_show_realcons(FILE *st, DEVICE *dptr, UNIT *uptr, int32 flag, char *cptr)
+t_stat sim_show_realcons(FILE *st, DEVICE *dptr, UNIT *uptr, int32 flag, CONST char *cptr)
 {
 	char gbuf[CBUFSIZE];
 	SHTAB *shptr;
@@ -188,7 +202,7 @@ t_stat sim_show_realcons(FILE *st, DEVICE *dptr, UNIT *uptr, int32 flag, char *c
 	return SCPE_OK;
 }
 
-t_stat realcons_simh_show_hostname(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag, char *cptr)
+t_stat realcons_simh_show_hostname(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag, CONST char *cptr)
 {
 	if (cptr && (*cptr != 0))
 		return SCPE_2MARG;
@@ -200,7 +214,7 @@ t_stat realcons_simh_show_hostname(FILE *st, DEVICE *dunused, UNIT *uunused, int
 }
 
 t_stat realcons_simh_show_panelname(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag,
-		char *cptr)
+    CONST char *cptr)
 {
 	if (cptr && (*cptr != 0))
 		return SCPE_2MARG;
@@ -211,8 +225,21 @@ t_stat realcons_simh_show_panelname(FILE *st, DEVICE *dunused, UNIT *uunused, in
 	return SCPE_OK;
 }
 
+t_stat realcons_simh_show_boot_image(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag,
+    CONST char *cptr)
+{
+    if (cptr && (*cptr != 0))
+        return SCPE_2MARG;
+    if (strlen(cpu_realcons->boot_image_filepath) == 0)
+        fprintf(st, "boot image filename not set");
+    else
+        fprintf(st, "boot image filename=\"%s\"", cpu_realcons->boot_image_filepath);
+    return SCPE_OK;
+}
+
+
 t_stat realcons_simh_show_service_interval(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag,
-		char *cptr)
+    CONST char *cptr)
 {
 	if (cptr && (*cptr != 0))
 		return SCPE_2MARG;
@@ -221,7 +248,7 @@ t_stat realcons_simh_show_service_interval(FILE *st, DEVICE *dunused, UNIT *uunu
 }
 
 // if connected, request info from blinkenlight API server
-t_stat realcons_simh_show_server(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag, char *cptr)
+t_stat realcons_simh_show_server(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag, CONST char *cptr)
 {
 	char buffer[1024];
 	unsigned blinkenboards_state;
@@ -249,7 +276,7 @@ t_stat realcons_simh_show_server(FILE *st, DEVICE *dunused, UNIT *uunused, int32
 }
 
 t_stat realcons_simh_show_connected(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag,
-		char *cptr)
+    CONST char *cptr)
 {
 	if (cptr && (*cptr != 0))
 		return SCPE_2MARG;
@@ -260,7 +287,7 @@ t_stat realcons_simh_show_connected(FILE *st, DEVICE *dunused, UNIT *uunused, in
 	return SCPE_OK;
 }
 
-t_stat realcons_simh_show_debug(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag, char *cptr)
+t_stat realcons_simh_show_debug(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag, CONST char *cptr)
 {
 	if (cptr && (*cptr != 0))
 		return SCPE_2MARG;
@@ -271,7 +298,7 @@ t_stat realcons_simh_show_debug(FILE *st, DEVICE *dunused, UNIT *uunused, int32 
 	return SCPE_OK;
 }
 
-t_stat realcons_simh_show_cycles(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag, char *cptr)
+t_stat realcons_simh_show_cycles(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag, CONST char *cptr)
 {
 	if (cptr && (*cptr != 0))
 		return SCPE_2MARG;

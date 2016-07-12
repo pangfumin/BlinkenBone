@@ -115,12 +115,7 @@ int32 cq_mbr = 0;                                       /* MBR */
 int32 cq_ipc = 0;                                       /* IPC */
 int32 autcon_enb = 1;                                   /* autoconfig enable */
 
-extern uint32 *M;
-extern UNIT cpu_unit;
-extern int32 PSL, SISR, trpirq, mem_err, crd_err, hlt_pin;
-extern int32 p1;
 extern int32 ssc_bto;
-extern jmp_buf save_env;
 extern int32 vc_mem_rd (int32 pa);
 extern void vc_mem_wr (int32 pa, int32 val, int32 lnt);
 extern uint32 *vc_buf;
@@ -135,10 +130,10 @@ t_stat qba_ex (t_value *vptr, t_addr exta, UNIT *uptr, int32 sw);
 t_stat qba_dep (t_value val, t_addr exta, UNIT *uptr, int32 sw);
 t_bool qba_map_addr (uint32 qa, uint32 *ma);
 t_bool qba_map_addr_c (uint32 qa, uint32 *ma);
-t_stat set_autocon (UNIT *uptr, int32 val, char *cptr, void *desc);
-t_stat show_autocon (FILE *st, UNIT *uptr, int32 val, void *desc);
-t_stat show_iospace (FILE *st, UNIT *uptr, int32 val, void *desc);
-t_stat qba_show_virt (FILE *of, UNIT *uptr, int32 val, void *desc);
+t_stat set_autocon (UNIT *uptr, int32 val, CONST char *cptr, void *desc);
+t_stat show_autocon (FILE *st, UNIT *uptr, int32 val, CONST void *desc);
+t_stat show_iospace (FILE *st, UNIT *uptr, int32 val, CONST void *desc);
+t_stat qba_show_virt (FILE *of, UNIT *uptr, int32 val, CONST void *desc);
 t_stat qba_help (FILE *st, DEVICE *dptr, UNIT *uptr, int32 flag, const char *cptr);
 const char *qba_description (DEVICE *dptr);
 
@@ -798,7 +793,7 @@ else {
 return 0;
 }
 
-int32 Map_WriteB (uint32 ba, int32 bc, uint8 *buf)
+int32 Map_WriteB (uint32 ba, int32 bc, const uint8 *buf)
 {
 int32 i;
 uint32 ma, dat;
@@ -830,7 +825,7 @@ else {
 return 0;
 }
 
-int32 Map_WriteW (uint32 ba, int32 bc, uint16 *buf)
+int32 Map_WriteW (uint32 ba, int32 bc, const uint16 *buf)
 {
 int32 i;
 uint32 ma, dat;
@@ -914,10 +909,10 @@ return SCPE_OK;
 
 /* Show QBA virtual address */
 
-t_stat qba_show_virt (FILE *of, UNIT *uptr, int32 val, void *desc)
+t_stat qba_show_virt (FILE *of, UNIT *uptr, int32 val, CONST void *desc)
 {
 t_stat r;
-char *cptr = (char *) desc;
+const char *cptr = (const char *) desc;
 uint32 qa, pa;
 
 if (cptr) {

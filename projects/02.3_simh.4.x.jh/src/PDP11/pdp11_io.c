@@ -68,6 +68,7 @@ int32 calc_ints (int32 nipl, int32 trq);
 extern t_stat cpu_build_dib (void);
 extern void init_mbus_tab (void);
 extern t_stat build_mbus_tab (DEVICE *dptr, DIB *dibp);
+extern void fixup_mbus_tab (void);
 
 /* I/O data structures */
 
@@ -325,7 +326,7 @@ else {                                                  /* physical */
     }
 }
 
-int32 Map_WriteB (uint32 ba, int32 bc, uint8 *buf)
+int32 Map_WriteB (uint32 ba, int32 bc, const uint8 *buf)
 {
 uint32 alim, lim, ma;
 
@@ -366,7 +367,7 @@ else {                                                  /* physical */
     }
 }
 
-int32 Map_WriteW (uint32 ba, int32 bc, uint16 *buf)
+int32 Map_WriteW (uint32 ba, int32 bc, const uint16 *buf)
 {
 uint32 alim, lim, ma;
 
@@ -433,5 +434,6 @@ for (i = 0; (dptr = sim_devices[i]) != NULL; i++) {     /* loop thru dev */
             }
         }                                               /* end if enabled */
     }                                                   /* end for */
+fixup_mbus_tab ();
 return SCPE_OK;
 }

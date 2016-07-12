@@ -90,8 +90,6 @@
 #define MEM_256K_MASK    0x5555
 #define MEM_BOARD_MASK_256K(x) ((((1u << (uint32)(x/MEM_SIZE_256K)) - 1) & MEM_256K_MASK) | MCSR2_CS256)
 
-extern UNIT cpu_unit;
-
 uint32 mcsr0 = 0;
 uint32 mcsr1 = 0;
 uint32 mcsr2 = 0;
@@ -259,12 +257,12 @@ const char *mctl_description (DEVICE *dptr)
 return "Memory controller";
 }
 
-t_stat cpu_show_memory (FILE* st, UNIT* uptr, int32 val, void* desc)
+t_stat cpu_show_memory (FILE* st, UNIT* uptr, int32 val, CONST void* desc)
 {
 uint32 baseaddr = 0;
 struct {
     uint32 capacity;
-    char *option;
+    const char *option;
     } boards[] = {
         { 4096, "MS750-JD M7199"},
         { 1024, "MS750-CA M8750"},

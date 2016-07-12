@@ -97,9 +97,9 @@ t_stat dlx_wr (int32 data, int32 PA, int32 access);
 t_stat dlx_reset (DEVICE *dptr);
 t_stat dli_svc (UNIT *uptr);
 t_stat dlo_svc (UNIT *uptr);
-t_stat dlx_attach (UNIT *uptr, char *cptr);
+t_stat dlx_attach (UNIT *uptr, CONST char *cptr);
 t_stat dlx_detach (UNIT *uptr);
-t_stat dlx_set_lines (UNIT *uptr, int32 val, char *cptr, void *desc);
+t_stat dlx_set_lines (UNIT *uptr, int32 val, CONST char *cptr, void *desc);
 void dlx_enbdis (int32 dis);
 void dli_clr_int (int32 ln, uint32 wd);
 void dli_set_int (int32 ln, uint32 wd);
@@ -108,6 +108,7 @@ void dlo_clr_int (int32 ln);
 void dlo_set_int (int32 ln);
 int32 dlo_iack (void);
 void dlx_reset_ln (int32 ln);
+const char *dlx_description (DEVICE *dptr);
 
 /* DLI data structures
 
@@ -185,7 +186,7 @@ DEVICE dli_dev = {
     NULL, NULL, &dlx_reset,
     NULL, &dlx_attach, &dlx_detach,
     &dli_dib, DEV_UBUS | DEV_QBUS | DEV_DISABLE | DEV_DIS | DEV_MUX | DEV_DEBUG,
-    0, dl_debug, NULL, NULL, NULL, NULL, NULL, NULL};
+    0, dl_debug, NULL, NULL, NULL, NULL, NULL, &dlx_description};
 
 /* DLO data structures
 
@@ -244,7 +245,7 @@ DEVICE dlo_dev = {
     NULL, NULL, &dlx_reset,
     NULL, NULL, NULL,
     NULL, DEV_UBUS | DEV_QBUS | DEV_DISABLE | DEV_DIS | DEV_DEBUG,
-    0, dl_debug, NULL, NULL, NULL, NULL, NULL, NULL };
+    0, dl_debug, NULL, NULL, NULL, NULL, NULL, &dlx_description};
 
 /* Register names for Debug tracing */
 static const char *dl_regs[] =
@@ -561,7 +562,7 @@ return;
 
 /* Attach master unit */
 
-t_stat dlx_attach (UNIT *uptr, char *cptr)
+t_stat dlx_attach (UNIT *uptr, CONST char *cptr)
 {
 t_stat r;
 
@@ -590,6 +591,18 @@ sim_cancel (uptr);                                      /* stop poll */
 return r;
 }
 
+/* Number of DL devices used by TU58 */
+
+t_value dlx_tu58_count (void)
+{
+DEVICE *td_dptr = find_dev ("TDC");
+
+if ((td_dptr == NULL) ||
+    (td_dptr->flags & DEV_DIS))
+    return 0;
+return (t_value)((DIB *)td_dptr->ctxt)->numc;
+}
+
 /* Enable/disable device */
 
 void dlx_enbdis (int32 dis)
@@ -599,22 +612,37 @@ if (dis) {
     dlo_dev.flags = dlo_dev.flags | DEV_DIS;
     }
 else {
-    dli_dev.flags = dli_dev.flags & ~DEV_DIS;
-    dlo_dev.flags = dlo_dev.flags & ~DEV_DIS;
+    if (dlx_tu58_count() < 16) {
+        if ((dlx_desc.lines + dlx_tu58_count()) > 16) {
+            char lines[16];
+            int32 saved_switches = sim_switches;
+            
+            sprintf (lines, "%d", 16 - dlx_tu58_count());
+            sim_switches |= SWMASK('Y');
+            dlx_set_lines (NULL, 0, lines, NULL);
+            sim_switches = saved_switches;
+            }
+        dli_dev.flags = dli_dev.flags & ~DEV_DIS;
+        dlo_dev.flags = dlo_dev.flags & ~DEV_DIS;
+        }
+    else {
+        dli_dev.flags = dli_dev.flags | DEV_DIS;
+        dlo_dev.flags = dlo_dev.flags | DEV_DIS;
+        }
     }
 return;
 }
 
 /* Change number of lines */
 
-t_stat dlx_set_lines (UNIT *uptr, int32 val, char *cptr, void *desc)
+t_stat dlx_set_lines (UNIT *uptr, int32 val, CONST char *cptr, void *desc)
 {
 int32 newln, i, t;
 t_stat r;
 
 if (cptr == NULL)
     return SCPE_ARG;
-newln = get_uint (cptr, 10, DLX_LINES, &r);
+newln = get_uint (cptr, 10, DLX_LINES - dlx_tu58_count(), &r);
 if ((r != SCPE_OK) || (newln == dlx_desc.lines))
     return r;
 if (newln == 0)
@@ -642,4 +670,10 @@ else {
 dlx_desc.lines = newln;
 dli_dib.lnt = newln * 010;                             /* upd IO page lnt */
 return auto_config (dli_dev.name, newln);              /* auto config */
+}
+
+const char *dlx_description (DEVICE *dptr)
+{
+return (dptr == &dli_dev) ? "DL11 asynchronous line interface - receiver" 
+                          : "DL11 asynchronous line interface - transmitter";
 }

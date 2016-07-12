@@ -50,7 +50,7 @@
 
 typedef struct {
     int8 group;
-    int8 code;
+    uint8 code;
 } LK_KEYDATA;
 
 LK_KEYDATA LK_KEY_UNKNOWN    = { 0, 0 };
@@ -305,6 +305,7 @@ if (lk_rbuf[0] & 1) {                                   /* peripheral command */
 
         case 0xA7:
             sim_debug (DBG_CMD, &lk_dev, "sound bell\n");
+            vid_beep ();
             break;
 
         case 0xC1:

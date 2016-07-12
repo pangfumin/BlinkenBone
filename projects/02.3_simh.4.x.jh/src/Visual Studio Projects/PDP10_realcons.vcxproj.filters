@@ -138,6 +138,9 @@
     <ClCompile Include="..\..\windows-build\pthreads\pthread.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\sim_video.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\PDP10\pdp10_defs.h">
@@ -210,6 +213,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\windows-build\pthreads\pthread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sim_video.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

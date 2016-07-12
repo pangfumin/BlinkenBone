@@ -279,6 +279,9 @@
     <ClCompile Include="..\REALCONS\realcons_console_pdp11_20.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\sim_video.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\slirp\bootp.h">
@@ -447,6 +450,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\REALCONS\realcons_console_pdp11_20.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sim_video.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

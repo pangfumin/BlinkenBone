@@ -20,6 +20,7 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+   18-Jun-2016  JH      added PDP-15, with param "bootimage" file path
    23-Apr-2016  JH      added PDP-11/20
    20-Feb-2016  JH      added PANEL_MODE_POWERLESS
    25-Mar-2012  JH      created
@@ -38,6 +39,8 @@
 
 #ifdef WIN32
 #define strcasecmp _stricmp	// grmbl
+#else
+#include <limits.h> // MAXINT
 #endif
 
 
@@ -128,6 +131,9 @@ typedef struct realcons_console_controller_interface_struct
 #ifdef VM_PDP8
 #include "realcons_console_pdp8i.h"
 #endif
+#ifdef PDP15
+#include "realcons_console_pdp15.h"
+#endif
 
 // global data
 typedef struct realcons_struct
@@ -135,7 +141,11 @@ typedef struct realcons_struct
 	// scratch vars for application (= SimH), set before connect
 	char console_logic_name[REALCONS_NAMELEN + 1]; // ID for panel logic class to instanciate.
 	char application_server_hostname[REALCONS_NAMELEN + 1]; // TCP/IP name of Blinkenlight API server
-	char application_panel_name[REALCONS_NAMELEN + 1]; // Name of panel on Blinkenlight server, set by configuratio nfile
+	char application_panel_name[REALCONS_NAMELEN + 1]; // Name of panel on Blinkenlight server, set by configuration file
+
+    // used for PDP-15 "READ-IN"  command
+    char boot_image_filepath[REALCONS_NAMELEN + 1]; 
+
 
 	blinkenlight_api_client_t * blinkenlight_api_client;
 	int connected; // 1: Connected to Blinkenlight_API and logic
@@ -164,12 +174,16 @@ typedef struct realcons_struct
 // 2. different PDP8 CPUs
 // state variables for every support console panel type
 // life cycle between "realcons connect" and "realcons disconnect"
-#ifdef USED
+#ifdef USEDxxxx
 	union
 	{
 		realcons_console_logic_pdp8i_t pdp8i;
 	} console_state_pdp8;
 #endif
+
+#ifdef VM_PDP15
+#endif
+
 
 #endif
 
@@ -230,7 +244,7 @@ blinkenlight_control_t *realcons_console_get_input_control(realcons_t *_this, ch
 blinkenlight_control_t *realcons_console_get_output_control(realcons_t *_this, char *name);
 void	realcons_console_clear_output_controls(realcons_t *_this) ;
 
-
+void realcons_simh_add_cmd(realcons_t *_this, char *format, ...);
 char *realcons_simh_get_cmd(realcons_t *_this); // has console panel controller generated a simh cmd string?
 char realcons_simh_getc_cmd(realcons_t *_this) ; // next char of cmd strings
 

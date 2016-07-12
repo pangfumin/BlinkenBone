@@ -155,6 +155,7 @@
     <ClCompile Include="..\sim_tape.c" />
     <ClCompile Include="..\sim_timer.c" />
     <ClCompile Include="..\sim_tmxr.c" />
+    <ClCompile Include="..\sim_video.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\00_common\bitcalc.h" />
@@ -177,6 +178,7 @@
     <ClInclude Include="..\sim_tape.h" />
     <ClInclude Include="..\sim_timer.h" />
     <ClInclude Include="..\sim_tmxr.h" />
+    <ClInclude Include="..\sim_video.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\REALCONS\realcons_pdp8i.txt" />

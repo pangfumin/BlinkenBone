@@ -367,7 +367,7 @@ int32 speed = 0;                                        /* Delay for each instru
 
 int32 XCT_mode = 0;                                     /* 1 if XCT mode */
 int32 XCT_inst = 0;                                     /* XCT instruction */
-int32 PPC = -1;
+int32 PrevPC = -1;
 int32 AMASK = 077777;
 
 struct ndev dev_table[64];                              /* dispatch table */
@@ -501,9 +501,9 @@ t_stat cpu_ex (t_value *vptr, t_addr addr, UNIT *uptr, int32 sw);
 t_stat cpu_dep (t_value val, t_addr addr, UNIT *uptr, int32 sw);
 t_stat cpu_reset (DEVICE *dptr);
 t_stat cpu_boot (int32 unitno, DEVICE *dptr);
-t_stat cpu_set_size (UNIT *uptr, int32 val, char *cptr, void *desc);
-t_stat Debug_Dump (UNIT *uptr, int32 val, char *cptr, void *desc);
-t_stat Dump_History (FILE *st, UNIT *uptr, int32 val, void *desc);
+t_stat cpu_set_size (UNIT *uptr, int32 val, CONST char *cptr, void *desc);
+t_stat Debug_Dump (UNIT *uptr, int32 val, CONST char *cptr, void *desc);
+t_stat Dump_History (FILE *st, UNIT *uptr, int32 val, CONST void *desc);
 t_stat map_ex (t_value *vptr, t_addr addr, UNIT *uptr, int32 sw);
 t_stat map_dep (t_value val, t_addr addr, UNIT *uptr, int32 sw);
 t_stat map_reset (DEVICE *dptr);
@@ -845,14 +845,14 @@ if (sim_brk_summ && sim_brk_test (PC, SWMASK ('E'))) {  /* breakpoint? */
 }
 
 if ((PC < 1 || PC > 077777) && Debug_Flags) {
-    if (PPC != -1) {                                    /* Don't break on 1st instruction */
-        printf("\n<<Invalid PC=%o from %o>>\n\r", PC, PPC);
+    if (PrevPC != -1) {                                    /* Don't break on 1st instruction */
+        printf("\n<<Invalid PC=%o from %o>>\n\r", PC, PrevPC);
         reason = STOP_IBKPT;
         break;
     }    
 }
 
-PPC = PC;
+PrevPC = PC;
 
 if (Debug_Flags) {
     if (!Tron) {
@@ -5763,7 +5763,7 @@ return SCPE_OK;
 
 /* Alter memory size */
 
-t_stat cpu_set_size (UNIT *uptr, int32 val, char *cptr, void *desc)
+t_stat cpu_set_size (UNIT *uptr, int32 val, CONST char *cptr, void *desc)
 {
 int32 mc = 0;
 t_addr i;
@@ -5952,12 +5952,12 @@ int32 Debug_Entry(int32 PC, int32 inst, int32 inst2, int32 AC0, int32 AC1, int32
     return 0;
 }
 
-t_stat Debug_Dump(UNIT *uptr, int32 val, char *cptr, void *desc)
+t_stat Debug_Dump(UNIT *uptr, int32 val, CONST char *cptr, void *desc)
 {
     return SCPE_OK;
 }
 
-t_stat Dump_History (FILE *st, UNIT *uptr, int32 val, void *desc) 
+t_stat Dump_History (FILE *st, UNIT *uptr, int32 val, CONST void *desc) 
 {
     char debmap[4], debion[4];
     t_value simeval[20];

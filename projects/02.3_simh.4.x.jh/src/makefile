@@ -46,6 +46,9 @@ REALCONS_PDP10= \
 REALCONS_PDP8= \
         $(REALCONS_DIR)realcons_console_pdp8i.c
 
+REALCONS_PDP15= \
+        $(REALCONS_DIR)realcons_console_pdp15.c
+
 REALCONS_OPT=-DUSE_REALCONS \
 	-DBLINKENLIGHT_CLIENT	\
 	-I$(SRC)/REALCONS \
@@ -62,6 +65,7 @@ REALCONS=
 REALCONS_PDP11=
 REALCONS_PDP10=
 REALCONS_PDP8=
+REALCONS_PDP15=
 endif
 
 
@@ -200,7 +204,7 @@ PDP18B = ${PDP18BD}/pdp18b_dt.c ${PDP18BD}/pdp18b_drm.c ${PDP18BD}/pdp18b_cpu.c 
 PDP4_OPT = -DPDP4 -I ${PDP18BD}
 PDP7_OPT = -DPDP7 -I ${PDP18BD}
 PDP9_OPT = -DPDP9 -I ${PDP18BD}
-PDP15_OPT = -DPDP15 -I ${PDP18BD}
+PDP15_OPT = -DPDP15 -I ${PDP18BD} ${REALCONS_OPT}
 
 
 PDP11D = PDP11
@@ -600,7 +604,7 @@ ALL = pdp1 pdp4 pdp7 pdp8 pdp9 pdp15 pdp11 pdp10 \
 	swtp6800mp-a swtp6800mp-a2 tx-0 ssem isys8010 isys8020
 
 #all : ${ALL}
-all : pdp11_realcons pdp10_realcons pdp8_realcons #vax
+all : pdp11_realcons pdp10_realcons pdp8_realcons pdp15_realcons #vax
 
 clean :
 ifeq ($(WIN32),)
@@ -662,11 +666,12 @@ ${BIN}pdp9${EXE} : ${PDP18B} ${SIM}
 	${MKDIRBIN}
 	${CC} ${PDP18B} ${SIM} ${PDP9_OPT} $(CC_OUTSPEC) ${LDFLAGS}
 
-pdp15 : ${BIN}pdp15${EXE}
+pdp15_realcons : ${BIN}pdp15_realcons${EXE}
 
-${BIN}pdp15${EXE} : ${PDP18B} ${SIM}
+${BIN}pdp15_realcons${EXE} : ${PDP18B} ${SIM} $(REALCONS) $(REALCONS_PDP15)
 	${MKDIRBIN}
-	${CC} ${PDP18B} ${SIM} ${PDP15_OPT} $(CC_OUTSPEC) ${LDFLAGS}
+	${CC} ${PDP18B} ${SIM} $(REALCONS) $(REALCONS_PDP15) ${PDP15_OPT} $(CC_OUTSPEC) ${LDFLAGS}
+	file ${BIN}pdp15_realcons${EXE}
 
 pdp10_realcons : ${BIN}pdp10_realcons${EXE}
 

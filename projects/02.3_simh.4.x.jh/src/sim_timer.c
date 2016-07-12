@@ -103,7 +103,7 @@ static uint32 sim_throt_state = 0;
 static uint32 sim_throt_sleep_time = 0;
 static int32 sim_throt_wait = 0;
 static UNIT *sim_clock_unit[SIM_NTIMERS] = {NULL};
-UNIT *sim_clock_cosched_queue[SIM_NTIMERS] = {NULL};
+UNIT * volatile sim_clock_cosched_queue[SIM_NTIMERS] = {NULL};
 t_bool sim_asynch_timer = 
 #if defined (SIM_ASYNCH_CLOCKS)
                                  TRUE;
@@ -163,6 +163,59 @@ return sim_os_msec() - start_time;
 #else
 #define SIM_IDLE_MS_SLEEP sim_os_ms_sleep
 #endif
+
+/* Mark the need for the sim_os_set_thread_priority routine, */
+/* allowing the feature and/or platform dependent code to provide it */
+#define NEED_THREAD_PRIORITY
+
+/* If we've got pthreads support then use pthreads mechanisms */
+#if defined(USE_READER_THREAD)
+
+#undef NEED_THREAD_PRIORITY
+
+#if defined(_WIN32)
+/* On Windows there are several potentially disjoint threading APIs */
+/* in use (base win32 pthreads, libSDL provided threading, and direct */
+/* calls to beginthreadex), so go directly to the Win32 threading APIs */
+/* to manage thread priority */
+t_stat sim_os_set_thread_priority (int below_normal_above)
+{
+const static int val[3] = {THREAD_PRIORITY_BELOW_NORMAL, THREAD_PRIORITY_NORMAL, THREAD_PRIORITY_ABOVE_NORMAL};
+
+if ((below_normal_above < -1) || (below_normal_above > 1))
+    return SCPE_ARG;
+SetThreadPriority (GetCurrentThread(), val[1 + below_normal_above]);
+return SCPE_OK;
+}
+#else
+/* Native pthreads priority implementation */
+t_stat sim_os_set_thread_priority (int below_normal_above)
+{
+int sched_policy, min_prio, max_prio;
+struct sched_param sched_priority;
+
+if ((below_normal_above < -1) || (below_normal_above > 1))
+    return SCPE_ARG;
+
+pthread_getschedparam (pthread_self(), &sched_policy, &sched_priority);
+min_prio = sched_get_priority_min(sched_policy);
+max_prio = sched_get_priority_max(sched_policy);
+switch (below_normal_above) {
+    case PRIORITY_BELOW_NORMAL:
+        sched_priority.sched_priority = min_prio;
+        break;
+    case PRIORITY_NORMAL:
+        sched_priority.sched_priority = (max_prio + min_prio) / 2;
+        break;
+    case PRIORITY_ABOVE_NORMAL:
+        sched_priority.sched_priority = max_prio;
+        break;
+    }
+pthread_setschedparam (pthread_self(), sched_policy, &sched_priority);
+return SCPE_OK;
+}
+#endif
+#endif  /* defined(USE_READER_THREAD) */
 
 /* OS-dependent timer and clock routines */
 
@@ -260,8 +313,6 @@ return 0;
 #elif defined (_WIN32)
 
 /* Win32 routines */
-
-#include <windows.h>
 
 const t_bool rtc_avail = TRUE;
 
@@ -494,6 +545,45 @@ treq.tv_nsec = (milliseconds % MILLIS_PER_SEC) * NANOS_PER_MILLI;
 return sim_os_msec () - stime;
 }
 
+#if defined(NEED_THREAD_PRIORITY)
+#undef NEED_THREAD_PRIORITY
+#include <sys/time.h>
+#include <sys/resource.h>
+
+t_stat sim_os_set_thread_priority (int below_normal_above)
+{
+if ((below_normal_above < -1) || (below_normal_above > 1))
+    return SCPE_ARG;
+
+errno = 0;
+switch (below_normal_above) {
+    case PRIORITY_BELOW_NORMAL:
+        if ((getpriority (PRIO_PROCESS, 0) <= 0) &&     /* at or above normal pri? */
+            (errno == 0))
+            setpriority (PRIO_PROCESS, 0, 10);
+        break;
+    case PRIORITY_NORMAL:
+        if (getpriority (PRIO_PROCESS, 0) != 0)         /* at or above normal pri? */
+            setpriority (PRIO_PROCESS, 0, 0);
+        break;
+    case PRIORITY_ABOVE_NORMAL:
+        if ((getpriority (PRIO_PROCESS, 0) <= 0) &&     /* at or above normal pri? */
+            (errno == 0))
+            setpriority (PRIO_PROCESS, 0, -10);
+        break;
+    }
+return SCPE_OK;
+}
+#endif  /* defined(NEED_THREAD_PRIORITY) */
+
+#endif
+
+/* If one hasn't been provided yet, then just stub it */
+#if defined(NEED_THREAD_PRIORITY)
+t_stat sim_os_set_thread_priority (int below_normal_above)
+{
+return SCPE_OK;
+}
 #endif
 
 /* diff = min - sub */
@@ -555,7 +645,8 @@ static uint32 rtc_elapsed[SIM_NTIMERS] = { 0 };         /* sec since init */
 static uint32 rtc_calibrations[SIM_NTIMERS] = { 0 };    /* calibration count */
 static double rtc_clock_skew_max[SIM_NTIMERS] = { 0 };  /* asynchronous max skew */
 
-UNIT sim_timer_units[SIM_NTIMERS+1];                    /* one for each timer and one for throttle */
+UNIT sim_timer_units[SIM_NTIMERS+2];                    /* one for each timer and one for throttle */
+                                                        /* plus one for an internal clock if no clocks are registered */
 
 
 void sim_rtcn_init_all (void)
@@ -722,9 +813,12 @@ int i;
 uint32 clock_start, clock_last, clock_now;
 
 sim_debug (DBG_TRC, &sim_timer_dev, "sim_timer_init()\n");
-for (i=0; i<SIM_NTIMERS; i++)
+for (i=0; i<SIM_NTIMERS; i++) {
     sim_timer_units[i].action = &sim_timer_tick_svc;
+    sim_timer_units[i].flags = UNIT_DIS;
+    }
 sim_timer_units[SIM_NTIMERS].action = &sim_throt_svc;
+sim_timer_units[SIM_NTIMERS].flags = UNIT_DIS;
 sim_register_internal_device (&sim_timer_dev);
 sim_idle_enab = FALSE;                                  /* init idle off */
 sim_idle_rate_ms = sim_os_ms_sleep_init ();             /* get OS timer rate */
@@ -756,10 +850,13 @@ return (sim_idle_rate_ms != 0);
 
 /* sim_show_timers - show running timer information */
 
-t_stat sim_show_timers (FILE* st, DEVICE *dptr, UNIT* uptr, int32 val, char* desc)
+t_stat sim_show_timers (FILE* st, DEVICE *dptr, UNIT* uptr, int32 val, CONST char* desc)
 {
 int tmr, clocks;
 
+fprintf (st, "Minimum Host Sleep Time:       %dms\n", sim_os_sleep_min_ms);
+fprintf (st, "Host Clock Resolution:         %dms\n", sim_os_clock_resoluton_ms);
+fprintf (st, "Time before Clock Calibration: %d seconds\n\n", sim_idle_stable);
 for (tmr=clocks=0; tmr<SIM_NTIMERS; ++tmr) {
     if (0 == rtc_initd[tmr])
         continue;
@@ -793,7 +890,7 @@ if (clocks == 0)
 return SCPE_OK;
 }
 
-t_stat sim_show_clock_queues (FILE *st, DEVICE *dptr, UNIT *uptr, int32 flag, char *cptr)
+t_stat sim_show_clock_queues (FILE *st, DEVICE *dptr, UNIT *uptr, int32 flag, CONST char *cptr)
 {
 #if defined (SIM_ASYNCH_IO)
 int tmr;
@@ -894,10 +991,12 @@ MTAB sim_timer_mod[] = {
   { 0 },
 };
 
+static t_stat sim_timer_clock_reset (DEVICE *dptr);
+
 DEVICE sim_timer_dev = {
     "TIMER", sim_timer_units, sim_timer_reg, sim_timer_mod, 
-    SIM_NTIMERS+1, 0, 0, 0, 0, 0, 
-    NULL, NULL, NULL, NULL, NULL, NULL, 
+    SIM_NTIMERS+2, 0, 0, 0, 0, 0, 
+    NULL, NULL, &sim_timer_clock_reset, NULL, NULL, NULL, 
     NULL, DEV_DEBUG | DEV_NOSAVE, 0, sim_timer_debug};
 
 
@@ -922,13 +1021,9 @@ int32 act_cyc;
 
 if ((!sim_idle_enab)                             ||     /* idling disabled */
     ((sim_clock_queue == QUEUE_LIST_END) &&             /* or clock queue empty? */
-#if defined(SIM_ASYNCH_IO) && defined(SIM_ASYNCH_CLOCKS)
      (!(sim_asynch_enabled && sim_asynch_timer)))||     /*     and not asynch? */
-#else
-     (TRUE))                                     ||
-#endif
-    ((sim_clock_queue != QUEUE_LIST_END) && 
-     ((sim_clock_queue->flags & UNIT_IDLE) == 0))||     /* or event not idle-able? */
+    ((sim_clock_queue != QUEUE_LIST_END) &&             /* or clock queue not empty */
+     ((sim_clock_queue->flags & UNIT_IDLE) == 0))||     /*   and event not idle-able? */
     (rtc_elapsed[tmr] < sim_idle_stable)) {             /* or timer not stable? */
     if (sin_cyc)
         sim_interval = sim_interval - 1;
@@ -994,23 +1089,19 @@ return TRUE;
 
 /* Set idling - implicitly disables throttling */
 
-t_stat sim_set_idle (UNIT *uptr, int32 val, char *cptr, void *desc)
+t_stat sim_set_idle (UNIT *uptr, int32 val, CONST char *cptr, void *desc)
 {
 t_stat r;
 uint32 v;
 
-if (sim_idle_rate_ms == 0) {
-    sim_printf ("Idling is not available, Minimum OS sleep time is %dms\n", sim_os_sleep_min_ms);
-    return SCPE_NOFNC;
-    }
-if ((val != 0) && (sim_idle_rate_ms > (uint32) val)) {
-    sim_printf ("Idling is not available, Minimum OS sleep time is %dms, Requied minimum OS sleep is %dms\n", sim_os_sleep_min_ms, val);
-    return SCPE_NOFNC;
-    }
-if (cptr) {
+if (sim_idle_rate_ms == 0)
+    return sim_messagef (SCPE_NOFNC, "Idling is not available, Minimum OS sleep time is %dms\n", sim_os_sleep_min_ms);
+if ((val != 0) && (sim_idle_rate_ms > (uint32) val))
+        return sim_messagef (SCPE_NOFNC, "Idling is not available, Minimum OS sleep time is %dms, Requied minimum OS sleep is %dms\n", sim_os_sleep_min_ms, val);
+if (cptr && *cptr) {
     v = (uint32) get_uint (cptr, 10, SIM_IDLE_STMAX, &r);
     if ((r != SCPE_OK) || (v < SIM_IDLE_STMIN))
-        return SCPE_ARG;
+        return sim_messagef (SCPE_ARG, "Invalid Stability value: %s.  Valid values range from %d to %d.\n", cptr, SIM_IDLE_STMIN, SIM_IDLE_STMAX);
     sim_idle_stable = v;
     }
 sim_idle_enab = TRUE;
@@ -1023,7 +1114,7 @@ return SCPE_OK;
 
 /* Clear idling */
 
-t_stat sim_clr_idle (UNIT *uptr, int32 val, char *cptr, void *desc)
+t_stat sim_clr_idle (UNIT *uptr, int32 val, CONST char *cptr, void *desc)
 {
 sim_idle_enab = FALSE;
 return SCPE_OK;
@@ -1031,7 +1122,7 @@ return SCPE_OK;
 
 /* Show idling */
 
-t_stat sim_show_idle (FILE *st, UNIT *uptr, int32 val, void *desc)
+t_stat sim_show_idle (FILE *st, UNIT *uptr, int32 val, CONST void *desc)
 {
 if (sim_idle_enab)
     fprintf (st, "idle enabled");
@@ -1044,9 +1135,9 @@ return SCPE_OK;
 
 /* Throttling package */
 
-t_stat sim_set_throt (int32 arg, char *cptr)
+t_stat sim_set_throt (int32 arg, CONST char *cptr)
 {
-const char *tptr;
+CONST char *tptr;
 char c;
 t_value val, val2 = 0;
 
@@ -1097,7 +1188,7 @@ else {
 return SCPE_OK;
 }
 
-t_stat sim_show_throt (FILE *st, DEVICE *dnotused, UNIT *unotused, int32 flag, char *cptr)
+t_stat sim_show_throt (FILE *st, DEVICE *dnotused, UNIT *unotused, int32 flag, CONST char *cptr)
 {
 if (sim_idle_rate_ms == 0)
     fprintf (st, "Throttling not available\n");
@@ -1380,8 +1471,55 @@ return NULL;
 
 #endif /* defined(SIM_ASYNCH_IO) && defined(SIM_ASYNCH_CLOCKS) */
 
+/*
+   In the event that there are no active clock devices, no instruction 
+   rate calibration will be performed.  This is more likely on simpler
+   simulators which don't have a full spectrum of standard devices or 
+   possibly when a clock device exists but its use is optional.
+   
+   To solve this we merely run an internal clock at 50Hz.
+ */
+#define CLK_TPS 50
+static t_stat sim_timer_clock_tick_svc (UNIT *uptr)
+{
+sim_rtcn_calb (CLK_TPS, SIM_NTIMERS-1);
+sim_activate_after (uptr, 1000000/CLK_TPS);             /* reactivate unit */
+return SCPE_OK;
+}
+
+static t_stat sim_timer_clock_reset (DEVICE *dptr)
+{
+uint32 i;
+
+for (i = 0; i < SIM_NTIMERS; i++)
+    if (rtc_initd[i] != 0)
+        break;
+if (i == SIM_NTIMERS) {     /* No clocks have signed in. */
+    /* setup internal clock */
+    sim_timer_units[SIM_NTIMERS+1].action = &sim_timer_clock_tick_svc;
+    sim_timer_units[SIM_NTIMERS+1].flags = UNIT_DIS;
+    }
+if (sim_timer_units[SIM_NTIMERS+1].action == &sim_timer_clock_tick_svc) {
+    /* actual clock reset */
+    sim_rtcn_init_unit (&sim_timer_units[SIM_NTIMERS+1], 5000, SIM_NTIMERS-1);
+    sim_activate_abs (&sim_timer_units[SIM_NTIMERS+1], 5000);
+    }
+return SCPE_OK;
+}
+
 void sim_start_timer_services (void)
 {
+uint32 i;
+
+for (i = 0; i < SIM_NTIMERS; i++)
+    if (rtc_initd[i] != 0)
+        break;
+if (i == SIM_NTIMERS) {     /* No clocks have signed in. */
+    /* setup internal clock */
+    sim_timer_units[SIM_NTIMERS+1].action = &sim_timer_clock_tick_svc;
+    sim_rtcn_init_unit (&sim_timer_units[SIM_NTIMERS+1], 5000, SIM_NTIMERS-1);
+    sim_activate_abs (&sim_timer_units[SIM_NTIMERS+1], 5000);
+    }
 #if defined(SIM_ASYNCH_IO) && defined(SIM_ASYNCH_CLOCKS)
 pthread_mutex_lock (&sim_timer_lock);
 if (sim_asynch_enabled && sim_asynch_timer) {
@@ -1490,6 +1628,8 @@ inst_delay_d = ((inst_per_sec*usec_delay)/1000000.0);
 if (inst_delay_d > (double)0x7fffffff)
     inst_delay_d = (double)0x7fffffff;
 inst_delay = (int32)inst_delay_d;
+if ((inst_delay == 0) && (usec_delay != 0))
+    inst_delay = 1;     /* Minimum non-zero delay is 1 instruction */
 #if defined(SIM_ASYNCH_IO) && defined(SIM_ASYNCH_CLOCKS)
 if ((sim_calb_tmr == -1) ||                             /* if No timer initialized */
     (inst_delay < rtc_currd[sim_calb_tmr]) ||           /*    or sooner than next clock tick? */

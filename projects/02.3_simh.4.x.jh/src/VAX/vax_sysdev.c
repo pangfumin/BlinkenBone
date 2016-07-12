@@ -65,7 +65,7 @@
 #define UNIT_V_NODELAY  (UNIT_V_UF + 0)                 /* ROM access equal to RAM access */
 #define UNIT_NODELAY    (1u << UNIT_V_NODELAY)
 
-t_stat vax_boot (int32 flag, char *ptr);
+t_stat vax_boot (int32 flag, CONST char *ptr);
 int32 sys_model = 0;
 
 /* Special boot command, overrides regular boot */
@@ -189,22 +189,7 @@ CTAB vax_cmd[] = {
 
 #define SSCADS_MASK     0x3FFFFFFC                      /* match or mask */
 
-extern int32 R[16];
-extern int32 STK[5];
-extern int32 PSL;
-extern int32 SISR;
-extern int32 mapen;
-extern int32 pcq[PCQ_SIZE];
-extern int32 pcq_p;
-extern int32 ibcnt, ppc;
-extern int32 in_ie;
-extern int32 mchk_va, mchk_ref;
-extern int32 fault_PC;
-extern int32 int_req[IPL_HLVL];
-extern UNIT cpu_unit;
 extern UNIT clk_unit;
-extern jmp_buf save_env;
-extern int32 p1;
 extern int32 MSER;
 extern int32 tmr_poll;
 extern DEVICE vc_dev, lk_dev, vs_dev;
@@ -243,7 +228,7 @@ const char *rom_description (DEVICE *dptr);
 t_stat nvr_ex (t_value *vptr, t_addr exta, UNIT *uptr, int32 sw);
 t_stat nvr_dep (t_value val, t_addr exta, UNIT *uptr, int32 sw);
 t_stat nvr_reset (DEVICE *dptr);
-t_stat nvr_attach (UNIT *uptr, char *cptr);
+t_stat nvr_attach (UNIT *uptr, CONST char *cptr);
 t_stat nvr_detach (UNIT *uptr);
 t_stat nvr_help (FILE *st, DEVICE *dptr, UNIT *uptr, int32 flag, const char *cptr);
 const char *nvr_description (DEVICE *dptr);
@@ -700,7 +685,7 @@ return SCPE_OK;
 
 /* NVR attach */
 
-t_stat nvr_attach (UNIT *uptr, char *cptr)
+t_stat nvr_attach (UNIT *uptr, CONST char *cptr)
 {
 t_stat r;
 
@@ -1179,13 +1164,13 @@ switch (rg) {
 return;
 }
 
-t_stat cpu_show_memory (FILE* st, UNIT* uptr, int32 val, void* desc)
+t_stat cpu_show_memory (FILE* st, UNIT* uptr, int32 val, CONST void* desc)
 {
 uint32 memsize = (uint32)(MEMSIZE>>20);
 uint32 baseaddr = 0;
 struct {
     uint32 capacity;
-    char *option;
+    const char *option;
     } boards[] = {
         { 16, "MS650-BA"},
         {  0, NULL}};
@@ -1632,7 +1617,7 @@ int32 tmr1_inta (void)
 return tmr_tivr[1];
 }
 
-char *tmr_description (DEVICE *dptr)
+const char *tmr_description (DEVICE *dptr)
 {
 return "non-volatile memory";
 }
@@ -1697,7 +1682,7 @@ return 0;                                               /* new cc = 0 */
 
 */
 
-t_stat vax_boot (int32 flag, char *ptr)
+t_stat vax_boot (int32 flag, CONST char *ptr)
 {
 char gbuf[CBUFSIZE];
 
@@ -1730,7 +1715,7 @@ sysd_powerup ();
 return SCPE_OK;
 }
 
-t_stat sysd_set_halt (UNIT *uptr, int32 val, char *cptr, void *desc)
+t_stat sysd_set_halt (UNIT *uptr, int32 val, CONST char *cptr, void *desc)
 {
 ka_hltenab = val;
 if (ka_hltenab)
@@ -1740,7 +1725,7 @@ else
 return SCPE_OK;
 }
 
-t_stat sysd_show_halt (FILE *st, UNIT *uptr, int32 val, void *desc)
+t_stat sysd_show_halt (FILE *st, UNIT *uptr, int32 val, CONST void *desc)
 {
 fprintf(st, "%s", ka_hltenab ? "NOAUTOBOOT" : "AUTOBOOT");
 return SCPE_OK;
@@ -1815,14 +1800,14 @@ const char *sysd_description (DEVICE *dptr)
 return "system devices";
 }
 
-t_stat cpu_set_model (UNIT *uptr, int32 val, char *cptr, void *desc)
+t_stat cpu_set_model (UNIT *uptr, int32 val, CONST char *cptr, void *desc)
 {
 char gbuf[CBUFSIZE];
 
 if ((cptr == NULL) || (!*cptr))
     return SCPE_ARG;
 cptr = get_glyph (cptr, gbuf, 0);
-if (MATCH_CMD(cptr, "VAXSERVER") == 0) {
+if (MATCH_CMD(gbuf, "VAXSERVER") == 0) {
     sys_model = 0;
     strcpy (sim_name, "VAXServer 3900 (KA655)");
     }
@@ -1845,7 +1830,7 @@ else if (MATCH_CMD(gbuf, "VAXSTATION") == 0) {
     vs_dev.flags = vs_dev.flags & ~DEV_DIS;              /* enable mouse */
     reset_all (0);                                       /* reset everything */
 #else
-    return SCPE_ARG;
+    return sim_messagef(SCPE_ARG, "Simulator built without Graphic Device Support");
 #endif
     }
 else

@@ -189,6 +189,7 @@
     <ClCompile Include="..\sim_tape.c" />
     <ClCompile Include="..\sim_timer.c" />
     <ClCompile Include="..\sim_tmxr.c" />
+    <ClCompile Include="..\sim_video.c" />
     <ClCompile Include="..\slirp\arp_table.c" />
     <ClCompile Include="..\slirp\bootp.c" />
     <ClCompile Include="..\slirp\cksum.c" />
@@ -248,6 +249,7 @@
     <ClInclude Include="..\sim_tape.h" />
     <ClInclude Include="..\sim_timer.h" />
     <ClInclude Include="..\sim_tmxr.h" />
+    <ClInclude Include="..\sim_video.h" />
     <ClInclude Include="..\slirp\bootp.h" />
     <ClInclude Include="..\slirp\debug.h" />
     <ClInclude Include="..\slirp\if.h" />

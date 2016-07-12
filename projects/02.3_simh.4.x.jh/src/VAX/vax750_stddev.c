@@ -175,8 +175,6 @@ typedef struct todr_battery_info TOY;
 
 int32 td_regval;                                        /* temp location used in reg declarations */
 
-extern jmp_buf save_env;
-
 t_stat tti_svc (UNIT *uptr);
 t_stat tto_svc (UNIT *uptr);
 t_stat clk_svc (UNIT *uptr);
@@ -190,7 +188,7 @@ const char *clk_description (DEVICE *dptr);
 t_stat tti_help (FILE *st, DEVICE *dptr, UNIT *uptr, int32 flag, const char *cptr);
 t_stat tto_help (FILE *st, DEVICE *dptr, UNIT *uptr, int32 flag, const char *cptr);
 t_stat clk_help (FILE *st, DEVICE *dptr, UNIT *uptr, int32 flag, const char *cptr);
-t_stat clk_attach (UNIT *uptr, char *cptr);
+t_stat clk_attach (UNIT *uptr, CONST char *cptr);
 t_stat clk_detach (UNIT *uptr);
 t_stat tmr_reset (DEVICE *dptr);
 const char *tmr_description (DEVICE *dptr);
@@ -221,7 +219,6 @@ REG tti_reg[] = {
     { FLDATAD (IE,         tti_csr,   CSR_V_IE, "interrupt enable flag (CSR<6>)") },
     { DRDATAD (POS,   tti_unit.pos,   T_ADDR_W, "number of characters input"), PV_LEFT },
     { DRDATAD (TIME, tti_unit.wait,         24, "input polling interval"), PV_LEFT },
-    { URDATAD (TIMEX, tti_unit,         10, 24, offsetof(UNIT, wait), 5, 0, "input polling interval"), PV_LEFT },
     { NULL }
     };
 
@@ -805,7 +802,7 @@ return "time of year clock";
 
 /* CLK attach */
 
-t_stat clk_attach (UNIT *uptr, char *cptr)
+t_stat clk_attach (UNIT *uptr, CONST char *cptr)
 {
 t_stat r;
 

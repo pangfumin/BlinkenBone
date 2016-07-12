@@ -65,8 +65,6 @@
 
 #define MEM_BOARD_MASK(x,y)  ((1u << (uint32)(x/y)) - 1)
 
-extern UNIT cpu_unit;
-
 uint32 mcsr0 = 0;
 uint32 mcsr1 = 0;
 uint32 mcsr2 = 0;
@@ -197,14 +195,14 @@ const char *mctl_description (DEVICE *dptr)
 return "memory controller";
 }
 
-t_stat cpu_show_memory (FILE* st, UNIT* uptr, int32 val, void* desc)
+t_stat cpu_show_memory (FILE* st, UNIT* uptr, int32 val, CONST void* desc)
 {
 uint32 memsize = (uint32)(MEMSIZE>>20);
 uint32 baseaddr = 0;
 uint32 slot = 6;
 struct {
     uint32 capacity;
-    char *option;
+    const char *option;
     } boards[] = {
         {  1, "MS730-CA M8750"}, 
         {  0, NULL}};

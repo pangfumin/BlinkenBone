@@ -91,7 +91,7 @@
 
 /* CPU */
 
-#define CPU_MODEL_MODIFIERS { MTAB_XTD|MTAB_VDV, 0,          "MODEL", "MODEL={MICROVAX|VAXSTATION}",        \
+#define CPU_MODEL_MODIFIERS { MTAB_XTD|MTAB_VDV, 0,          "MODEL", "MODEL={MicroVAX|VAXStation}",        \
                               &cpu_set_model, &cpu_show_model, NULL, "Set/Show the simulator CPU Model" },  \
                             { MTAB_XTD|MTAB_VDV, 0,          "DIAG", "DIAG={FULL|MIN}",                     \
                               &sysd_set_diag, &sysd_show_diag, NULL, "Set/Show boot rom diagnostic mode" }, \
@@ -119,7 +119,7 @@
                         { UNIT_MSIZE, (1u << 23) + (1u << 22) + (1u << 20), NULL, "13M", &cpu_set_size, NULL, NULL, "Set Memory to 13M bytes" }, \
                         { UNIT_MSIZE, (1u << 24), NULL, "16M", &cpu_set_size, NULL, NULL, "Set Memory to 16M bytes" },                           \
                         { MTAB_XTD|MTAB_VDV|MTAB_NMO, 0, "MEMORY", NULL, NULL, &cpu_show_memory, NULL, "Display memory configuration" }
-extern t_stat cpu_show_memory (FILE* st, UNIT* uptr, int32 val, void* desc);
+extern t_stat cpu_show_memory (FILE* st, UNIT* uptr, int32 val, CONST void* desc);
 
 /* Qbus I/O page */
 
@@ -246,7 +246,15 @@ typedef struct {
     int32               vloc;                           /* locator */
     int32               vec;                            /* value */
     int32               (*ack[VEC_DEVMAX])(void);       /* ack routine */
-    uint32              ulnt;                           /* IO length per unit */
+    uint32              ulnt;                           /* IO length per-device */
+                                                        /* Only need to be populated */
+                                                        /* when numunits != num devices */
+    int32               numc;                           /* Number of controllers */
+                                                        /* this field handles devices */
+                                                        /* where multiple instances are */
+                                                        /* simulated through a single */
+                                                        /* DEVICE structure (e.g., DZ, VH, DL, DC). */
+                                                        /* Populated by auto-configure */
     } DIB;
 
 /* Qbus I/O page layout - see pdp11_io_lib.c for address layout details */
@@ -373,6 +381,7 @@ typedef struct {
 #define SET_INT(dv)     int_req[IPL_##dv] = int_req[IPL_##dv] | (INT_##dv)
 #define CLR_INT(dv)     int_req[IPL_##dv] = int_req[IPL_##dv] & ~(INT_##dv)
 #define IORETURN(f,v)   ((f)? (v): SCPE_OK)             /* cond error return */
+extern int32 int_req[IPL_HLVL];                         /* intr, IPL 14-17 */
 
 /* Logging */
 
@@ -384,8 +393,8 @@ typedef struct {
 
 int32 Map_ReadB (uint32 ba, int32 bc, uint8 *buf);
 int32 Map_ReadW (uint32 ba, int32 bc, uint16 *buf);
-int32 Map_WriteB (uint32 ba, int32 bc, uint8 *buf);
-int32 Map_WriteW (uint32 ba, int32 bc, uint16 *buf);
+int32 Map_WriteB (uint32 ba, int32 bc, const uint8 *buf);
+int32 Map_WriteW (uint32 ba, int32 bc, const uint16 *buf);
 
 /* Function prototypes for system-specific unaligned support */
 
@@ -394,11 +403,11 @@ int32 ReadRegU (uint32 pa, int32 lnt);
 void WriteIOU (uint32 pa, int32 val, int32 lnt);
 void WriteRegU (uint32 pa, int32 val, int32 lnt);
 
-extern t_stat sysd_set_diag (UNIT *uptr, int32 val, char *cptr, void *desc);
-extern t_stat sysd_show_diag (FILE *st, UNIT *uptr, int32 val, void *desc);
-extern t_stat sysd_set_halt (UNIT *uptr, int32 val, char *cptr, void *desc);
-extern t_stat sysd_show_halt (FILE *st, UNIT *uptr, int32 val, void *desc);
-extern t_stat sysd_show_leds (FILE *st, UNIT *uptr, int32 val, void *desc);
+extern t_stat sysd_set_diag (UNIT *uptr, int32 val, CONST char *cptr, void *desc);
+extern t_stat sysd_show_diag (FILE *st, UNIT *uptr, int32 val, CONST void *desc);
+extern t_stat sysd_set_halt (UNIT *uptr, int32 val, CONST char *cptr, void *desc);
+extern t_stat sysd_show_halt (FILE *st, UNIT *uptr, int32 val, CONST void *desc);
+extern t_stat sysd_show_leds (FILE *st, UNIT *uptr, int32 val, CONST void *desc);
 
 #include "pdp11_io_lib.h"
 

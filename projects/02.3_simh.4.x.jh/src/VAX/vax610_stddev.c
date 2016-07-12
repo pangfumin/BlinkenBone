@@ -68,11 +68,6 @@
 #define CLK_DELAY       5000                            /* 100 Hz */
 #define TMXR_MULT       1                               /* 100 Hz */
 
-extern int32 int_req[IPL_HLVL];
-extern int32 hlt_pin;
-extern jmp_buf save_env;
-extern int32 p1;
-
 int32 tti_csr = 0;                                      /* control/status */
 uint32 tti_buftime;                                     /* time input character arrived */
 int32 tto_csr = 0;                                      /* control/status */
@@ -319,7 +314,7 @@ else
 
 }
 
-t_stat cpu_show_leds (FILE *st, UNIT *uptr, int32 val, void *desc)
+t_stat cpu_show_leds (FILE *st, UNIT *uptr, int32 val, CONST void *desc)
 {
 fprintf (st, "leds=%d(%s,%s,%s)", tto_leds, tto_leds&4 ? "ON" : "OFF", 
                                             tto_leds&2 ? "ON" : "OFF", 

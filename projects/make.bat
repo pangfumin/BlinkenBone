@@ -19,4 +19,5 @@ pushd "02.3_simh.4.x.jh\src\Visual Studio Projects"
 %MSBUILD% pdp8_realcons.vcxproj
 %MSBUILD% pdp10_realcons.vcxproj
 %MSBUILD% pdp11_realcons.vcxproj
+%MSBUILD% pdp15_realcons.vcxproj
 popd

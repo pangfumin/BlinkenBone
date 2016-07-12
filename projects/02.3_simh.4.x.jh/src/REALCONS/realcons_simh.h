@@ -20,33 +20,36 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
+   18-Jun-2016  JH      added param "bootimage" (for PDP-15)
    25-Mar-2012  JH      created
 */
 
 #ifndef REALCONS_SIMH_H_
 #define REALCONS_SIMH_H_
 
-t_stat sim_set_realcons(int32 flag, char *cptr);
-t_stat realcons_simh_set_hostname(int32 flg, char *cptr);
-t_stat realcons_simh_set_panelname(int32 flg, char *cptr);
-t_stat realcons_simh_set_service_interval(int32 flg, char *cptr);
-t_stat realcons_simh_set_connect(int32 flg, char *cptr);
-t_stat realcons_simh_test(int32 flg, char *cptr);
-t_stat realcons_simh_set_debug(int32 flg, char *cptr);
+t_stat sim_set_realcons(int32 flag, CONST char *cptr);
+t_stat realcons_simh_set_hostname(int32 flg, CONST char *cptr);
+t_stat realcons_simh_set_panelname(int32 flg, CONST char *cptr);
+t_stat realcons_simh_set_service_interval(int32 flg, CONST char *cptr);
+t_stat realcons_simh_set_connect(int32 flg, CONST char *cptr);
+t_stat realcons_simh_set_boot_image(int32 flg, CONST char *cptr);
+t_stat realcons_simh_test(int32 flg, CONST char *cptr);
+t_stat realcons_simh_set_debug(int32 flg, CONST char *cptr);
 
-t_stat sim_show_realcons(FILE *st, DEVICE *dptr, UNIT *uptr, int32 flag, char *cptr);
+t_stat sim_show_realcons(FILE *st, DEVICE *dptr, UNIT *uptr, int32 flag, CONST char *cptr);
 t_stat realcons_simh_show_hostname(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag,
-		char *cptr);
+    CONST char *cptr);
 t_stat realcons_simh_show_panelname(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag,
-		char *cptr);
+    CONST char *cptr);
 t_stat realcons_simh_show_service_interval(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag,
-		char *cptr);
+    CONST char *cptr);
 t_stat realcons_simh_show_connected(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag,
-		char *cptr);
-t_stat realcons_simh_show_debug(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag, char *cptr);
-t_stat realcons_simh_show_cycles(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag, char *cptr) ;
+    CONST char *cptr);
+t_stat realcons_simh_show_boot_image(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag,
+    CONST char *cptr);
+t_stat realcons_simh_show_debug(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag, CONST char *cptr);
+t_stat realcons_simh_show_cycles(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag, CONST char *cptr) ;
 
-t_stat realcons_simh_show_server(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag, char *cptr);
+t_stat realcons_simh_show_server(FILE *st, DEVICE *dunused, UNIT *uunused, int32 flag, CONST char *cptr);
 
 #endif /* REALCONS_SIMH_H_ */

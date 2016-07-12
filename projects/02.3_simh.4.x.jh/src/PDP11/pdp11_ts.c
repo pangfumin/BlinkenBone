@@ -289,7 +289,7 @@ t_stat ts_rd (int32 *data, int32 PA, int32 access);
 t_stat ts_wr (int32 data, int32 PA, int32 access);
 t_stat ts_svc (UNIT *uptr);
 t_stat ts_reset (DEVICE *dptr);
-t_stat ts_attach (UNIT *uptr, char *cptr);
+t_stat ts_attach (UNIT *uptr, CONST char *cptr);
 t_stat ts_detach (UNIT *uptr);
 t_stat ts_boot (int32 unitno, DEVICE *dptr);
 int32 ts_updtssr (int32 t);
@@ -1080,11 +1080,11 @@ return auto_config (0, 0);
 
 /* Attach */
 
-t_stat ts_attach (UNIT *uptr, char *cptr)
+t_stat ts_attach (UNIT *uptr, CONST char *cptr)
 {
 t_stat r;
 
-r = sim_tape_attach (uptr, cptr);                       /* attach unit */
+r = sim_tape_attach_ex (uptr, cptr, DBG_TAP, 0);        /* attach unit */
 if (r != SCPE_OK)                                       /* error? */
     return r;
 tssr = tssr & ~TSSR_OFL;                                /* clr offline */

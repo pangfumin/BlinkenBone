@@ -98,14 +98,8 @@ uint32 uba_dpr[UBA_NDPATH] = { 0 };                     /* number data paths */
 uint32 uba_map[UBA_NMAPR] = { 0 };                      /* map registers */
 int32 autcon_enb = 1;                                   /* autoconfig enable */
 
-extern int32 trpirq;
 extern int32 autcon_enb;
-extern jmp_buf save_env;
-extern UNIT cpu_unit;
 extern uint32 nexus_req[NEXUS_HLVL];
-extern int32 p1;
-extern int32 fault_PC;                                  /* fault PC */
-extern int32 mem_err;
 
 t_stat uba_reset (DEVICE *dptr);
 const char *uba_description (DEVICE *dptr);
@@ -117,10 +111,10 @@ int32 uba_get_ubvector (int32 lvl);
 void uba_eval_int (void);
 void uba_ioreset (void);
 t_bool uba_map_addr (uint32 ua, uint32 *ma);
-t_stat set_autocon (UNIT *uptr, int32 val, char *cptr, void *desc);
-t_stat show_autocon (FILE *st, UNIT *uptr, int32 val, void *desc);
-t_stat show_iospace (FILE *st, UNIT *uptr, int32 val, void *desc);
-t_stat uba_show_virt (FILE *st, UNIT *uptr, int32 val, void *desc);
+t_stat set_autocon (UNIT *uptr, int32 val, CONST char *cptr, void *desc);
+t_stat show_autocon (FILE *st, UNIT *uptr, int32 val, CONST void *desc);
+t_stat show_iospace (FILE *st, UNIT *uptr, int32 val, CONST void *desc);
+t_stat uba_show_virt (FILE *st, UNIT *uptr, int32 val, CONST void *desc);
 
 extern int32 eval_int (void);
 extern t_stat build_dib_tab (void);
@@ -529,7 +523,7 @@ for (i = 0; i < bc; i = i + pbc) {                      /* loop by pages */
 return 0;
 }
 
-int32 Map_WriteB (uint32 ba, int32 bc, uint8 *buf)
+int32 Map_WriteB (uint32 ba, int32 bc, const uint8 *buf)
 {
 int32 i, j, pbc;
 uint32 ma, dat;
@@ -562,7 +556,7 @@ for (i = 0; i < bc; i = i + pbc) {                      /* loop by pages */
 return 0;
 }
 
-int32 Map_WriteW (uint32 ba, int32 bc, uint16 *buf)
+int32 Map_WriteW (uint32 ba, int32 bc, const uint16 *buf)
 {
 int32 i, j, pbc;
 uint32 ma, dat;
@@ -711,10 +705,10 @@ return SCPE_NXM;
 
 /* Show UBA virtual address */
 
-t_stat uba_show_virt (FILE *of, UNIT *uptr, int32 val, void *desc)
+t_stat uba_show_virt (FILE *of, UNIT *uptr, int32 val, CONST void *desc)
 {
 t_stat r;
-char *cptr = (char *) desc;
+const char *cptr = (const char *) desc;
 uint32 ua, pa;
 
 if (cptr) {

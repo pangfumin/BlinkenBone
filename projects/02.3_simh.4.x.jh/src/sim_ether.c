@@ -369,46 +369,130 @@
 #include "sim_ether.h"
 #include "sim_sock.h"
 #include "sim_timer.h"
+#if defined(_WIN32)
+#include <direct.h>
+#else
+#include <unistd.h>
+#endif
+
+/* Internal routines - forward declarations */
+static int _eth_get_system_id (char *buf, size_t buf_size);
 
 /*============================================================================*/
 /*                  OS-independant ethernet routines                          */
 /*============================================================================*/
 
-t_stat eth_mac_scan (ETH_MAC* mac, char* strmac)
+t_stat eth_mac_scan (ETH_MAC* mac, const char* strmac)
 {
-  unsigned int a0, a1, a2, a3, a4, a5;
-  const ETH_MAC zeros = {0,0,0,0,0,0};
-  const ETH_MAC ones  = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-  ETH_MAC newmac;
+return eth_mac_scan_ex (mac, strmac, NULL);
+}
 
-  if ((6 != sscanf(strmac, "%x:%x:%x:%x:%x:%x", &a0, &a1, &a2, &a3, &a4, &a5)) &&
-      (6 != sscanf(strmac, "%x.%x.%x.%x.%x.%x", &a0, &a1, &a2, &a3, &a4, &a5)) &&
-      (6 != sscanf(strmac, "%x-%x-%x-%x-%x-%x", &a0, &a1, &a2, &a3, &a4, &a5)))
-    return SCPE_ARG;
-  if ((a0 > 0xFF) || (a1 > 0xFF) || (a2 > 0xFF) || (a3 > 0xFF) || (a4 > 0xFF) || (a5 > 0xFF))
-    return SCPE_ARG;
-  newmac[0] = (unsigned char)a0;
-  newmac[1] = (unsigned char)a1;
-  newmac[2] = (unsigned char)a2;
-  newmac[3] = (unsigned char)a3;
-  newmac[4] = (unsigned char)a4;
-  newmac[5] = (unsigned char)a5;
+t_stat eth_mac_scan_ex (ETH_MAC* mac, const char* strmac, UNIT *uptr)
+{
+  unsigned int a[6], g[6];
+  FILE *f;
+  char filebuf[64] = "";
+  uint32 i;
+  static const ETH_MAC zeros = {0,0,0,0,0,0};
+  static const ETH_MAC ones  = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+  ETH_MAC newmac;
+  struct {
+      uint32 bits;
+      char system_id[37];
+      char cwd[PATH_MAX];
+      char file[PATH_MAX];
+      ETH_MAC base_mac;
+      char uname[64];
+      char sim[128];
+      } state;
+  CONST char *cptr, *tptr;
+  uint32 data;
+
+  /* Allow generated MAC address */
+  /* XX:XX:XX:XX:XX:XX{/bits{>file}} */
+  /* bits (if specified) must be from 16 thru 48 */
+
+  memset (&state, 0, sizeof(state));
+  _eth_get_system_id (state.system_id, sizeof(state.system_id));
+  strncpy (state.sim, sim_name, sizeof(state.sim));
+  getcwd (state.cwd, sizeof(state.cwd));
+  if (uptr)
+    strncpy (state.uname, sim_uname (uptr), sizeof(state.uname));
+  cptr = strchr (strmac, '>');
+  if (cptr) {
+    strncpy (state.file, cptr + 1, sizeof(state.file));
+    if ((f = fopen (state.file, "r"))) {
+      filebuf[sizeof(filebuf)-1] = '\0';
+      fgets (filebuf, sizeof(filebuf)-1, f);
+      strmac = filebuf;
+      fclose (f);
+      strcpy (state.file, "");  /* avoid saving */
+      }
+    }
+  cptr = strchr (strmac, '/');
+  if (cptr) {
+    state.bits = (uint32)strtotv (cptr + 1, &tptr, 10);
+    if ((state.bits < 16) || (state.bits > 48))
+      return sim_messagef (SCPE_ARG, "Invalid MAC address bits specifier '%d'. Valid values are from 16 thru 48\n", state.bits);
+    }
+  else
+    state.bits = 48;
+  data = eth_crc32 (0, (void *)&state, sizeof(state));
+  for (i=g[0]=g[1]=0; i<4; i++)
+    g[i+2] = (data >> (i << 3)) & 0xFF;
+  if ((6 != sscanf(strmac, "%x:%x:%x:%x:%x:%x", &a[0], &a[1], &a[2], &a[3], &a[4], &a[5])) &&
+      (6 != sscanf(strmac, "%x.%x.%x.%x.%x.%x", &a[0], &a[1], &a[2], &a[3], &a[4], &a[5])) &&
+      (6 != sscanf(strmac, "%x-%x-%x-%x-%x-%x", &a[0], &a[1], &a[2], &a[3], &a[4], &a[5])))
+    return sim_messagef (SCPE_ARG, "Invalid MAC address format: '%s'\n", strmac);
+  for (i=0; i<6; i++)
+    if (a[i] > 0xFF)
+      return sim_messagef (SCPE_ARG, "Invalid MAC address byte value: %02X\n", a[i]);
+    else {
+      uint32 mask, shift;
+    
+      state.base_mac[i] = a[i];
+      if (((i + 1) << 3) < state.bits)
+          shift = 0;
+      else
+          shift = ((i + 1) << 3) - state.bits;
+      mask = 0xFF << shift;
+      newmac[i] = (unsigned char)((a[i] & mask) | (g[i] & ~mask));
+      }
 
   /* final check - mac cannot be broadcast or multicast address */
   if (!memcmp(newmac, zeros, sizeof(ETH_MAC)) ||  /* broadcast */
       !memcmp(newmac, ones,  sizeof(ETH_MAC)) ||  /* broadcast */
       (newmac[0] & 0x01)                          /* multicast */
      )
-    return SCPE_ARG;
+    return sim_messagef (SCPE_ARG, "Can't use Broadcast or MultiCast address as interface MAC address\n");
 
-  /* new mac is OK, copy into passed mac */
+  /* new mac is OK */
+  /* optionally save */
+  if (state.file[0]) {              /* Save File specified? */
+    f = fopen (state.file, "w");
+    if (f == NULL)
+      return sim_messagef (SCPE_ARG, "Can't open MAC address configuration file '%s'.\n", state.file);
+    eth_mac_fmt (&newmac, filebuf);
+    fprintf (f, "%s/48\n", filebuf);
+    fprintf (f, "system-id: %s\n", state.system_id);
+    fprintf (f, "directory: %s\n", state.cwd);
+    fprintf (f, "simulator: %s\n", state.sim);
+    fprintf (f, "device:    %s\n", state.uname);
+    fprintf (f, "file:      %s\n", state.file);
+    eth_mac_fmt (&state.base_mac, filebuf);
+    fprintf (f, "base-mac:  %s\n", filebuf);
+    fprintf (f, "specified: %d bits\n", state.bits);
+    fprintf (f, "generated: %d bits\n", 48-state.bits);
+    fclose (f);
+    }
+  /* copy into passed mac */
   memcpy (*mac, newmac, sizeof(ETH_MAC));
   return SCPE_OK;
 }
 
-void eth_mac_fmt(ETH_MAC* mac, char* buff)
+void eth_mac_fmt(ETH_MAC* const mac, char* buff)
 {
-  uint8* m = (uint8*) mac;
+  const uint8* m = (const uint8*) mac;
   sprintf(buff, "%02X:%02X:%02X:%02X:%02X:%02X", m[0], m[1], m[2], m[3], m[4], m[5]);
   return;
 }
@@ -519,16 +603,16 @@ void eth_packet_trace_ex(ETH_DEV* dev, const uint8 *msg, int len, const char* tx
   if (dev->dptr->dctrl & reason) {
     char src[20];
     char dst[20];
-    unsigned short* proto = (unsigned short*) &msg[12];
+    const unsigned short* proto = (const unsigned short*) &msg[12];
     uint32 crc = eth_crc32(0, msg, len);
-    eth_mac_fmt((ETH_MAC*)&msg[0], dst);
-    eth_mac_fmt((ETH_MAC*)&msg[6], src);
+    eth_mac_fmt((ETH_MAC*)msg, dst);
+    eth_mac_fmt((ETH_MAC*)(msg+6), src);
     sim_debug(reason, dev->dptr, "%s  dst: %s  src: %s  proto: 0x%04X  len: %d  crc: %X\n",
           txt, dst, src, ntohs(*proto), len, crc);
     if (detail) {
       int i, same, group, sidx, oidx;
       char outbuf[80], strbuf[18];
-      static char hex[] = "0123456789ABCDEF";
+      static const char hex[] = "0123456789ABCDEF";
 
       for (i=same=0; i<len; i += 16) {
         if ((i > 0) && (0 == memcmp(&msg[i], &msg[i-16], 16))) {
@@ -570,7 +654,7 @@ void eth_packet_trace_detail(ETH_DEV* dev, const uint8 *msg, int len, const char
   eth_packet_trace_ex(dev, msg, len, txt, 1     , dev->dbit);
 }
 
-char* eth_getname(int number, char* name)
+const char* eth_getname(int number, char* name, char *desc)
 {
   ETH_LIST  list[ETH_MAX_DEVICE];
   int count = eth_devices(ETH_MAX_DEVICE, list);
@@ -578,10 +662,11 @@ char* eth_getname(int number, char* name)
   if ((number < 0) || (count <= number))
       return NULL;
   strcpy(name, list[number].name);
+  strcpy(desc, list[number].desc);
   return name;
 }
 
-char* eth_getname_bydesc(char* desc, char* name)
+const char* eth_getname_bydesc(const char* desc, char* name, char *ndesc)
 {
   ETH_LIST  list[ETH_MAX_DEVICE];
   int count = eth_devices(ETH_MAX_DEVICE, list);
@@ -600,6 +685,7 @@ char* eth_getname_bydesc(char* desc, char* name)
 
     /* found a case-insensitive description match */
     strcpy(name, list[i].name);
+    strcpy(ndesc, list[i].desc);
     return name;
   }
   /* not found */
@@ -607,7 +693,7 @@ char* eth_getname_bydesc(char* desc, char* name)
 }
 
 /* strncasecmp() is not available on all platforms */
-int eth_strncasecmp(char* string1, char* string2, size_t len)
+int eth_strncasecmp(const char* string1, const char* string2, size_t len)
 {
   size_t i;
   unsigned char s1, s2;
@@ -627,7 +713,7 @@ int eth_strncasecmp(char* string1, char* string2, size_t len)
   return 0;
 }
 
-char* eth_getname_byname(char* name, char* temp)
+char* eth_getname_byname(const char* name, char* temp, char *desc)
 {
   ETH_LIST  list[ETH_MAX_DEVICE];
   int count = eth_devices(ETH_MAX_DEVICE, list);
@@ -641,6 +727,7 @@ char* eth_getname_byname(char* name, char* temp)
         (eth_strncasecmp(name, list[i].name, n) == 0)) {
       found = 1;
       strcpy(temp, list[i].name); /* only case might be different */
+      strcpy(desc, list[i].desc);
     }
   }
   return (found ? temp : NULL);
@@ -672,8 +759,11 @@ void eth_zero(ETH_DEV* dev)
   dev->reflections = -1;                          /* not established yet */
 }
 
+static char*   (*p_pcap_lib_version) (void);
+
 static ETH_DEV **eth_open_devices = NULL;
 static int eth_open_device_count = 0;
+static t_bool eth_show_active = FALSE;
 
 #if defined (USE_NETWORK) || defined (USE_SHARED)
 static void _eth_add_to_open_list (ETH_DEV* dev)
@@ -696,11 +786,13 @@ for (i=0; i<eth_open_device_count; ++i)
 }
 #endif
 
-t_stat eth_show (FILE* st, UNIT* uptr, int32 val, void* desc)
+t_stat eth_show (FILE* st, UNIT* uptr, int32 val, CONST void* desc)
 {
   ETH_LIST  list[ETH_MAX_DEVICE];
-  int number = eth_devices(ETH_MAX_DEVICE, list);
+  int number;
 
+  eth_show_active = TRUE;
+  number = eth_devices(ETH_MAX_DEVICE, list);
   fprintf(st, "ETH devices:\n");
   if (number == -1)
     fprintf(st, "  network support not available in simulator\n");
@@ -715,6 +807,8 @@ t_stat eth_show (FILE* st, UNIT* uptr, int32 val, void* desc)
       for (i=0; i<number; i++)
         fprintf(st," eth%d\t%-*s (%s)\n", i, (int)min, list[i].name, list[i].desc);
     }
+  if (p_pcap_lib_version)
+    fprintf(st, "%s\n", p_pcap_lib_version());
   if (eth_open_device_count) {
     int i;
     char desc[ETH_DEV_DESC_MAX], *d;
@@ -729,12 +823,13 @@ t_stat eth_show (FILE* st, UNIT* uptr, int32 val, void* desc)
       eth_show_dev (st, eth_open_devices[i]);
       }
     }
+  eth_show_active = FALSE;
   return SCPE_OK;
 }
 
-t_stat eth_show_devices (FILE* st, DEVICE *dptr, UNIT* uptr, int32 val, char* desc)
+t_stat eth_show_devices (FILE* st, DEVICE *dptr, UNIT* uptr, int32 val, CONST char *desc)
 {
-return eth_show (st, uptr, val, desc);
+return eth_show (st, uptr, val, NULL);
 }
 
 t_stat ethq_init(ETH_QUE* que, int max)
@@ -850,7 +945,7 @@ ethq_insert_data(que, type, pack->oversize ? pack->oversize : pack->msg, pack->u
 #if !defined (USE_NETWORK) && !defined (USE_SHARED)
 const char *eth_capabilities(void)
     {return "no Ethernet";}
-t_stat eth_open(ETH_DEV* dev, char* name, DEVICE* dptr, uint32 dbit)
+t_stat eth_open(ETH_DEV* dev, const char* name, DEVICE* dptr, uint32 dbit)
   {return SCPE_NOFNC;}
 t_stat eth_close (ETH_DEV* dev)
   {return SCPE_NOFNC;}
@@ -883,6 +978,8 @@ int eth_devices (int max, ETH_LIST* dev)
   {return -1;}
 void eth_show_dev (FILE* st, ETH_DEV* dev)
   {}
+static int _eth_get_system_id (char *buf, size_t buf_size)
+  {memset (buf, 0, buf_size); return 0;}
 #else    /* endif unimplemented */
 
 const char *eth_capabilities(void)
@@ -941,7 +1038,13 @@ typedef void * pcap_t;  /* Pseudo Type to avoid compiler errors */
 #endif /* HAVE_TAP_NETWORK */
 
 #ifdef HAVE_VDE_NETWORK
+#ifdef  __cplusplus
+extern "C" {
+#endif
 #include <libvdeplug.h>
+#ifdef  __cplusplus
+}
+#endif
 #endif /* HAVE_VDE_NETWORK */
 
 #ifdef HAVE_SLIRP_NETWORK
@@ -1008,7 +1111,6 @@ static int     (*p_pcap_fileno) (pcap_t *);
 static int     (*p_pcap_sendpacket) (pcap_t* handle, const u_char* msg, int len);
 static int     (*p_pcap_setfilter) (pcap_t *, struct bpf_program *);
 static int     (*p_pcap_setnonblock)(pcap_t* a, int nonblock, char *errbuf);
-static char*   (*p_pcap_lib_version) (void);
 
 /* load function pointer from DLL */
 typedef int (*_func)();
@@ -1075,7 +1177,7 @@ int load_pcap(void) {
       load_function("pcap_setnonblock",  (_func *) &p_pcap_setnonblock);
       load_function("pcap_lib_version",  (_func *) &p_pcap_lib_version);
 
-      if (lib_loaded == 1) {
+      if ((lib_loaded == 1) && (!eth_show_active)) {
         /* log successful load */
         sim_printf("%s\n", p_pcap_lib_version());
       }
@@ -1267,7 +1369,7 @@ typedef struct _PACKET_OID_DATA PACKET_OID_DATA, *PPACKET_OID_DATA;
 typedef void **LPADAPTER;
 #define OID_802_3_CURRENT_ADDRESS               0x01010102 /* Extracted from ntddmdis.h */
 
-static int pcap_mac_if_win32(char *AdapterName, unsigned char MACAddress[6])
+static int pcap_mac_if_win32(const char *AdapterName, unsigned char MACAddress[6])
 {
   LPADAPTER         lpAdapter;
   PPACKET_OID_DATA  OidData;
@@ -1279,18 +1381,18 @@ static int pcap_mac_if_win32(char *AdapterName, unsigned char MACAddress[6])
   static void       *hDll = NULL; /* handle to Library */
   typedef int BOOLEAN;
 #endif
-  LPADAPTER (*p_PacketOpenAdapter)(char *AdapterName);
+  LPADAPTER (*p_PacketOpenAdapter)(const char *AdapterName);
   void (*p_PacketCloseAdapter)(LPADAPTER lpAdapter);
   int (*p_PacketRequest)(LPADAPTER  AdapterObject,BOOLEAN Set,PPACKET_OID_DATA  OidData);
 
 #ifdef _WIN32
   hDll = LoadLibraryA("packet.dll");
-  p_PacketOpenAdapter = (LPADAPTER (*)(char *AdapterName))GetProcAddress(hDll, "PacketOpenAdapter");
+  p_PacketOpenAdapter = (LPADAPTER (*)(const char *AdapterName))GetProcAddress(hDll, "PacketOpenAdapter");
   p_PacketCloseAdapter = (void (*)(LPADAPTER lpAdapter))GetProcAddress(hDll, "PacketCloseAdapter");
   p_PacketRequest = (int (*)(LPADAPTER  AdapterObject,BOOLEAN Set,PPACKET_OID_DATA  OidData))GetProcAddress(hDll, "PacketRequest");
 #else
   hDll = dlopen("packet.dll", RTLD_NOW);
-  p_PacketOpenAdapter = (LPADAPTER (*)(char *AdapterName))dlsym(hDll, "PacketOpenAdapter");
+  p_PacketOpenAdapter = (LPADAPTER (*)(const char *AdapterName))dlsym(hDll, "PacketOpenAdapter");
   p_PacketCloseAdapter = (void (*)(LPADAPTER lpAdapter))dlsym(hDll, "PacketCloseAdapter");
   p_PacketRequest = (int (*)(LPADAPTER  AdapterObject,BOOLEAN Set,PPACKET_OID_DATA  OidData))dlsym(hDll, "PacketRequest");
 #endif
@@ -1344,6 +1446,7 @@ static int pcap_mac_if_win32(char *AdapterName, unsigned char MACAddress[6])
 #endif
   return ReturnValue;
 }
+
 #endif  /* defined(_WIN32) || defined(__CYGWIN__) */
 
 #if defined (__VMS) && !defined(__VAX)
@@ -1355,7 +1458,7 @@ static int pcap_mac_if_win32(char *AdapterName, unsigned char MACAddress[6])
 #include <stsdef.h>
 #include <nmadef.h>
 
-static int pcap_mac_if_vms(char *AdapterName, unsigned char MACAddress[6])
+static int pcap_mac_if_vms(const char *AdapterName, unsigned char MACAddress[6])
 {
   char VMS_Device[16];
   $DESCRIPTOR(Device, VMS_Device);
@@ -1434,7 +1537,7 @@ static int pcap_mac_if_vms(char *AdapterName, unsigned char MACAddress[6])
 }
 #endif /* defined (__VMS) && !defined(__VAX) */
 
-static void eth_get_nic_hw_addr(ETH_DEV* dev, char *devname)
+static void eth_get_nic_hw_addr(ETH_DEV* dev, const char *devname)
 {
   memset(&dev->host_nic_phy_hw_addr, 0, sizeof(dev->host_nic_phy_hw_addr));
   dev->have_host_nic_phy_addr = 0;
@@ -1495,6 +1598,68 @@ static void eth_get_nic_hw_addr(ETH_DEV* dev, char *devname)
 #endif
 }
 
+#if defined(__APPLE__)
+#include <uuid/uuid.h>
+#include <unistd.h>
+static int _eth_get_system_id (char *buf, size_t buf_size)
+{
+static struct timespec wait = {5, 0};   /* 5 seconds */
+static uuid_t uuid;
+
+memset (buf, 0, buf_size);
+if (buf_size < 37)
+  return -1;
+if (gethostuuid (uuid, &wait))
+  memset (uuid, 0, sizeof(uuid));
+uuid_unparse_lower(uuid, buf);
+return 0;
+}
+
+#elif defined(_WIN32)
+static int _eth_get_system_id (char *buf, size_t buf_size)
+{
+  LONG status;
+  DWORD reglen, regtype;
+  HKEY reghnd;
+
+  memset (buf, 0, buf_size);
+  if ((status = RegOpenKeyExA (HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Cryptography", 0, KEY_QUERY_VALUE|KEY_WOW64_64KEY, &reghnd)) != ERROR_SUCCESS)
+    return -1;
+  reglen = buf_size;
+  if ((status = RegQueryValueExA (reghnd, "MachineGuid", NULL, &regtype, buf, &reglen)) != ERROR_SUCCESS) {
+    RegCloseKey (reghnd);
+    return -1;
+    }
+  RegCloseKey (reghnd );
+  /* make sure value is the right type, bail if not acceptable */
+  if ((regtype != REG_SZ) || (reglen > buf_size))
+    return -1;
+  /* registry value seems OK */
+  return 0;
+}
+
+#else
+static int _eth_get_system_id (char *buf, size_t buf_size)
+{
+FILE *f;
+
+memset (buf, 0, buf_size);
+if ((f = fopen ("/etc/machine-id", "r"))) {
+  fread (buf, 1, buf_size, f);
+  fclose (f);
+  }
+else {
+  if ((f = popen ("hostname", "r"))) {
+    fread (buf, 1, buf_size, f);
+    pclose (f);
+    }
+  }
+while ((strlen (buf) > 0) && sim_isspace(buf[strlen (buf) - 1]))
+  buf[strlen (buf) - 1] = '\0';
+return 0;
+}
+#endif
+
 /* Forward declarations */
 static void
 _eth_callback(u_char* info, const struct pcap_pkthdr* header, const u_char* data);
@@ -1524,8 +1689,6 @@ _eth_reader(void *arg)
 {
 ETH_DEV* volatile dev = (ETH_DEV*)arg;
 int status = 0;
-int sched_policy;
-struct sched_param sched_priority;
 int sel_ret = 0;
 int do_select = 0;
 SOCKET select_fd = 0;
@@ -1556,9 +1719,7 @@ sim_debug(dev->dbit, dev->dptr, "Reader Thread Starting\n");
 /* Boost Priority for this I/O thread vs the CPU instruction execution 
    thread which, in general, won't be readily yielding the processor 
    when this thread needs to run */
-pthread_getschedparam (pthread_self(), &sched_policy, &sched_priority);
-++sched_priority.sched_priority;
-pthread_setschedparam (pthread_self(), sched_policy, &sched_priority);
+sim_os_set_thread_priority (PRIORITY_ABOVE_NORMAL);
 
 while (dev->handle) {
 #if defined (_WIN32)
@@ -1714,16 +1875,12 @@ static void *
 _eth_writer(void *arg)
 {
 ETH_DEV* volatile dev = (ETH_DEV*)arg;
-struct write_request *request;
-int sched_policy;
-struct sched_param sched_priority;
+ETH_WRITE_REQUEST *request;
 
 /* Boost Priority for this I/O thread vs the CPU instruction execution 
    thread which in general won't be readily yielding the processor when 
    this thread needs to run */
-pthread_getschedparam (pthread_self(), &sched_policy, &sched_priority);
-++sched_priority.sched_priority;
-pthread_setschedparam (pthread_self(), sched_policy, &sched_priority);
+sim_os_set_thread_priority (PRIORITY_ABOVE_NORMAL);
 
 sim_debug(dev->dbit, dev->dptr, "Writer Thread Starting\n");
 
@@ -1822,7 +1979,7 @@ memset(errbuf, 0, PCAP_ERRBUF_SIZE);
 if (0 == strncmp("tap:", savname, 4)) {
   int  tun = -1;    /* TUN/TAP Socket */
   int  on = 1;
-  char *devname = savname + 4;
+  const char *devname = savname + 4;
 
   while (isspace(*devname))
       ++devname;
@@ -1909,7 +2066,7 @@ else { /* !tap: */
   if (0 == strncmp("vde:", savname, 4)) {
 #if defined(HAVE_VDE_NETWORK)
     struct vde_open_args voa;
-    char *devname = savname + 4;
+    const char *devname = savname + 4;
 
     memset(&voa, 0, sizeof(voa));
     if (!strcmp(savname, "vde:vdedevice")) {
@@ -1918,7 +2075,7 @@ else { /* !tap: */
       }
     while (isspace(*devname))
         ++devname;
-    if (!(*handle = (void*) vde_open(devname, "simh", &voa)))
+    if (!(*handle = (void*) vde_open((char *)devname, (char *)"simh", &voa)))
       strncpy(errbuf, strerror(errno), PCAP_ERRBUF_SIZE-1);
     else {
       *eth_api = ETH_API_VDE;
@@ -1931,7 +2088,7 @@ else { /* !tap: */
   else { /* !vde: */
     if (0 == strncmp("nat:", savname, 4)) {
 #if defined(HAVE_SLIRP_NETWORK)
-      char *devname = savname + 4;
+      const char *devname = savname + 4;
 
       while (isspace(*devname))
           ++devname;
@@ -1949,7 +2106,7 @@ else { /* !tap: */
       if (0 == strncmp("udp:", savname, 4)) {
         char localport[CBUFSIZE], host[CBUFSIZE], port[CBUFSIZE];
         char hostport[2*CBUFSIZE];
-        char *devname = savname + 4;
+        const char *devname = savname + 4;
 
         if (!strcmp(savname, "udp:sourceport:remotehost:remoteport")) {
           sim_printf ("Eth: Must specify actual udp host and ports(i.e. udp:1224:somehost.com:2234)\r\n");
@@ -2057,13 +2214,14 @@ if (bpf_filter && (*eth_api == ETH_API_PCAP)) {
 return SCPE_OK;
 }
 
-t_stat eth_open(ETH_DEV* dev, char* name, DEVICE* dptr, uint32 dbit)
+t_stat eth_open(ETH_DEV* dev, const char* name, DEVICE* dptr, uint32 dbit)
 {
 t_stat r;
 int bufsz = (BUFSIZ < ETH_MAX_PACKET) ? ETH_MAX_PACKET : BUFSIZ;
 char errbuf[PCAP_ERRBUF_SIZE];
-char temp[1024];
-char* savname = name;
+char temp[1024], desc[1024] = "";
+const char* savname = name;
+char namebuf[4*CBUFSIZE];
 int   num;
 
 if (bufsz < ETH_MAX_JUMBO_FRAME)
@@ -2080,22 +2238,27 @@ if ((strlen(name) == 4)
     && isdigit(name[3])
    ) {
   num = atoi(&name[3]);
-  savname = eth_getname(num, temp);
+  savname = eth_getname(num, temp, desc);
   if (savname == NULL) /* didn't translate */
     return SCPE_OPENERR;
   }
 else {
   /* are they trying to use device description? */
-  savname = eth_getname_bydesc(name, temp);
+  savname = eth_getname_bydesc(name, temp, desc);
   if (savname == NULL) { /* didn't translate */
     /* probably is not ethX and has no description */
-    savname = eth_getname_byname(name, temp);
-    if (savname == NULL) /* didn't translate */
+    savname = eth_getname_byname(name, temp, desc);
+    if (savname == NULL) {/* didn't translate */
       savname = name;
+      desc[0] = '\0';   /* no description */
+      }
     }
   }
 
-r = _eth_open_port(savname, &dev->eth_api, &dev->handle, &dev->fd_handle, errbuf, NULL, (void *)dev, dptr, dbit);
+namebuf[sizeof(namebuf)-1] = '\0';
+strncpy (namebuf, savname, sizeof(namebuf)-1);
+savname = namebuf;
+r = _eth_open_port(namebuf, &dev->eth_api, &dev->handle, &dev->fd_handle, errbuf, NULL, (void *)dev, dptr, dbit);
 
 if (errbuf[0]) {
   sim_printf ("Eth: open error - %s\r\n", errbuf);
@@ -2104,7 +2267,9 @@ if (errbuf[0]) {
 if (r != SCPE_OK)
   return r;
 
-sim_printf ("Eth: opened OS device %s\r\n", savname);
+if (!strcmp (desc, "No description available"))
+    strcpy (desc, "");
+sim_printf ("Eth: opened OS device %s%s%s\r\n", savname, desc[0] ? " - " : "", desc);
 
 /* get the NIC's hardware MAC address */
 eth_get_nic_hw_addr(dev, savname);
@@ -2201,7 +2366,7 @@ pthread_mutex_destroy (&dev->self_lock);
 pthread_mutex_destroy (&dev->writer_lock);
 pthread_cond_destroy (&dev->writer_cond);
 if (1) {
-  struct write_request *buffer;
+  ETH_WRITE_REQUEST *buffer;
    while (NULL != (buffer = dev->write_buffers)) {
     dev->write_buffers = buffer->next;
     free(buffer);
@@ -2355,7 +2520,7 @@ eth_filter(dev, 1, (ETH_MAC *)mac, 0, 0);
 /* send the packet */
 status = _eth_write (dev, &send, NULL);
 if (status != SCPE_OK) {
-  char *msg;
+  const char *msg;
   msg = (dev->eth_api == ETH_API_PCAP) ?
       "Eth: Error Transmitting packet: %s\r\n"
         "You may need to run as root, or install a libpcap version\r\n"
@@ -2593,7 +2758,7 @@ return ((status == 0) ? SCPE_OK : SCPE_IOERR);
 t_stat eth_write(ETH_DEV* dev, ETH_PACK* packet, ETH_PCALLBACK routine)
 {
 #ifdef USE_READER_THREAD
-struct write_request *request;
+ETH_WRITE_REQUEST *request;
 int write_queue_size = 1;
 
 /* make sure device exists */
@@ -2605,7 +2770,7 @@ if (NULL != (request = dev->write_buffers))
   dev->write_buffers = request->next;
 pthread_mutex_unlock (&dev->writer_lock);
 if (NULL == request)
-  request = (struct write_request *)malloc(sizeof(*request));
+  request = (ETH_WRITE_REQUEST *)malloc(sizeof(*request));
 
 /* Copy buffer contents */
 request->packet.len = packet->len;
@@ -2619,7 +2784,7 @@ memcpy(request->packet.msg, packet->msg, packet->len);
 pthread_mutex_lock (&dev->writer_lock);
 request->next = NULL;
 if (dev->write_requests) {
-  struct write_request *last_request = dev->write_requests;
+  ETH_WRITE_REQUEST *last_request = dev->write_requests;
 
   ++write_queue_size;
   while (last_request->next) {
@@ -2830,9 +2995,9 @@ return (uint16)(~sum);
 }
 
 static void
-_eth_fix_ip_jumbo_offload(ETH_DEV* dev, const u_char* msg, int len)
+_eth_fix_ip_jumbo_offload(ETH_DEV* dev, u_char* msg, int len)
 {
-unsigned short* proto = (unsigned short*) &msg[12];
+const unsigned short* proto = (const unsigned short*) &msg[12];
 struct IPHeader *IP;
 struct TCPHeader *TCP = NULL;
 struct UDPHeader *UDP;
@@ -3021,7 +3186,7 @@ switch (IP->proto) {
 static void
 _eth_fix_ip_xsum_offload(ETH_DEV* dev, const u_char* msg, int len)
 {
-unsigned short* proto = (unsigned short*) &msg[12];
+const unsigned short* proto = (const unsigned short*) &msg[12];
 struct IPHeader *IP;
 struct TCPHeader *TCP;
 struct UDPHeader *UDP;
@@ -3221,8 +3386,12 @@ if ((LOOPBACK_SELF_FRAME(dev->physical_addr, data)) ||
 
 if (bpf_used ? to_me : (to_me && !from_me)) {
   if (header->len > ETH_MIN_JUMBO_FRAME) {
-    if (header->len <= header->caplen) /* Whole Frame captured? */
-      _eth_fix_ip_jumbo_offload(dev, data, header->len);
+    if (header->len <= header->caplen) {/* Whole Frame captured? */
+      u_char *datacopy = (u_char *)malloc(header->len);
+      memcpy(datacopy, data, header->len);
+      _eth_fix_ip_jumbo_offload(dev, datacopy, header->len);
+      free(datacopy);
+      }
     else
       ++dev->jumbo_truncated;
     return;
