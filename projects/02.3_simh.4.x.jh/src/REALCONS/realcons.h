@@ -40,7 +40,7 @@
 #ifdef WIN32
 #define strcasecmp _stricmp	// grmbl
 #else
-#include <limits.h> // MAXINT
+#include <limits.h> // INT_MAX
 #endif
 
 
