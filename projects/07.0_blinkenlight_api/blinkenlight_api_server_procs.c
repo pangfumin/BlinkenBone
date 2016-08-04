@@ -20,7 +20,7 @@
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
+ 04-Aug-2016  JH      activated bitwise input lowpass for pin debouncing (c->fmax)
  08-May-2016  JH      new event "set_controlvalue"
  22-Feb-2016  JH	  added panel mode set/get callbacks
  13-Nov-2015  JH      created
@@ -212,6 +212,8 @@ rpc_blinkenlight_api_setpanel_controlvalues_1_svc(u_int i_panel,
 
 	print(LOG_DEBUG, "blinkenlight_api_setpanel_controlvalues(i_panel=%d)\n", i_panel);
 
+	now_us = historybuffer_now_us() ;
+
 	if (i_panel >= blinkenlight_panel_list->panels_count) {
 		print(LOG_ERR, "i_panel > panels_count\n");
 		result.error_code = 1; // invalid panel
@@ -231,7 +233,6 @@ rpc_blinkenlight_api_setpanel_controlvalues_1_svc(u_int i_panel,
 		/* go through all output controls, assign value to each
 		 * decode control value from the right amount of bytes
 		 * */
-		now_us = historybuffer_now_us() ;
 		value_byte_ptr = valuelist.value_bytes.value_bytes_val;
 		for (i_control = 0; i_control < p->controls_count; i_control++) {
 			c = &(p->controls[i_control]);
@@ -280,6 +281,7 @@ rpc_blinkenlight_api_setpanel_controlvalues_1_svc(u_int i_panel,
 rpc_blinkenlight_api_controlvalues_struct *
 rpc_blinkenlight_api_getpanel_controlvalues_1_svc(u_int i_panel, struct svc_req *rqstp)
 {
+    uint64_t    now_us ; // system ticks in microseconds
 	static rpc_blinkenlight_api_controlvalues_struct result;
 	blinkenlight_panel_t *p;
 	unsigned i_control;
@@ -287,6 +289,8 @@ rpc_blinkenlight_api_getpanel_controlvalues_1_svc(u_int i_panel, struct svc_req 
 	blinkenlight_control_t *c;
 
 	print(LOG_DEBUG, "blinkenlight_api_getpanel_controlvalues(i_panel=%d)\n", i_panel);
+
+	now_us = historybuffer_now_us();
 
 	if (i_panel >= blinkenlight_panel_list->panels_count)
 		result.error_code = 1; // invalid panel
@@ -305,18 +309,32 @@ rpc_blinkenlight_api_getpanel_controlvalues_1_svc(u_int i_panel, struct svc_req 
 				sizeof(u_char));
 		assert(result.value_bytes.value_bytes_val);
 
+
 		/* go through all input controls, assign value from each into result stream
 		 * each input control puts "value_bytelen" bytes into char stream, lsb first */
 		value_byte_ptr = result.value_bytes.value_bytes_val;
 		for (i_control = 0; i_control < p->controls_count; i_control++) {
 			c = &(p->controls[i_control]);
 			if (c->is_input) {
+			    uint64_t    val = 0 ;
 				assert(
 						(value_byte_ptr - result.value_bytes.value_bytes_val)
 								< result.value_bytes.value_bytes_len);
-				encode_uint64_to_bytes(value_byte_ptr, c->value, c->value_bytelen);
+                if (c->fmax) {
+                     int i_bit ;
+                    // low pass each single bit of control individually!
+                    // use fmax only for pin debouncing!
+                     historybuffer_get_average_vals(c->history, 1000000 / c->fmax, now_us, /*bitmode*/1);
+                     // re-assemble value from low-passed bits
+                     for (i_bit = 0 ; i_bit < c->value_bitlen ; i_bit++)
+                         if (c->averaged_value_bits[i_bit] > 128) // > 50% ?
+                             val |= (1 << i_bit) ;
+                }
+                else val = c->value ;
+
+				encode_uint64_to_bytes(value_byte_ptr, val, c->value_bytelen);
 				print(LOG_DEBUG, "  result.values[] += control[%d].value = 0x%llx (%d bytes)\n",
-						i_control, c->value, c->value_bytelen);
+						i_control, val, c->value_bytelen);
 				value_byte_ptr += c->value_bytelen; // next pos in buffer
 			}
 		}

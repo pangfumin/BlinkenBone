@@ -20,7 +20,7 @@
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
+ 04-Aug-2016  JH    Switch polling with reduced frequency, to supress contact bounce
  01-Aug-2016  JH    DEPOSIT/EXAMINE_THIS/NEXT separate (like keys, not internal combo signals)
  25-Jun-2016  JH    DATA/ADDR switches, REGISTER, MEMBUFFER: mirror, Bit17 = LSB
  25-Jun-2016  JH    commandline processing changed to getopt2
@@ -69,6 +69,7 @@
 #include "main.h"
 #include "gpio.h"
 
+
 // all data structs work on this panel
 volatile blinkenlight_panel_t *pdp15_panel;
 
@@ -80,6 +81,7 @@ char program_options[1024]; // argv[1.argc-1]
 int opt_test = 0;
 int opt_background = 0;
 unsigned opt_mux_frequency = 0;
+unsigned opt_switch_mux_frequency = 0 ;
 
 // command line args
 static getopt_t getopt_parser;
@@ -365,6 +367,11 @@ static void parse_commandline(int argc, char **argv)
                     "!! For values != 1000 (1 kHz) the lamp protection watchdog will not work correctly !!",
             "10000", "multiplex with 10 kHz, every row is shown 3333x per second", NULL, NULL);
 
+    getopt_def(&getopt_parser, "sf", "switchmuxfrequency", "switchmuxfrequency", NULL, "15",
+            "Row frequency for switch polling. Effective polling frequency is 1/3 of that.\n"
+                    "Use low values to suppress contact bounce on some switches.",
+            "30", "Poll switches with 10 Hz", NULL, NULL);
+
     res = getopt_first(&getopt_parser, argc, argv);
     while (res > 0) {
         if (getopt_isoption(&getopt_parser, "help")) {
@@ -377,6 +384,9 @@ static void parse_commandline(int argc, char **argv)
             print_level = LOG_DEBUG;
         } else if (getopt_isoption(&getopt_parser, "muxfrequency")) {
             if (getopt_arg_i(&getopt_parser, "frequency", &opt_mux_frequency) < 0)
+                commandline_option_error();
+        } else if (getopt_isoption(&getopt_parser, "switchmuxfrequency")) {
+            if (getopt_arg_i(&getopt_parser, "switchmuxfrequency", &opt_switch_mux_frequency) < 0)
                 commandline_option_error();
 
         }
@@ -525,7 +535,9 @@ static void register_controls()
     // params: value offset, bitlen, muxcode, OUT register, register bit offset
     // see panels/pdp15/schematic.txt
 
+    // some switches have no debouncing flip-flops, set internal lowpass
     switch_stop = define_switch_slice(p, "STOP", 0, 1, MUX1, 1, 1); // In1.1 "STOP"
+    //switch_stop->fmax = SWITCH_LOWPASS_FREQUENCY ; // debounce
     switch_reset = define_switch_slice(p, "RESET", 0, 1, MUX1, 2, 0); // In2.0 "RESET"
     switch_read_in = define_switch_slice(p, "READ_IN", 0, 1, MUX1, 1, 2); // In1.2 "READ IN"
     switch_reg_group = define_switch_slice(p, "REG_GROUP", 0, 1, MUX6, 1, 0); // In 1.0 "REG GROUP"
@@ -546,9 +558,13 @@ static void register_controls()
     switch_cont = define_switch_slice(p, "CONT", 0, 1, MUX1, 1, 5); // In1.5 "CONT"
     // EXAM/DEPOSIT THIS/NEXT are constructed in gpio.c;
     switch_deposit_this = define_switch_slice(p, "DEPOSIT_THIS", 0, 1, MUX1, 0, 0); // register&bit dummy
+    //switch_deposit_this->fmax = SWITCH_LOWPASS_FREQUENCY ; // debounce
     switch_examine_this = define_switch_slice(p, "EXAMINE_THIS", 0, 1, MUX1, 0, 0); // "
+    //switch_examine_this->fmax = SWITCH_LOWPASS_FREQUENCY ; // debounce
     switch_deposit_next = define_switch_slice(p, "DEPOSIT_NEXT", 0, 1, MUX1, 0, 0); // "
+    //switch_deposit_next->fmax = SWITCH_LOWPASS_FREQUENCY ; // debounce
     switch_examine_next = define_switch_slice(p, "EXAMINE_NEXT", 0, 1, MUX1, 0, 0); // "
+    //switch_examine_next->fmax = SWITCH_LOWPASS_FREQUENCY ; // debounce
 
     switch_data = define_switch_slice(p, "DATA", 0, 8, MUX2, 2, 0); // In2.0:7 "DSW00-07"
     switch_data = define_switch_slice(p, "DATA", 8, 2, MUX2, 3, 0); // In3.0:1 "DSW08-09"
@@ -580,6 +596,16 @@ int main(int argc, char *argv[])
     print_level = LOG_NOTICE;
     // print_level = LOG_DEBUG;
     parse_commandline(argc, argv);
+
+    /* if history-lowpass is used ...
+    if ((opt_switch_mux_frequency / SWITCH_LOWPASS_FREQUENCY) > MAX_BLINKENLIGHT_HISTORY_ENTRIES) {
+        print(LOG_ERR, "Configuration error: multiplexing with %d Hz, Switch lowpass %d Hz:\n",
+        opt_mux_frequency, SWITCH_LOWPASS_FREQUENCY) ;
+        print(LOG_ERR, "   would need %d value history entries, but only %d available!\n",
+                (opt_mux_frequency / SWITCH_LOWPASS_FREQUENCY), MAX_BLINKENLIGHT_HISTORY_ENTRIES) ;
+        exit(1);
+    }
+    */
 
     sprintf(program_info, "PDP-15 blinkenlightd - Blinkenlight API server daemon for PDP-15 %s",
     VERSION);

@@ -37,6 +37,10 @@
 #include <unistd.h>
 #include <fcntl.h> // extra
 
+#define SWITCH_LOWPASS_FREQUENCY    10
+// MAX_BLINKENLIGHT_HISTORY_ENTRIES in history buffer,
+// updated with thread polling freqency !
+// f=10Hz -> 100ms intervall -> 100 buffer entries used at 1 kHz -> OK
 
 // multiplexer codes
 #define MUX1    1   // gives some optical structure
