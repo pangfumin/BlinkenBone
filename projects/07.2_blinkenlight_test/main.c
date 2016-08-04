@@ -116,20 +116,20 @@ static void parse_commandline(int argc, char **argv)
 	arg_cmdfilename[0] = 0;
 	arg_hostname[0] = 0;
 
-	getopt_def(&getopt_parser, NULL, NULL, "hostname", NULL, "Connect to the Blinkenlight API server on <hostname>\n"
+	getopt_def(&getopt_parser, NULL, NULL, "hostname", NULL, NULL, "Connect to the Blinkenlight API server on <hostname>\n"
 		"<hostname> may be numerical or ar DNS name",
 		"127.0.0.1", "connect to the server running on the same machine.",
 		"raspberrypi", "connected to a RaspberryPi with default name.");
-	getopt_def(&getopt_parser, "?", "help", NULL, NULL, "Print help", NULL, NULL, NULL, NULL);
-	getopt_def(&getopt_parser, "cf", "cmdfile", "cmdfilename", NULL, "File from which commands are read.\n"
+	getopt_def(&getopt_parser, "?", "help", NULL, NULL, NULL, "Print help", NULL, NULL, NULL, NULL);
+	getopt_def(&getopt_parser, "cf", "cmdfile", "cmdfilename", NULL, NULL, "File from which commands are read.\n"
 		"Lines are processed as if typed in.",
 		"testseq", "read commands from file \"testseq\" and execute line by line", NULL, NULL);
-	getopt_def(&getopt_parser, "p", "ping", "pingcount", NULL, "Ping server on <hostname> wether he is alife.\n"
+	getopt_def(&getopt_parser, "p", "ping", "pingcount", NULL, NULL, "Ping server on <hostname> wether he is alife.\n"
 		"There are <pingcount> tries. On error, exit status 1 is returned.",
 		"20", "Ping for 20 seconds.", NULL, NULL);
-	getopt_def(&getopt_parser, "w", "width", "columns", NULL, "set screen width for display.\n"
+	getopt_def(&getopt_parser, "w", "width", "columns", NULL, "132", "set screen width for display.\n"
 		"Panel controls are displayed in a table, which uses this much char columns.\n"
-		"Should be less or equal to terminal window width. Minimum 80, default = 132.",
+		"Should be less or equal to terminal window width. Minimum 80.",
 		"96", "Use 96 columns in terminal window", NULL, NULL);
 	if (argc < 2)
 		help(); // at least 1 required

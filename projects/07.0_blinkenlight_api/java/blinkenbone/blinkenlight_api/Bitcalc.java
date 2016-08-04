@@ -1,4 +1,4 @@
-/* Bitcalc.java: bit arithemtic utilities
+/* Bitcalc.java: bit arithmetic utilities
 
    Copyright (c) 2012-2016, Joerg Hoppe
    j_hoppe@t-online.de, www.retrocmp.com

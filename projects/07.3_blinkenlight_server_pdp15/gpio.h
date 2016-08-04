@@ -38,6 +38,16 @@
 #include <fcntl.h> // extra
 
 
+// multiplexer codes
+#define MUX1    1   // gives some optical structure
+#define MUX2    2
+#define MUX3    3
+#define MUX5    5
+#define MUX6    6
+#define MUX7    7
+
+
+
 #ifndef _GPIO_C_
 #endif
 

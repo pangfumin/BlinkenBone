@@ -424,8 +424,9 @@ t_stat realcons_console_pdp15_reset(realcons_console_logic_pdp15_t *_this)
         return SCPE_NOATT;
     if (!(_this->switch_examine_this = realcons_console_get_input_control(_this->realcons, "EXAMINE_THIS")))
         return SCPE_NOATT;
-// S31 "DEP NEXT" & S33 "EXAMINE NEXT" is one signal, combines with EXAM/DEPOSIT THIS
-    if (!(_this->switch_deposit_examine_next = realcons_console_get_input_control(_this->realcons, "DEP_EXAM_NEXT")))
+    if (!(_this->switch_deposit_next = realcons_console_get_input_control(_this->realcons, "DEPOSIT_NEXT")))
+        return SCPE_NOATT;
+    if (!(_this->switch_examine_next = realcons_console_get_input_control(_this->realcons, "EXAMINE_NEXT")))
         return SCPE_NOATT;
     if (!(_this->switch_data = realcons_console_get_input_control(_this->realcons, "DATA")))
         return SCPE_NOATT;
@@ -458,7 +459,10 @@ static int momentary_switch_signal(realcons_console_logic_pdp15_t *_this, blinke
                      || action_switch == _this->switch_exec
                      || action_switch == _this->switch_cont
                      || action_switch == _this->switch_examine_this
-                     || action_switch == _this->switch_deposit_this);
+                     || action_switch == _this->switch_examine_next
+                     || action_switch == _this->switch_deposit_this
+                     || action_switch == _this->switch_deposit_next
+                     );
 
     // switch signal on first press
     if (action_switch->value && !action_switch->value_previous) {
@@ -558,46 +562,51 @@ t_stat realcons_console_pdp15_service(realcons_console_logic_pdp15_t *_this)
     }
 
 
+    // "Examine: Places the contents of the memory location specified by the address switches
+    // into the memory buffer register. The address is loaded into the OA(operand
+    //  address) register.
+    // Examine Next:  Places the contents of the memory location specified by the OA + 1 (operand
+    // address plus 1) into the memory buffer register. Sequential memory locations may
+    // be examined using the Examine - Next switch.
     if (momentary_switch_signal(_this, _this->switch_examine_this, repeat_triggered)) {
-        // "Examine: Places the contents of the memory location specified by the address switches
-        // into the memory buffer register. The address is loaded into the OA(operand
-        //  address) register.
-        // Examine Next:  Places the contents of the memory location specified by the OA + 1 (operand
-        // address plus 1) into the memory buffer register. Sequential memory locations may
-        // be examined using the Examine - Next switch.
         unsigned addrval;
-
-        if (_this->switch_deposit_examine_next->value) {
-            // "Examine Next" pressed
-            addrval = SIGNAL_GET(cpusignal_operand_address_register) + 1;
-        }  else {
             addrval = (realcons_machine_word_t)_this->switch_address->value;
-        }
         addrval &= 077777; // 15 bit addr
         SIGNAL_SET(cpusignal_operand_address_register, addrval);
-
+        // generate simh "exam cmd". Always octal, should use SimH-radix
+        realcons_simh_add_cmd(_this->realcons, "examine %o\n", addrval);
+    }
+    if (momentary_switch_signal(_this, _this->switch_examine_next, repeat_triggered)) {
+        unsigned addrval;
+            addrval = SIGNAL_GET(cpusignal_operand_address_register) + 1;
+        addrval &= 077777; // 15 bit addr
+        SIGNAL_SET(cpusignal_operand_address_register, addrval);
         // generate simh "exam cmd". Always octal, should use SimH-radix
         realcons_simh_add_cmd(_this->realcons, "examine %o\n", addrval);
     }
 
+    // "Deposit: Deposits the contents of the data switches into the memory location specified by
+    // the address switches. After the transfer, the memory locations address is in the
+    // OA (operand address) register and the contents of the accumulator switches are
+    // in the MO (memory out) register.
+    // Deposit Next: Deposits the contents of the data switches into the location given by OA +/- 1.
+    // This permits the loading of sequential memory locations without the need of
+    // loading the address each time."
+    // (The  "+/-" in the docs is interpreted as typo, only "+" is implemented.)
     if (momentary_switch_signal(_this, _this->switch_deposit_this, repeat_triggered)) {
-        // "Deposit: Deposits the contents of the data switches into the memory location specified by
-        // the address switches. After the transfer, the memory locations address is in the
-        // OA (operand address) register and the contents of the accumulator switches are
-        // in the MO (memory out) register.
-        // Deposit Next: Deposits the contents of the data switches into the location given by OA +/- 1.
-        // This permits the loading of sequential memory locations without the need of
-        // loading the address each time."
-        // The  "+/-" in the docs is interpreted as typo, only "+" is implemented.
         unsigned addrval, dataval;
-        if (_this->switch_deposit_examine_next->value)
-            // "Deposit Next" pressed
-            addrval = SIGNAL_GET(cpusignal_operand_address_register) + 1;
-        else
             addrval = (realcons_machine_word_t)_this->switch_address->value;
         addrval &= 077777; // 15 bit addr
         SIGNAL_SET(cpusignal_operand_address_register, addrval);
-
+        dataval = (realcons_machine_word_t)_this->switch_data->value;
+        // produce SimH cmd. Always octal, should use SimH-radix
+        realcons_simh_add_cmd(_this->realcons, "deposit %o %o\n", addrval, dataval);
+    }
+    if (momentary_switch_signal(_this, _this->switch_deposit_next, repeat_triggered)) {
+        unsigned addrval, dataval;
+            addrval = SIGNAL_GET(cpusignal_operand_address_register) + 1;
+        addrval &= 077777; // 15 bit addr
+        SIGNAL_SET(cpusignal_operand_address_register, addrval);
         dataval = (realcons_machine_word_t)_this->switch_data->value;
         // produce SimH cmd. Always octal, should use SimH-radix
         realcons_simh_add_cmd(_this->realcons, "deposit %o %o\n", addrval, dataval);
@@ -840,8 +849,9 @@ int realcons_console_pdp15_test(realcons_console_logic_pdp15_t *_this, int arg)
     realcons_printf(_this->realcons, stdout, "Switch 'EXEC' ............... = %llo\n", _this->switch_exec->value);
     realcons_printf(_this->realcons, stdout, "Switch 'CONT' ............... = %llo\n", _this->switch_cont->value);
     realcons_printf(_this->realcons, stdout, "Switch 'DEPOSIT THIS' ....... = %llo\n", _this->switch_deposit_this->value);
+    realcons_printf(_this->realcons, stdout, "Switch 'DEPOSIT NEXT' ....... = %llo\n", _this->switch_deposit_next->value);
     realcons_printf(_this->realcons, stdout, "Switch 'EXAMINE THIS' ....... = %llo\n", _this->switch_examine_this->value);
-    realcons_printf(_this->realcons, stdout, "Switch 'DEPOSIT/EXAMINE NEXT' = %llo\n", _this->switch_deposit_examine_next->value);
+    realcons_printf(_this->realcons, stdout, "Switch 'EXAMINE NEXT' ....... = %llo\n", _this->switch_examine_next->value);
     realcons_printf(_this->realcons, stdout, "Switches 'DATA' ............. = %llo\n", _this->switch_data->value);
     realcons_printf(_this->realcons, stdout, "Potentiometer 'REPEAT RATE'   = %llo\n", _this->potentiometer_repeat_rate->value);
 

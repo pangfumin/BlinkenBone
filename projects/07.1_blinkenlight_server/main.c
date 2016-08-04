@@ -256,25 +256,25 @@ static int parse_commandline(int argc, char **argv)
 
     // define commandline syntax
     getopt_init(&getopt_parser, /*ignore_case*/1);
-    getopt_def(&getopt_parser, "?", "help", NULL, NULL, "Print help", NULL, NULL, NULL, NULL);
-    getopt_def(&getopt_parser, "c", "config_file", "config_filename", NULL,
+    getopt_def(&getopt_parser, "?", "help", NULL, NULL, NULL, "Print help", NULL, NULL, NULL, NULL);
+    getopt_def(&getopt_parser, "c", "config_file", "config_filename", NULL, NULL,
             "specify name of panel configuration file\n"
                     "Defines, how panels are connected to BLINKENBUS interface boards",
             "pdp1170.conf", "read control definitions for the BlinkenBone PDP-11/70 panel", NULL,
             NULL);
 #ifndef WIN32
-    getopt_def(&getopt_parser, "b", "background", NULL, NULL,
+    getopt_def(&getopt_parser, "b", "background", NULL, NULL, NULL,
             "background operation: print to syslog (view with dmesg)\n"
                     "default output is stderr",
             NULL, NULL, NULL, NULL);
-    getopt_def(&getopt_parser, "s", "simulation", NULL, NULL,
+    getopt_def(&getopt_parser, "s", "simulation", NULL, NULL, NULL,
             "show user GUI with simulated panel.\n"
                     "No operation on BLINKENBUS. Clears -b, default output is stderr.",
             NULL, NULL, NULL, NULL);
-    getopt_def(&getopt_parser, "v", "verbose", NULL, NULL, "tell what I'm doing",
+    getopt_def(&getopt_parser, "v", "verbose", NULL, NULL, NULL, "tell what I'm doing",
     NULL, NULL, NULL, NULL);
 #endif
-    getopt_def(&getopt_parser, "t", "test", NULL, NULL,
+    getopt_def(&getopt_parser, "t", "test", NULL, NULL, NULL,
             "go not into server mode, just test the config file",
             NULL, NULL, NULL, NULL);
 

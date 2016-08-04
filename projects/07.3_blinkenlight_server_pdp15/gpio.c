@@ -150,6 +150,68 @@ static void inputcontrols_from_mux_row(unsigned mux_code)
             blinkenbus_control_from_cache(blinkenbus_input_cache, c);
         }
     }
+    if (mux_code == MUX1) {
+        /* exam/deposit this/next must be constructed separateley
+         * physical keyboard signals:
+         * S30 "DEP THIS"       => In2.2
+         * S32 "EXAMINE THIS"   => In2.1
+         * S31 "DEP NEXT" & S33 "EXAMINE NEXT" is one signal, combines with EXAM/DEPOSIT THIS
+         *                      => In1.0
+         *
+         *        keyboard                       API
+         * dep_this     dep_exam_next   exam_this   exam_next
+         * 0            *               0           0
+         * 1            0               1           0
+         * 1            1               0           1
+         *
+         * exam_this    dep_exam_next   dep_this    dep_next
+         * 0            *               0           0
+         * 1            0               1           0
+         * 1            1               0           1
+         */
+         int keyboard_deposit_this = ! (blinkenbus_input_cache[2] & 0x4) ; // In2.2
+         int keyboard_examine_this = ! (blinkenbus_input_cache[2] & 0x2) ; // In2.1
+         int keyboard_dep_exam_next = ! (blinkenbus_input_cache[1] & 0x1) ; // In1.0
+         static uint64_t prevval = 0;
+         static int n = 0;
+         extern blinkenlight_control_t *switch_deposit_this; // main.c
+         extern blinkenlight_control_t *switch_deposit_next;
+         extern blinkenlight_control_t *switch_examine_this;
+         extern blinkenlight_control_t *switch_examine_next;
+
+         if (keyboard_deposit_this == 0) {
+             switch_deposit_this->value = 0 ;
+             switch_deposit_next->value = 0 ;
+         } else if (keyboard_dep_exam_next == 0) {
+             switch_deposit_this->value = 1 ;
+             switch_deposit_next->value = 0 ;
+         } else {
+             switch_deposit_this->value = 0 ;
+             switch_deposit_next->value = 1 ;
+         }
+         if (keyboard_examine_this == 0) {
+             switch_examine_this->value = 0 ;
+             switch_examine_next->value = 0 ;
+         } else if (keyboard_dep_exam_next == 0) {
+             switch_examine_this->value = 1 ;
+             switch_examine_next->value = 0 ;
+         } else {
+             switch_examine_this->value = 0 ;
+             switch_examine_next->value = 1 ;
+         }
+         /*
+         // jitter?
+         if (switch_examine_next->value != prevval)
+             printf("%u) Input %s %llu -> %llu\n", n++, switch_examine_next->name, prevval, switch_examine_next->value) ;
+         prevval = switch_examine_next->value ;
+         */
+/*
+         if (keyboard_dep_exam_next != prevval)
+             printf("%u) Input %s %u -> %u\n", n++, "keyboard_dep_exam_next", prevval, keyboard_dep_exam_next) ;
+         prevval = keyboard_dep_exam_next;
+         */
+
+    }
 }
 
 /***********************************************

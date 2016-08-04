@@ -113,9 +113,9 @@ import blinkenbone.blinkenlight_api.Control.ControlType;
 import blinkenbone.blinkenlight_api.Panel;
 import blinkenbone.panelsim.ControlSliceStateImage;
 import blinkenbone.panelsim.ControlSliceVisualization;
-import blinkenbone.panelsim.DimmableLEDVisualization;
+import blinkenbone.panelsim.DimmableLedControlSliceVisualization;
 import blinkenbone.panelsim.ResourceManager;
-import blinkenbone.panelsim.TwoStateControlVisualization;
+import blinkenbone.panelsim.TwoStateControlSliceVisualization;
 import blinkenbone.panelsim.panelsim1140.Panel1140Control.Panel1140ControlType;
 import blinkenbone.rpcgen.rpc_blinkenlight_api;
 
@@ -153,7 +153,7 @@ public class Panel1140 extends JPanel implements Observer {
 	Panel1140Control led_VIRTUAL;
 
 	// the background
-	TwoStateControlVisualization backgroundVisualization;
+	TwoStateControlSliceVisualization backgroundVisualization;
 
 	private ResourceManager resourceManager;
 
@@ -277,7 +277,7 @@ public class Panel1140 extends JPanel implements Observer {
 		 * load all visualizations into global list. mark them with the
 		 * Blinkenlight API control and bit pos
 		 */
-		backgroundVisualization = new TwoStateControlVisualization("0000_background.png", null,
+		backgroundVisualization = new TwoStateControlSliceVisualization("0000_background.png", null,
 				null, 0);
 
 		// clear visualization of all controls
@@ -286,148 +286,148 @@ public class Panel1140 extends JPanel implements Observer {
 		}
 
 		// All coordinates must have been loaded: loadImageCoordinates()
-		switches_SR.visualization.add(new TwoStateControlVisualization(
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization(
 				"0004s_0000_switch_SR17_up.png", switches_SR, switches_SR.inputcontrol, 17));
-		switches_SR.visualization.add(new TwoStateControlVisualization(
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization(
 				"0004s_0001_switch_SR16_up.png", switches_SR, switches_SR.inputcontrol, 16));
-		switches_SR.visualization.add(new TwoStateControlVisualization(
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization(
 				"0004s_0002_switch_SR15_up.png", switches_SR, switches_SR.inputcontrol, 15));
-		switches_SR.visualization.add(new TwoStateControlVisualization(
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization(
 				"0004s_0003_switch_SR14_up.png", switches_SR, switches_SR.inputcontrol, 14));
-		switches_SR.visualization.add(new TwoStateControlVisualization(
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization(
 				"0004s_0004_switch_SR13_up.png", switches_SR, switches_SR.inputcontrol, 13));
-		switches_SR.visualization.add(new TwoStateControlVisualization(
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization(
 				"0004s_0005_switch_SR12_up.png", switches_SR, switches_SR.inputcontrol, 12));
-		switches_SR.visualization.add(new TwoStateControlVisualization(
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization(
 				"0004s_0006_switch_SR11_up.png", switches_SR, switches_SR.inputcontrol, 11));
-		switches_SR.visualization.add(new TwoStateControlVisualization(
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization(
 				"0004s_0007_switch_SR10_up.png", switches_SR, switches_SR.inputcontrol, 10));
-		switches_SR.visualization.add(new TwoStateControlVisualization(
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization(
 				"0004s_0008_switch_SR09_up.png", switches_SR, switches_SR.inputcontrol, 9));
-		switches_SR.visualization.add(new TwoStateControlVisualization(
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization(
 				"0004s_0009_switch_SR08_up.png", switches_SR, switches_SR.inputcontrol, 8));
-		switches_SR.visualization.add(new TwoStateControlVisualization(
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization(
 				"0004s_0010_switch_SR07_up.png", switches_SR, switches_SR.inputcontrol, 7));
-		switches_SR.visualization.add(new TwoStateControlVisualization(
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization(
 				"0004s_0011_switch_SR06_up.png", switches_SR, switches_SR.inputcontrol, 6));
-		switches_SR.visualization.add(new TwoStateControlVisualization(
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization(
 				"0004s_0012_switch_SR05_up.png", switches_SR, switches_SR.inputcontrol, 5));
-		switches_SR.visualization.add(new TwoStateControlVisualization(
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization(
 				"0004s_0013_switch_SR04_up.png", switches_SR, switches_SR.inputcontrol, 4));
-		switches_SR.visualization.add(new TwoStateControlVisualization(
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization(
 				"0004s_0014_switch_SR03_up.png", switches_SR, switches_SR.inputcontrol, 3));
-		switches_SR.visualization.add(new TwoStateControlVisualization(
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization(
 				"0004s_0015_switch_SR02_up.png", switches_SR, switches_SR.inputcontrol, 2));
-		switches_SR.visualization.add(new TwoStateControlVisualization(
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization(
 				"0004s_0016_switch_SR01_up.png", switches_SR, switches_SR.inputcontrol, 1));
-		switches_SR.visualization.add(new TwoStateControlVisualization(
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization(
 				"0004s_0017_switch_SR00_up.png", switches_SR, switches_SR.inputcontrol, 0));
 
 		// command switches
 		switch_LOAD_ADRS.visualization
-				.add(new TwoStateControlVisualization("0003s_0000_switch_LOADADRS_down.png",
+				.add(new TwoStateControlSliceVisualization("0003s_0000_switch_LOADADRS_down.png",
 						switch_LOAD_ADRS, switch_LOAD_ADRS.inputcontrol, 0));
-		switch_EXAM.visualization.add(new TwoStateControlVisualization(
+		switch_EXAM.visualization.add(new TwoStateControlSliceVisualization(
 				"0003s_0001_switch_EXAM_down.png", switch_EXAM, switch_EXAM.inputcontrol, 0));
-		switch_CONT.visualization.add(new TwoStateControlVisualization(
+		switch_CONT.visualization.add(new TwoStateControlSliceVisualization(
 				"0003s_0002_switch_CONT_down.png", switch_CONT, switch_CONT.inputcontrol, 0));
-		switch_HALT.visualization.add(new TwoStateControlVisualization(
+		switch_HALT.visualization.add(new TwoStateControlSliceVisualization(
 				"0003s_0003_switch_HALT_down.png", switch_HALT, switch_HALT.inputcontrol, 0));
 		switch_START.visualization
-				.add(new TwoStateControlVisualization("0003s_0004_switch_START_down.png",
+				.add(new TwoStateControlSliceVisualization("0003s_0004_switch_START_down.png",
 						switch_START, switch_START.inputcontrol, 0));
 		switch_DEPOSIT.visualization
-				.add(new TwoStateControlVisualization("0003s_0005_switch_DEP_up.png",
+				.add(new TwoStateControlSliceVisualization("0003s_0005_switch_DEP_up.png",
 						switch_DEPOSIT, switch_DEPOSIT.inputcontrol, 0));
 
-		DimmableLEDVisualization.defaultAveragingInterval_ms = 100;
+		DimmableLedControlSliceVisualization.defaultAveragingInterval_ms = 100;
 		// create all LEDs with a low pass of 1/10 sec.
 		// Critical are the "running light" and "idle pattern" use cases.
 
 		// dimmable LEDs use variable transparency, so they do not dsiaturb the
 		// background if
 		// they are "dim"
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("0000s_0000_led_A17.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("0000s_0000_led_A17.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 17, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("0000s_0001_led_A16.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("0000s_0001_led_A16.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 16, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("0000s_0002_led_A15.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("0000s_0002_led_A15.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 15, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("0000s_0003_led_A14.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("0000s_0003_led_A14.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 14, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("0000s_0004_led_A13.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("0000s_0004_led_A13.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 13, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("0000s_0005_led_A12.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("0000s_0005_led_A12.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 12, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("0000s_0006_led_A11.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("0000s_0006_led_A11.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 11, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("0000s_0007_led_A10.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("0000s_0007_led_A10.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 10, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("0000s_0008_led_A09.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("0000s_0008_led_A09.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 9, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("0000s_0009_led_A08.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("0000s_0009_led_A08.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 8, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("0000s_0010_led_A07.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("0000s_0010_led_A07.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 7, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("0000s_0011_led_A06.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("0000s_0011_led_A06.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 6, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("0000s_0012_led_A05.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("0000s_0012_led_A05.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 5, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("0000s_0013_led_A04.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("0000s_0013_led_A04.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 4, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("0000s_0014_led_A03.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("0000s_0014_led_A03.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 3, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("0000s_0015_led_A02.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("0000s_0015_led_A02.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 2, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("0000s_0016_led_A01.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("0000s_0016_led_A01.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 1, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("0000s_0017_led_A00.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("0000s_0017_led_A00.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 0, true));
 
-		leds_DATA.visualization.add(new DimmableLEDVisualization("0001s_0000_led_D15.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("0001s_0000_led_D15.png",
 				leds_DATA, leds_DATA.outputcontrol, 15, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("0001s_0001_led_D14.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("0001s_0001_led_D14.png",
 				leds_DATA, leds_DATA.outputcontrol, 14, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("0001s_0002_led_D13.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("0001s_0002_led_D13.png",
 				leds_DATA, leds_DATA.outputcontrol, 13, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("0001s_0003_led_D12.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("0001s_0003_led_D12.png",
 				leds_DATA, leds_DATA.outputcontrol, 12, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("0001s_0004_led_D11.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("0001s_0004_led_D11.png",
 				leds_DATA, leds_DATA.outputcontrol, 11, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("0001s_0005_led_D10.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("0001s_0005_led_D10.png",
 				leds_DATA, leds_DATA.outputcontrol, 10, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("0001s_0006_led_D09.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("0001s_0006_led_D09.png",
 				leds_DATA, leds_DATA.outputcontrol, 9, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("0001s_0007_led_D08.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("0001s_0007_led_D08.png",
 				leds_DATA, leds_DATA.outputcontrol, 8, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("0001s_0008_led_D07.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("0001s_0008_led_D07.png",
 				leds_DATA, leds_DATA.outputcontrol, 7, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("0001s_0009_led_D06.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("0001s_0009_led_D06.png",
 				leds_DATA, leds_DATA.outputcontrol, 6, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("0001s_0010_led_D05.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("0001s_0010_led_D05.png",
 				leds_DATA, leds_DATA.outputcontrol, 5, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("0001s_0011_led_D04.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("0001s_0011_led_D04.png",
 				leds_DATA, leds_DATA.outputcontrol, 4, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("0001s_0012_led_D03.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("0001s_0012_led_D03.png",
 				leds_DATA, leds_DATA.outputcontrol, 3, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("0001s_0013_led_D02.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("0001s_0013_led_D02.png",
 				leds_DATA, leds_DATA.outputcontrol, 2, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("0001s_0014_led_D01.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("0001s_0014_led_D01.png",
 				leds_DATA, leds_DATA.outputcontrol, 1, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("0001s_0015_led_D00.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("0001s_0015_led_D00.png",
 				leds_DATA, leds_DATA.outputcontrol, 0, true));
 
-		led_RUN.visualization.add(new DimmableLEDVisualization("0002s_0000_led_RUN.png",
+		led_RUN.visualization.add(new DimmableLedControlSliceVisualization("0002s_0000_led_RUN.png",
 				led_RUN, led_RUN.outputcontrol, 0, true));
-		led_BUS.visualization.add(new DimmableLEDVisualization("0002s_0001_led_BUS.png",
+		led_BUS.visualization.add(new DimmableLedControlSliceVisualization("0002s_0001_led_BUS.png",
 				led_BUS, led_BUS.outputcontrol, 0, true));
-		led_USER.visualization.add(new DimmableLEDVisualization("0002s_0002_led_USER.png",
+		led_USER.visualization.add(new DimmableLedControlSliceVisualization("0002s_0002_led_USER.png",
 				led_USER, led_USER.outputcontrol, 0, true));
-		led_PROCESSOR.visualization.add(new DimmableLEDVisualization("0002s_0003_led_PROC.png",
+		led_PROCESSOR.visualization.add(new DimmableLedControlSliceVisualization("0002s_0003_led_PROC.png",
 				led_PROCESSOR, led_PROCESSOR.outputcontrol, 0, true));
-		led_CONSOLE.visualization.add(new DimmableLEDVisualization("0002s_0004_led_CONSOLE.png",
+		led_CONSOLE.visualization.add(new DimmableLedControlSliceVisualization("0002s_0004_led_CONSOLE.png",
 				led_CONSOLE, led_CONSOLE.outputcontrol, 0, true));
-		led_VIRTUAL.visualization.add(new DimmableLEDVisualization("0002s_0005_led_VIRTUAL.png",
+		led_VIRTUAL.visualization.add(new DimmableLedControlSliceVisualization("0002s_0005_led_VIRTUAL.png",
 				led_VIRTUAL, led_VIRTUAL.outputcontrol, 0, true));
 
 	}
@@ -452,7 +452,7 @@ public class Panel1140 extends JPanel implements Observer {
 
 		// full file name is something like
 		// "pdpPDP8I_size=1200_coordinates.csv"
-		ControlSliceStateImage.loadImageCoordinates("0000_coordinates.csv");
+		ControlSliceStateImage.loadImageInfos("0000_coordinates.csv");
 
 		// background: load image
 		backgroundVisualization.createStateImages();
@@ -811,7 +811,7 @@ public class Panel1140 extends JPanel implements Observer {
 							if ((c.value & (1L << csv.controlSlicePosition)) > 0)
 								visible = true;
 							// all outputs are LEDs
-							assert (csv.getClass() == DimmableLEDVisualization.class);
+							assert (csv.getClass() == DimmableLedControlSliceVisualization.class);
 							// LEDs: : select between off and max
 							if (visible)
 								csv.setStateAveraging(csv.maxState);

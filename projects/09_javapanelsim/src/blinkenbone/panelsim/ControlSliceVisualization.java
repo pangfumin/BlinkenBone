@@ -76,10 +76,10 @@ public abstract class ControlSliceVisualization {
 	public static int defaultAveragingInterval_ms = 100; // 1/10 sec
 	// low pass for states in millisecs. is default for constructor
 
-	// if a mouse clicked onto an state image: last  
+	// if a mouse clicked onto an state image: last
 	public ControlSliceStateImage clickedStateImage ;
-	public Point clickedStateImagePoint ; // relative coordinates of cick event inside  clickedStateImage 
-	
+	public Point clickedStateImagePoint ; // relative coordinates of cick event inside  clickedStateImage
+
 	// after load a image from disk, these Rescaleop Params are applied
 	// this allows to modify brightness & contrast.
 	public float imageRescaleopScale ;
@@ -102,7 +102,7 @@ public abstract class ControlSliceVisualization {
 		stateExact = 0;
 		stateExactValid = true;
 		averagingInterval_us = 1000 * defaultAveragingInterval_ms;
-		
+
 		imageRescaleopScale = 1 ; // default: no change
 		imageRescaleopOffset = 0 ;
 	}
@@ -291,6 +291,7 @@ public abstract class ControlSliceVisualization {
 	}
 
 	// find the biggest defined state < current state
+	// stop at lowest state
 	public int getNextLowerState() {
 		ControlSliceStateImage bestCssi = null;
 		for (ControlSliceStateImage cssi : stateImages)
@@ -304,6 +305,7 @@ public abstract class ControlSliceVisualization {
 	}
 
 	// find the lowest defined state > current state
+	// stop at highest state
 	public int getNextHigherState() {
 		ControlSliceStateImage bestCssi = null;
 		for (ControlSliceStateImage cssi : stateImages)
@@ -311,12 +313,55 @@ public abstract class ControlSliceVisualization {
 				if (bestCssi == null || bestCssi.state > cssi.state)
 					bestCssi = cssi;
 		if (bestCssi == null)
-			return minState; // not found
+			return maxState; // not found
+		else
+			return bestCssi.state;
+	}
+	
+	// find the biggest defined state < current state
+	// after lowest state highest state 
+	public int getNextRotateToLowerState() {
+		ControlSliceStateImage bestCssi = null;
+		for (ControlSliceStateImage cssi : stateImages)
+			if (cssi.state < stateExact)
+				if (bestCssi == null || bestCssi.state < cssi.state)
+					bestCssi = cssi;
+		if (bestCssi == null)
+			return maxState; // not found: roll over to highest
 		else
 			return bestCssi.state;
 	}
 
-	// which of the state images is to display? null = invisible
+	// find the biggest defined state < current state
+	// after lowest state highest state 
+	public int getNextRotateToHigherState() {
+		ControlSliceStateImage bestCssi = null;
+		for (ControlSliceStateImage cssi : stateImages)
+			if (cssi.state > stateExact)
+				if (bestCssi == null || bestCssi.state > cssi.state)
+					bestCssi = cssi; 
+		if (bestCssi == null)
+			return minState; // not found: roll over to lowest
+		else
+			return bestCssi.state;
+	}
+
+
+	
+	// only one image (state,variant) is painted, only visible images may be target of mouse clicks
+	public ControlSliceStateImage getClickableStateImage() {
+		for (ControlSliceStateImage cssi : stateImages) {
+			if (cssi.clickable)
+				return cssi;
+		}
+		return null; // not found
+	}
+	/*
+	 * which of the state images is to display? null = invisible
+	 * used for mouse click points, should be implemented with "image.clickable"
+	 
+	 */
+	@Deprecated
 	public ControlSliceStateImage getVisibleStateImage() {
 		return getStateImage(getState());
 	}
@@ -325,11 +370,12 @@ public abstract class ControlSliceVisualization {
 	 * add a state image ControlSliceStateImage. resourceManager,
 	 * unscaledBackgroundWidth scaledBackgroundWidth must have been set.
 	 */
-	public ControlSliceStateImage addStateImage(String imageFilename, int state) {
-		
-		ControlSliceStateImage cssi = new ControlSliceStateImage(imageFilename, state, 
+	public ControlSliceStateImage addStateImage(String imageFilename, int state, int variant) {
+
+		// System.out.printf("%s\n", imageFilename);
+		ControlSliceStateImage cssi = new ControlSliceStateImage(imageFilename, state, variant,
 				imageRescaleopScale, imageRescaleopOffset );
-		
+
 		stateImages.add(cssi);
 		if (minState > cssi.state)
 			minState = cssi.state;
@@ -338,6 +384,12 @@ public abstract class ControlSliceVisualization {
 		return cssi;
 	}
 
+	// form without variant
+	public ControlSliceStateImage addStateImage(String imageFilename, int state) {
+		return addStateImage(imageFilename, state, 0) ;
+	}
+	
+	
 	/*
 	 * add a deep copy of another StateImage
 	 */
@@ -352,9 +404,9 @@ public abstract class ControlSliceVisualization {
 	}
 
 	/*
-	 * search a state image by state code
+	 * search a state image by state code.
+     * ignore "variant" code of state image
 	 */
-
 	public ControlSliceStateImage getStateImage(int state) {
 		for (ControlSliceStateImage cssi : stateImages) {
 			if (cssi.state == state)
@@ -363,10 +415,23 @@ public abstract class ControlSliceVisualization {
 		return null; // not found
 	}
 
+
+	/*
+	 * search a state image by state code and variant code
+	 */
+	public ControlSliceStateImage getStateImage(int state, int variant) {
+		for (ControlSliceStateImage cssi : stateImages) {
+			if (cssi.state == state && cssi.variant == variant)
+				return cssi;
+		}
+		return null; // not found
+	}
+
+
 	// template images, used to produce scaled and dimmed "stateImages[] ;
 	// method to load and calc "stateImages.img []
-	
-	
+
+
 	public abstract void loadStateImages();
 
 	/*

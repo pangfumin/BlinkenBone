@@ -21,7 +21,7 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
+   03-Aug-2016  JH      POWER/LOCK key switch did not turn on POWER mode
    21-Apr-2016  JH      dec/inc of knobs changed from "left/right mouse button" to
                         "click coordinate left/right of image center"
    20-Apr-2016  JH      added POWER/LOCK keyswitch
@@ -81,11 +81,12 @@ import blinkenbone.blinkenlight_api.Control.ControlType;
 import blinkenbone.blinkenlight_api.Panel;
 import blinkenbone.panelsim.ControlSliceStateImage;
 import blinkenbone.panelsim.ControlSliceVisualization;
-import blinkenbone.panelsim.DimmableLEDVisualization;
-import blinkenbone.panelsim.MultiStateControlVisualization;
+import blinkenbone.panelsim.DimmableLedControlSliceVisualization;
+import blinkenbone.panelsim.MultiStateControlSliceVisualization;
 import blinkenbone.panelsim.ResourceManager;
-import blinkenbone.panelsim.TwoStateControlVisualization;
+import blinkenbone.panelsim.TwoStateControlSliceVisualization;
 import blinkenbone.panelsim.panelsim1170.Panel1170Control.Panel1170ControlType;
+import blinkenbone.panelsim.panelsimPDP8I.PanelPDP8IControl;
 import blinkenbone.rpcgen.rpc_blinkenlight_api;
 
 public class Panel1170 extends JPanel implements Observer {
@@ -149,7 +150,7 @@ public class Panel1170 extends JPanel implements Observer {
 										// visual
 
 	// the background
-	TwoStateControlVisualization backgroundVisualization;
+	TwoStateControlSliceVisualization backgroundVisualization;
 
 	private ResourceManager resourceManager;
 
@@ -326,7 +327,7 @@ public class Panel1170 extends JPanel implements Observer {
 		 * load all visualizations into global list. mark them with the
 		 * Blinkenlight API control and bit pos
 		 */
-		backgroundVisualization = new TwoStateControlVisualization("background.png", null, null,
+		backgroundVisualization = new TwoStateControlSliceVisualization("background.png", null, null,
 				0);
 
 		// clear visualization of all controls
@@ -337,196 +338,196 @@ public class Panel1170 extends JPanel implements Observer {
 		// All coordinates must have been loaded: loadImageCoordinates()
 
 		// keyswitch: positions 0,1,2
-		MultiStateControlVisualization msvc;
+		MultiStateControlSliceVisualization msvc;
 		// add knob states. no direct link to API controls
-		msvc = new MultiStateControlVisualization(keyswitch, "keyswitch");
+		msvc = new MultiStateControlSliceVisualization(keyswitch, "keyswitch");
 		keyswitch.visualization.add(msvc);
 		msvc.addStateImageFilename("keyswitch_off.png", 0); // off
 		msvc.addStateImageFilename("keyswitch_power.png", 1); // power
 		msvc.addStateImageFilename("keyswitch_lock.png", 2); // lock
 
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_21_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_21_up.png",
 				switches_SR, switches_SR.inputcontrol, 21));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_20_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_20_up.png",
 				switches_SR, switches_SR.inputcontrol, 20));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_19_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_19_up.png",
 				switches_SR, switches_SR.inputcontrol, 19));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_18_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_18_up.png",
 				switches_SR, switches_SR.inputcontrol, 18));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_17_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_17_up.png",
 				switches_SR, switches_SR.inputcontrol, 17));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_16_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_16_up.png",
 				switches_SR, switches_SR.inputcontrol, 16));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_15_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_15_up.png",
 				switches_SR, switches_SR.inputcontrol, 15));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_14_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_14_up.png",
 				switches_SR, switches_SR.inputcontrol, 14));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_13_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_13_up.png",
 				switches_SR, switches_SR.inputcontrol, 13));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_12_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_12_up.png",
 				switches_SR, switches_SR.inputcontrol, 12));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_11_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_11_up.png",
 				switches_SR, switches_SR.inputcontrol, 11));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_10_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_10_up.png",
 				switches_SR, switches_SR.inputcontrol, 10));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_09_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_09_up.png",
 				switches_SR, switches_SR.inputcontrol, 9));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_08_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_08_up.png",
 				switches_SR, switches_SR.inputcontrol, 8));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_07_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_07_up.png",
 				switches_SR, switches_SR.inputcontrol, 7));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_06_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_06_up.png",
 				switches_SR, switches_SR.inputcontrol, 6));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_05_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_05_up.png",
 				switches_SR, switches_SR.inputcontrol, 5));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_04_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_04_up.png",
 				switches_SR, switches_SR.inputcontrol, 4));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_03_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_03_up.png",
 				switches_SR, switches_SR.inputcontrol, 3));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_02_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_02_up.png",
 				switches_SR, switches_SR.inputcontrol, 2));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_01_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_01_up.png",
 				switches_SR, switches_SR.inputcontrol, 1));
-		switches_SR.visualization.add(new TwoStateControlVisualization("switch_sr_00_up.png",
+		switches_SR.visualization.add(new TwoStateControlSliceVisualization("switch_sr_00_up.png",
 				switches_SR, switches_SR.inputcontrol, 0));
 
-		switch_LAMPTEST.visualization.add(new TwoStateControlVisualization(
+		switch_LAMPTEST.visualization.add(new TwoStateControlSliceVisualization(
 				"switch_lamptest_up.png", switch_LAMPTEST, null, 0));
 		switch_LOAD_ADRS.visualization
-				.add(new TwoStateControlVisualization("switch_load_adrs_down.png",
+				.add(new TwoStateControlSliceVisualization("switch_load_adrs_down.png",
 						switch_LOAD_ADRS, switch_LOAD_ADRS.inputcontrol, 0));
-		switch_EXAM.visualization.add(new TwoStateControlVisualization("switch_exam_down.png",
+		switch_EXAM.visualization.add(new TwoStateControlSliceVisualization("switch_exam_down.png",
 				switch_EXAM, switch_EXAM.inputcontrol, 0));
-		switch_DEPOSIT.visualization.add(new TwoStateControlVisualization("switch_dep_up.png",
+		switch_DEPOSIT.visualization.add(new TwoStateControlSliceVisualization("switch_dep_up.png",
 				switch_DEPOSIT, switch_DEPOSIT.inputcontrol, 0));
-		switch_CONT.visualization.add(new TwoStateControlVisualization("switch_cont_down.png",
+		switch_CONT.visualization.add(new TwoStateControlSliceVisualization("switch_cont_down.png",
 				switch_CONT, switch_CONT.inputcontrol, 0));
-		switch_HALT.visualization.add(new TwoStateControlVisualization(
+		switch_HALT.visualization.add(new TwoStateControlSliceVisualization(
 				"switch_enable_halt_down.png", switch_HALT, switch_HALT.inputcontrol, 0));
 		switch_S_BUS_CYCLE.visualization
-				.add(new TwoStateControlVisualization("switch_sinst_sbuscycle_down.png",
+				.add(new TwoStateControlSliceVisualization("switch_sinst_sbuscycle_down.png",
 						switch_S_BUS_CYCLE, switch_S_BUS_CYCLE.inputcontrol, 0));
-		switch_START.visualization.add(new TwoStateControlVisualization("switch_start_down.png",
+		switch_START.visualization.add(new TwoStateControlSliceVisualization("switch_start_down.png",
 				switch_START, switch_START.inputcontrol, 0));
 
-		DimmableLEDVisualization.defaultAveragingInterval_ms = 100;
+		DimmableLedControlSliceVisualization.defaultAveragingInterval_ms = 100;
 		// create all LEDs with a low pass of 1/10 sec.
 		// Critical are the "running light" and "idle pattern" use cases.
 
 		// dimmable LEDs use variable transparency, so they do not dsiaturb the
 		// background if
 		// they are "dim"
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_21_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_21_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 21, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_20_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_20_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 20, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_19_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_19_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 19, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_18_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_18_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 18, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_17_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_17_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 17, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_16_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_16_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 16, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_15_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_15_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 15, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_14_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_14_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 14, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_13_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_13_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 13, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_12_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_12_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 12, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_11_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_11_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 11, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_10_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_10_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 10, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_09_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_09_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 9, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_08_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_08_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 8, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_07_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_07_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 7, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_06_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_06_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 6, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_05_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_05_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 5, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_04_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_04_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 4, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_03_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_03_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 3, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_02_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_02_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 2, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_01_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_01_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 1, true));
-		leds_ADDRESS.visualization.add(new DimmableLEDVisualization("led_addr_00_on.png",
+		leds_ADDRESS.visualization.add(new DimmableLedControlSliceVisualization("led_addr_00_on.png",
 				leds_ADDRESS, leds_ADDRESS.outputcontrol, 0, true));
 
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_data_15_on.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_data_15_on.png",
 				leds_DATA, leds_DATA.outputcontrol, 15, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_data_14_on.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_data_14_on.png",
 				leds_DATA, leds_DATA.outputcontrol, 14, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_data_13_on.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_data_13_on.png",
 				leds_DATA, leds_DATA.outputcontrol, 13, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_data_12_on.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_data_12_on.png",
 				leds_DATA, leds_DATA.outputcontrol, 12, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_data_11_on.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_data_11_on.png",
 				leds_DATA, leds_DATA.outputcontrol, 11, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_data_10_on.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_data_10_on.png",
 				leds_DATA, leds_DATA.outputcontrol, 10, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_data_09_on.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_data_09_on.png",
 				leds_DATA, leds_DATA.outputcontrol, 9, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_data_08_on.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_data_08_on.png",
 				leds_DATA, leds_DATA.outputcontrol, 8, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_data_07_on.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_data_07_on.png",
 				leds_DATA, leds_DATA.outputcontrol, 7, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_data_06_on.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_data_06_on.png",
 				leds_DATA, leds_DATA.outputcontrol, 6, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_data_05_on.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_data_05_on.png",
 				leds_DATA, leds_DATA.outputcontrol, 5, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_data_04_on.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_data_04_on.png",
 				leds_DATA, leds_DATA.outputcontrol, 4, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_data_03_on.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_data_03_on.png",
 				leds_DATA, leds_DATA.outputcontrol, 3, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_data_02_on.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_data_02_on.png",
 				leds_DATA, leds_DATA.outputcontrol, 2, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_data_01_on.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_data_01_on.png",
 				leds_DATA, leds_DATA.outputcontrol, 1, true));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_data_00_on.png",
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_data_00_on.png",
 				leds_DATA, leds_DATA.outputcontrol, 0, true));
 
-		led_PARITY_HIGH.visualization.add(new DimmableLEDVisualization("led_parity_high_on.png",
+		led_PARITY_HIGH.visualization.add(new DimmableLedControlSliceVisualization("led_parity_high_on.png",
 				led_PARITY_HIGH, led_PARITY_HIGH.outputcontrol, 0, true));
-		led_PARITY_LOW.visualization.add(new DimmableLEDVisualization("led_parity_low_on.png",
+		led_PARITY_LOW.visualization.add(new DimmableLedControlSliceVisualization("led_parity_low_on.png",
 				led_PARITY_LOW, led_PARITY_LOW.outputcontrol, 0, true));
-		led_PAR_ERR.visualization.add(new DimmableLEDVisualization("led_par_err_on.png",
+		led_PAR_ERR.visualization.add(new DimmableLedControlSliceVisualization("led_par_err_on.png",
 				led_PAR_ERR, led_PAR_ERR.outputcontrol, 0, true));
-		led_ADRS_ERR.visualization.add(new DimmableLEDVisualization("led_adrs_err_on.png",
+		led_ADRS_ERR.visualization.add(new DimmableLedControlSliceVisualization("led_adrs_err_on.png",
 				led_ADRS_ERR, led_ADRS_ERR.outputcontrol, 0, true));
-		led_RUN.visualization.add(new DimmableLEDVisualization("led_run_on.png", led_RUN,
+		led_RUN.visualization.add(new DimmableLedControlSliceVisualization("led_run_on.png", led_RUN,
 				led_RUN.outputcontrol, 0, true));
-		led_PAUSE.visualization.add(new DimmableLEDVisualization("led_pause_on.png", led_PAUSE,
+		led_PAUSE.visualization.add(new DimmableLedControlSliceVisualization("led_pause_on.png", led_PAUSE,
 				led_PAUSE.outputcontrol, 0, true));
-		led_MASTER.visualization.add(new DimmableLEDVisualization("led_master_on.png",
+		led_MASTER.visualization.add(new DimmableLedControlSliceVisualization("led_master_on.png",
 				led_MASTER, led_MASTER.outputcontrol, 0, true));
 		// MMR0: 0 = Kernel, 1= off, 2 = Super, 3 = User. NOT binary encoded,
 		// but 1:n decoder
-		leds_MMR0_MODE.visualization.add(new DimmableLEDVisualization("led_kernel_on.png",
+		leds_MMR0_MODE.visualization.add(new DimmableLedControlSliceVisualization("led_kernel_on.png",
 				leds_MMR0_MODE, leds_MMR0_MODE.outputcontrol, 0, true));
-		leds_MMR0_MODE.visualization.add(new DimmableLEDVisualization("led_super_on.png",
+		leds_MMR0_MODE.visualization.add(new DimmableLedControlSliceVisualization("led_super_on.png",
 				leds_MMR0_MODE, leds_MMR0_MODE.outputcontrol, 2, true));
-		leds_MMR0_MODE.visualization.add(new DimmableLEDVisualization("led_user_on.png",
+		leds_MMR0_MODE.visualization.add(new DimmableLedControlSliceVisualization("led_user_on.png",
 				leds_MMR0_MODE, leds_MMR0_MODE.outputcontrol, 3, true));
 
-		led_DATA_SPACE.visualization.add(new DimmableLEDVisualization("led_data_on.png",
+		led_DATA_SPACE.visualization.add(new DimmableLedControlSliceVisualization("led_data_on.png",
 				led_DATA_SPACE, led_DATA_SPACE.outputcontrol, 0, true));
 		led_ADDRESSING_16.visualization
-				.add(new DimmableLEDVisualization("led_addressing_16_on.png", led_ADDRESSING_16,
+				.add(new DimmableLedControlSliceVisualization("led_addressing_16_on.png", led_ADDRESSING_16,
 						led_ADDRESSING_16.outputcontrol, 0, true));
 		led_ADDRESSING_18.visualization
-				.add(new DimmableLEDVisualization("led_addressing_18_on.png", led_ADDRESSING_18,
+				.add(new DimmableLedControlSliceVisualization("led_addressing_18_on.png", led_ADDRESSING_18,
 						led_ADDRESSING_18.outputcontrol, 0, true));
 		led_ADDRESSING_22.visualization
-				.add(new DimmableLEDVisualization("led_addressing_22_on.png", led_ADDRESSING_22,
+				.add(new DimmableLedControlSliceVisualization("led_addressing_22_on.png", led_ADDRESSING_22,
 						led_ADDRESSING_22.outputcontrol, 0, true));
 
 		// these are hardwired to the ADDR/DATA_SELECT knob
@@ -536,38 +537,38 @@ public class Panel1170 extends JPanel implements Observer {
 		// (because LEDs are feedback from visual controls and are not set over
 		// Blinkenlight API)
 		// led.state := (1 << knob.state)
-		leds_ADDR_SELECT.visualization.add(new TwoStateControlVisualization(
+		leds_ADDR_SELECT.visualization.add(new TwoStateControlSliceVisualization(
 				"led_prog_phy_on.png", leds_ADDR_SELECT, leds_ADDR_SELECT.outputcontrol, 0));
-		leds_ADDR_SELECT.visualization.add(new TwoStateControlVisualization(
+		leds_ADDR_SELECT.visualization.add(new TwoStateControlSliceVisualization(
 				"led_cons_phy_on.png", leds_ADDR_SELECT, leds_ADDR_SELECT.outputcontrol, 1));
-		leds_ADDR_SELECT.visualization.add(new TwoStateControlVisualization(
+		leds_ADDR_SELECT.visualization.add(new TwoStateControlSliceVisualization(
 				"led_kernel_d_on.png", leds_ADDR_SELECT, leds_ADDR_SELECT.outputcontrol, 2));
-		leds_ADDR_SELECT.visualization.add(new TwoStateControlVisualization(
+		leds_ADDR_SELECT.visualization.add(new TwoStateControlSliceVisualization(
 				"led_super_d_on.png", leds_ADDR_SELECT, leds_ADDR_SELECT.outputcontrol, 3));
-		leds_ADDR_SELECT.visualization.add(new TwoStateControlVisualization("led_user_d_on.png",
+		leds_ADDR_SELECT.visualization.add(new TwoStateControlSliceVisualization("led_user_d_on.png",
 				leds_ADDR_SELECT, leds_ADDR_SELECT.outputcontrol, 4));
-		leds_ADDR_SELECT.visualization.add(new TwoStateControlVisualization("led_user_i_on.png",
+		leds_ADDR_SELECT.visualization.add(new TwoStateControlSliceVisualization("led_user_i_on.png",
 				leds_ADDR_SELECT, leds_ADDR_SELECT.outputcontrol, 5));
-		leds_ADDR_SELECT.visualization.add(new TwoStateControlVisualization(
+		leds_ADDR_SELECT.visualization.add(new TwoStateControlSliceVisualization(
 				"led_super_i_on.png", leds_ADDR_SELECT, leds_ADDR_SELECT.outputcontrol, 6));
-		leds_ADDR_SELECT.visualization.add(new TwoStateControlVisualization(
+		leds_ADDR_SELECT.visualization.add(new TwoStateControlSliceVisualization(
 				"led_kernel_i_on.png", leds_ADDR_SELECT, leds_ADDR_SELECT.outputcontrol, 7));
 
-		leds_DATA_SELECT.visualization.add(new TwoStateControlVisualization(
+		leds_DATA_SELECT.visualization.add(new TwoStateControlSliceVisualization(
 				"led_bus_reg_on.png", leds_DATA_SELECT, leds_DATA_SELECT.outputcontrol, 0));
-		leds_DATA_SELECT.visualization.add(new TwoStateControlVisualization(
+		leds_DATA_SELECT.visualization.add(new TwoStateControlSliceVisualization(
 				"led_data_paths_on.png", leds_DATA_SELECT, leds_DATA_SELECT.outputcontrol, 1));
-		leds_DATA_SELECT.visualization.add(new TwoStateControlVisualization("led_u_adrs_on.png",
+		leds_DATA_SELECT.visualization.add(new TwoStateControlSliceVisualization("led_u_adrs_on.png",
 				leds_DATA_SELECT, leds_DATA_SELECT.outputcontrol, 2));
 		leds_DATA_SELECT.visualization
-				.add(new TwoStateControlVisualization("led_display_register_on.png",
+				.add(new TwoStateControlSliceVisualization("led_display_register_on.png",
 						leds_DATA_SELECT, leds_DATA_SELECT.outputcontrol, 3));
 
 		// knobs: for rotation, state 0..7 must be circular.
 		// encoding of physical panel is NOT! correct in
 		// inputImageState2BlinkenlightApiControlValues()
 		// add knob states
-		msvc = new MultiStateControlVisualization(knob_ADDR_SELECT,
+		msvc = new MultiStateControlSliceVisualization(knob_ADDR_SELECT,
 				knob_ADDR_SELECT.inputcontrol);
 		knob_ADDR_SELECT.visualization.add(msvc);
 		msvc.addStateImageFilename("knob_addr_7_prog_phy.png", 0);
@@ -580,7 +581,7 @@ public class Panel1170 extends JPanel implements Observer {
 		msvc.addStateImageFilename("knob_addr_5_kernel_i.png", 7);
 
 		// DATA knob has 8 positions, but encodes 0,1,2,3,0,1,2,3
-		msvc = new MultiStateControlVisualization(knob_DATA_SELECT,
+		msvc = new MultiStateControlSliceVisualization(knob_DATA_SELECT,
 				knob_DATA_SELECT.inputcontrol);
 		knob_DATA_SELECT.visualization.add(msvc);
 		msvc.addStateImageFilename("knob_data_2a_bus_reg.png", 0);
@@ -613,7 +614,7 @@ public class Panel1170 extends JPanel implements Observer {
 
 		// full file name is something like
 		// "pdpPDP8I_size=1200_coordinates.csv"
-		ControlSliceStateImage.loadImageCoordinates("coordinates.csv");
+		ControlSliceStateImage.loadImageInfos("coordinates.csv");
 
 		// background: load image
 		backgroundVisualization.createStateImages();
@@ -1182,7 +1183,7 @@ public class Panel1170 extends JPanel implements Observer {
 									visible = true;
 							}
 							// all outputs are LEDs
-							assert (csv.getClass() == DimmableLEDVisualization.class);
+							assert (csv.getClass() == DimmableLedControlSliceVisualization.class);
 							// LEDs: : select between off and max
 							if (visible)
 								csv.setStateAveraging(csv.maxState);
@@ -1200,7 +1201,34 @@ public class Panel1170 extends JPanel implements Observer {
 	 * Lamps are painted as OFF in paintComponent() !
 	 */
 	private void setPowerMode(int mode) {
-		// no power switch to set
+		ControlSliceVisualization keySwitchCsv = keyswitch.visualization.get(0);
+
+		// default: do not change power button state
+		int newKeySwitchState = keySwitchCsv.getState();
+
+		if (mode == rpc_blinkenlight_api.RPC_PARAM_VALUE_PANEL_MODE_POWERLESS) {
+			// all BlinkenLight API output controls to state 0
+			// Alternatively, lamps can be painted as OFF in paintComponent()
+			for (Panel1170Control panelcontrol : controls) {
+				Control c = panelcontrol.outputcontrol;
+				if (c != null)
+					c.value = 0; // atomic, not synchronized
+			}
+			// Power button visual OFF
+			newKeySwitchState = 0;
+		} else {
+			// make sure power button is ON in normal & test modes
+			newKeySwitchState = 1;
+		}
+		// power button state: change only if user does not operate it
+		if (currentMouseControlSliceVisualization != keySwitchCsv
+				&& newKeySwitchState != keySwitchCsv.getState()) {
+			// power button state changed
+			keySwitchCsv.setStateExact(newKeySwitchState);
+			// update API power switch control
+			inputImageState2BlinkenlightApiControlValues();
+		}
+
 	}
 
 	/*

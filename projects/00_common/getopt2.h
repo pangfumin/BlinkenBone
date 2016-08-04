@@ -28,12 +28,12 @@
 #define _GETOPT_H_
 
 
-
 #define GETOPT_MAX_OPTION_DESCR	100
 #define GETOPT_MAX_OPTION_ARGS	100
 #define GETOPT_MAX_ERROR_LEN	256
 #define GETOPT_MAX_LINELEN	256
-
+#define GETOPT_MAX_DEFAULT_CMDLINE_LEN	1000
+#define	GETOPT_MAX_CMDLINE_TOKEN	(2*GETOPT_MAX_OPTION_ARGS)
 
 // status codes of first()/next()
 #define GETOPT_STATUS_OK	1
@@ -43,7 +43,7 @@
 #define GETOPT_STATUS_MAXARGCOUNT	-3	// too much args for -option
 #define GETOPT_STATUS_ILLEGALARG	-4	// argument name not known
 #define GETOPT_STATUS_ARGNOTSET	-5	// optional arg not specified
-#define GETOPT_STATUS_ARGFORMATINT	-6	// argument has illegal format for decimal integer
+#define GETOPT_STATUS_ARGFORMATINT	-6	// argument has illegal format for decimal integer 
 #define GETOPT_STATUS_ARGFORMATHEX	-7	// argument has illegal format for hex integer
 
 // static description of one Option
@@ -58,12 +58,13 @@ typedef struct {
 	int	fix_arg_count;
 	int	max_arg_count;
 
+	char	*default_args; // string representation of default arguments
+
 	char *info;
 	char *example_simple_cline_args;
 	char *example_simple_info;
 	char *example_complex_cline_args;
-	char *example_complex_info;
-
+	char *example_complex_info; 
 
 	char	syntaxhelp[2*GETOPT_MAX_LINELEN]; // calculated like "-option arg1 args [optarg]
 } getopt_option_descr_t;
@@ -75,16 +76,17 @@ typedef struct {
 	getopt_option_descr_t	*option_descrs[GETOPT_MAX_OPTION_DESCR + 1];
 	getopt_option_descr_t *cur_option; // current paresed option
 	char	*cur_option_argval[GETOPT_MAX_OPTION_ARGS + 1]; // ptr to parsed args
-	unsigned	cur_option_argvalcount;
+	unsigned	cur_option_argvalcount; 
 
 	char	*curtoken; // ptr to current cleine arg, error context
 
 	int		curerror;
 	char	curerrortext[GETOPT_MAX_ERROR_LEN+1];
 
-	// private
-	int	argc;  // copy of commandline
-	char	**argv;
+	// private 
+	char	default_cmdline_buff[GETOPT_MAX_DEFAULT_CMDLINE_LEN+1];
+	int	argc;  // default cmdline + copy of user commandline
+	char	*argv[GETOPT_MAX_CMDLINE_TOKEN+1];
 	int	cur_cline_arg_idx; // index of next unprocessed argv[]
 } getopt_t;
 
@@ -96,6 +98,7 @@ getopt_option_descr_t	*getopt_def(getopt_t *_this,
 	char	*long_option_name,
 	char	*fix_args_csv,
 	char	*opt_args_csv,
+	char	*default_args,
 	char	*info,
 	char	*example_simple_cline, char *example_simple_info,
 	char	*example_complex_cline, char *example_complex_info
@@ -108,6 +111,7 @@ int getopt_arg_i(getopt_t *_this, char *argname, int *res);
 int getopt_arg_u(getopt_t *_this, char *argname, unsigned *val);
 int getopt_arg_h(getopt_t *_this, char *argname, int *val);
 
+void getopt_help_commandline(getopt_t *_this, FILE *stream, unsigned linelen, unsigned indent);
 void getopt_help_option(getopt_t *_this, FILE *stream, unsigned linelen, unsigned indent);
 void getopt_help(getopt_t *_this, FILE *stream, unsigned linelen, unsigned indent, char *commandname);
 

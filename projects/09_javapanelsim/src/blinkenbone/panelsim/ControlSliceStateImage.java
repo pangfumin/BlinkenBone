@@ -21,6 +21,9 @@
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+   27-Jul-2016	JH       - paintOrder: Z order from Photoshop stack
+                        - variant: same state may displayed in differnt ways
+                         (PDP-15 switch shadow, enlarged knob)
    17-May-2012  JH      created
 
 
@@ -45,6 +48,7 @@ import java.awt.image.ColorModel;
 import java.awt.image.RescaleOp;
 import java.awt.image.WritableRaster;
 import java.io.InputStream;
+import java.util.Comparator;
 import java.util.HashMap;
 
 import javax.swing.table.TableModel;
@@ -54,9 +58,6 @@ import blinkenbone.CSVParser;
 public class ControlSliceStateImage extends Object {
 
 	public static ResourceManager resourceManager;
-	public static int xxunscaledBackgroundWidth = 0; // image positions are
-														// based
-														// on thise width
 	// public static int scaledBackgroundWidth; // on demand width rescaled
 	public static String resourceImageFilePathPrefix; // part of image filepath
 														// for constructor
@@ -64,17 +65,25 @@ public class ControlSliceStateImage extends Object {
 
 	// scaled position for each image filename (without path),
 	// read from external CSV file.
-	public static HashMap<String, Point> imageCoordinates;
+	private static HashMap<String, Point> csvImageCoordinates;
+	private static HashMap<String, Integer> csvImagePaintOrders;
 
-	public int state; // state of the control. usally 0 = OFF..
-
-	// !! every image shows the "active" state of a controlbit !!
-	// pictore of switch shows: "switch is ON!"
+	public int state; // state of the control (bit value, knob position). usally
+						// 0 = OFF, 1 = ON (swotch, lamp)..
+	public int variant; // diffent images for same state,
+	// for lighting situations and display modes
 
 	public String resourceFilepath; // full path
 
 	public Point scaledPosition; // x/y of left top corner on screen
 	public Rectangle scaledRectangle; // bounding box in image
+	// Position of image in Photoshop layer stack
+	public int paintOrder; // 0=background, higher numbers hide lower ones
+
+	// only one stateimage of a ControlSlizeVisualisation is visible
+	// this is marked as "clickable" by the paint() function,
+	// only visible/clickable images are targets of mouse clicks, see getClickableStateImage()
+	public boolean clickable ;
 
 	public BufferedImage scaledStateImage; // calculated : rescale, fixup
 
@@ -106,6 +115,7 @@ public class ControlSliceStateImage extends Object {
 	 * + suffix ("LED_A15_ON.png") ;
 	 *
 	 * state: code of state of this image
+	 * variant: code for lighting situtation or display mode
 	 *
 	 * unscaledReferenceWidth: width, for which left/top are given
 	 *
@@ -117,10 +127,11 @@ public class ControlSliceStateImage extends Object {
 	 *
 	 * ref_left/top is typically large, as picture taken from DSLR: 4300 pixels
 	 */
-	public ControlSliceStateImage(String imageFilepathSuffix, int state, float rescaleOpScale,
-			float rescaleopOffset) {
+	public ControlSliceStateImage(String imageFilepathSuffix, int state, int variant,
+			float rescaleOpScale, float rescaleopOffset) {
 
 		this.state = state;
+		this.variant = variant;
 
 		// generate filename from backgroundSize and filename template
 		this.resourceFilepath = resourceImageFilePathPrefix + resourceImageFileNamePrefix
@@ -142,15 +153,23 @@ public class ControlSliceStateImage extends Object {
 		// System.out.printf("done.%n");
 		String pureFilename = resourceImageFileNamePrefix + imageFilepathSuffix;
 		// use external Photoshop coordinates
-		Point p = imageCoordinates.get(pureFilename);
+		Point p = csvImageCoordinates.get(pureFilename);
 		assert (p != null);
 		scaledPosition = p;
 		scaledRectangle = new Rectangle(p.x, p.y, scaledStateImage.getWidth(),
 				scaledStateImage.getHeight());
+		paintOrder = csvImagePaintOrders.get(pureFilename);
 
-		// System.out.printf("Position of state image %s = (%d,%d)\n",
-		// imageFilepathSuffix, p.x, p.y);
-		// System.out.printf("%s;%d,%d\n",pureFilename, p.x, p.y);
+		// System.out.printf("Position of state image %s = (%d,%d),
+		// paintOrder=%d\n",
+		// imageFilepathSuffix, p.x, p.y, paintOrder);
+		// System.out.printf("%s;(%d,%d)\n",pureFilename, p.x, p.y);
+	}
+
+	// traditionally form, without "variant code" (== 0)
+	public ControlSliceStateImage(String imageFilepathSuffix, int state, float rescaleOpScale,
+			float rescaleopOffset) {
+		this(imageFilepathSuffix, state, 0, rescaleOpScale, rescaleopOffset);
 	}
 
 	/*
@@ -160,10 +179,12 @@ public class ControlSliceStateImage extends Object {
 	 */
 	public ControlSliceStateImage(ControlSliceStateImage original, int newstate) {
 		this.state = newstate;
+		this.variant = original.variant  ;
 		this.resourceFilepath = original.resourceFilepath;
 		this.scaledStateImage = deepImageCopy(original.scaledStateImage);
 		this.scaledPosition = new Point(original.scaledPosition);
 		this.scaledRectangle = new Rectangle(original.scaledRectangle);
+		this.paintOrder = original.paintOrder;
 	}
 
 	static BufferedImage deepImageCopy(BufferedImage bi) {
@@ -198,8 +219,9 @@ public class ControlSliceStateImage extends Object {
 	 *
 	 * HashMap assoziates each filename with a Pint(left,top)
 	 */
-	public static void loadImageCoordinates(String csvFilepathSuffix) {
-		imageCoordinates = new HashMap<String, Point>();
+	public static void loadImageInfos(String csvFilepathSuffix) {
+		csvImageCoordinates = new HashMap<String, Point>();
+		csvImagePaintOrders = new HashMap<String, Integer>();
 		String resourceFilePath = resourceImageFilePathPrefix + resourceImageFileNamePrefix
 				+ csvFilepathSuffix;
 		TableModel t = null;
@@ -223,7 +245,9 @@ public class ControlSliceStateImage extends Object {
 			int left = Integer.parseInt(sLeft.trim());
 			int top = Integer.parseInt(sTop.trim());
 
-			imageCoordinates.put(filename, new Point(left, top));
+			csvImageCoordinates.put(filename, new Point(left, top));
+			// the order in the CSV file is the Photoshop paint order
+			csvImagePaintOrders.put(filename, new Integer(r));
 		}
 	}
 

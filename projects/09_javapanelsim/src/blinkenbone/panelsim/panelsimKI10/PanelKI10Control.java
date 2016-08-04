@@ -38,7 +38,7 @@ import blinkenbone.blinkenlight_api.Control;
 import blinkenbone.blinkenlight_api.Panel;
 import blinkenbone.panelsim.ControlSliceVisualization;
 import blinkenbone.panelsim.PanelControl;
-import blinkenbone.panelsim.TwoStateControlVisualization;
+import blinkenbone.panelsim.TwoStateControlSliceVisualization;
 
 
 
@@ -65,7 +65,7 @@ public class PanelKI10Control extends PanelControl{
 	// if any control slice is repainted, this background must be paitned first
 	// The background may be shared with other PanelKI10Control, so other
 	// controls may need repaint too ... even if unchanged.
-	TwoStateControlVisualization localBackground ;
+	TwoStateControlSliceVisualization localBackground ;
 
         boolean needRepaint ; // flag for background paint logic
 

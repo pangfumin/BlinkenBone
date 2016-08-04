@@ -19,12 +19,7 @@
 		<link>
 			<name>3rdparty</name>
 			<type>2</type>
-			<location>/home/joerg/retrocmp/blinkenbone/projects/3rdparty</location>
-		</link>
-		<link>
-			<name>blinkenbone</name>
-			<type>2</type>
-			<location>/home/joerg/retrocmp/blinkenbone/projects/07.0_blinkenlight_api/java/blinkenbone</location>
+			<location>/home/joerg/retrocmp/blinkenbone/projects/3rdpartyxx</location>
 		</link>
 		<link>
 			<name>blinkenlight_api_java</name>
@@ -34,12 +29,12 @@
 		<link>
 			<name>rpcgen_java</name>
 			<type>2</type>
-			<location>/home/joerg/retrocmp/blinkenbone/projects/07.0_blinkenlight_api/rpcgen_java</location>
+			<location>/home/joerg/retrocmp/blinkenbone/projects/07.0_blinkenlight_api/rpcgen_javaxx</location>
 		</link>
 	</linkedResources>
 	<filteredResources>
 		<filter>
-			<id>0</id>
+			<id>1469602973002</id>
 			<name></name>
 			<type>5</type>
 			<matcher>
