@@ -8,7 +8,9 @@ or graphical Java simulations of the panels.
 
 The interface between simulator and panel is a network-base client/server model.
 
-At the moment, DEC PDP-11/20, PDP-11/40, PDP-11/70, DEC PDP-10/KI10 and PDP-8/I are available.
+At the moment, DEC PDP-11/20, PDP-11/40, PDP-11/70, PDP-8/I, PDP-10/KI10
+and PDP-15 are available.
+
 Sources and precompiled distributions for Win32, Ubuntu and RaspberryPi can be downloaded.
 
 Documentation at: www.retrocmp.com/projects/blinkenbone
