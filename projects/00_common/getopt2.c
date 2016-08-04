@@ -1,86 +1,87 @@
- /* getopt2.c:  advanced commandline parsing
+/* getopt2.c:  advanced commandline parsing
 
-   Copyright (c) 2016, Joerg Hoppe
-   j_hoppe@t-online.de, www.retrocmp.com
+  Copyright (c) 2016, Joerg Hoppe
+  j_hoppe@t-online.de, www.retrocmp.com
 
-   Permission is hereby granted, free of charge, to any person obtaining a
-   copy of this software and associated documentation files (the "Software"),
-   to deal in the Software without restriction, including without limitation
-   the rights to use, copy, modify, merge, publish, distribute, sublicense,
-   and/or sell copies of the Software, and to permit persons to whom the
-   Software is furnished to do so, subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a
+  copy of this software and associated documentation files (the "Software"),
+  to deal in the Software without restriction, including without limitation
+  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom the
+  Software is furnished to do so, subject to the following conditions:
 
-   The above copyright notice and this permission notice shall be included in
-   all copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-   JOERG HOPPE BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-   IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+  JOERG HOPPE BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-   17-Mar-2016  JH  allow "/" option marker only #ifdef WIN32
-   01-Feb-2016  JH  created
-
-
-   Adavanced getopt(), parses command lines,
-
-   Argument pattern
-
-      commandline = [option, option, ...]  args ....
-      option = ( "-" | "/"  ) ( short_option_name | long_option_name )
-      			[fix_arg fix_arg .... [ var_arg var_arg ]]
+  20-Jul-2016  JH	added defaults for options
+  17-Mar-2016  JH	allow "/" option marker only #ifdef WIN32
+  01-Feb-2016  JH   created
 
 
-    API
-    getopt_init()  - init data after start, only once
-    getopt_def(id, short, long, fix_args, opt_args, info)
-        define a possible option
-        fix_args, opt_args: comma separated names
+  Adavanced getopt(), parses command lines,
+
+  Argument pattern
+
+	 commandline = [option, option, ...]  args ....
+	 option = ( "-" | "/"  ) ( short_option_name | long_option_name )
+			   [fix_arg fix_arg .... [ var_arg var_arg ]]
 
 
-    getopt_first(argc, argv) parse and return arg of first option
-        result = id
-        value for args in static "argval" (NULL temriantd)
+   API
+   getopt_init()  - init data after start, only once
+   getopt_def(id, short, long, fix_args, opt_args, info)
+	   define a possible option
+	   fix_args, opt_args: comma separated names
 
-    getopt_next()	- ge
+
+   getopt_first(argc, argv) parse and return arg of first option
+	   result = id
+	   value for args in static "argval" (NULL temriantd)
+
+   getopt_next()	- ge
 
 
 
-    Example
-    Cmdline syntax: "-send id len [data .. data]   \
-                        -flag \
-                        -logfile logfile \
-                        myfile \
+   Example
+   Cmdline syntax: "-send id len [data .. data]   \
+					   -flag \
+					   -logfile logfile \
+					   myfile \
 
-        getopt_init() ;
-        getopt_def("s", "send", "id,len", "data0,data1,data2,data3,data4,data5,data6,data7") ;
-        getopt_def("flag", NULL, NULL, NULL) ;
-        getopt_def("l", "logfile", "logfile", NULL) ;
+	   getopt_init() ;
+	   getopt_def("s", "send", "id,len", "data0,data1,data2,data3,data4,data5,data6,data7") ;
+	   getopt_def("flag", NULL, NULL, NULL) ;
+	   getopt_def("l", "logfile", "logfile", NULL) ;
 
-        res = getopt_first(argc, argv) ;
-        while (res > 0) {
-                if (getopt_is("send")) {
-                 // process "send" option with argval[0]= id, argval[1] = len, argval[2]= data0 ...
-                } else if (getopt_is("flag")) {
-                // process flag
-        } else if (getopt_is("logfile")) {
-                // process logfile, name = argval[0]
-        } else if (getopt_is(NULL)) {
-                // non-option commandline arguments in argval[]
-        }
-    }
-    if (res < 0) {
-        printf("Cmdline syntax error at ", curtoken) ;
-        getopt_help(stdout) ;
-        exit(1) ;
+	   res = getopt_first(argc, argv) ;
+	   while (res > 0) {
+			   if (getopt_is("send")) {
+				// process "send" option with argval[0]= id, argval[1] = len, argval[2]= data0 ...
+			   } else if (getopt_is("flag")) {
+			   // process flag
+	   } else if (getopt_is("logfile")) {
+			   // process logfile, name = argval[0]
+	   } else if (getopt_is(NULL)) {
+			   // non-option commandline arguments in argval[]
+	   }
    }
+   if (res < 0) {
+	   printf("Cmdline syntax error at ", curtoken) ;
+	   getopt_help(stdout) ;
+	   exit(1) ;
+  }
 
-   // res == 0: all OK, go on
-   ...
+  // res == 0: all OK, go on
+  ...
 
- */
+*/
 
 #include <stdlib.h>
 #include <string.h>
@@ -94,13 +95,14 @@
 #define strcasecmp _stricmp	// grmbl
 #define snprintf  sprintf_s
 #else
+#include <ctype.h>
 #include <unistd.h>
 #endif
 
- /*
-  * first intialize, only once!
-  * NO FREE() HERE !
-  */
+/*
+ * first intialize, only once!
+ * NO FREE() HERE !
+ */
 
 
 void getopt_init(getopt_t *_this, int ignore_case)
@@ -132,6 +134,7 @@ getopt_option_descr_t	*getopt_def(getopt_t *_this,
 	char	*long_option_name,
 	char	*fix_args_csv,
 	char	*opt_args_csv,
+	char	*default_args,
 	char	*info,
 	char	*example_simple_cline, char *example_simple_info,
 	char	*example_complex_cline, char *example_complex_info
@@ -156,14 +159,12 @@ getopt_option_descr_t	*getopt_def(getopt_t *_this,
 	}
 	res->short_name = short_option_name;
 	res->long_name = long_option_name;
+	res->default_args = default_args;
 	res->info = info;
 	res->example_simple_cline_args = example_simple_cline;
 	res->example_simple_info = example_simple_info;
 	res->example_complex_cline_args = example_complex_cline;
 	res->example_complex_info = example_complex_info;
-
-
-
 
 	res->fix_args[0] = NULL;
 	res->var_args[0] = NULL;
@@ -331,6 +332,9 @@ int getopt_next(getopt_t *_this)
 	_this->curtoken = s = _this->argv[_this->cur_cline_arg_idx];
 	assert(s);
 	assert(*s); // must be non empty
+
+
+
 	oname = get_dashed_option_name(s);
 	if (oname) {
 		// it is an "-option": search options by name
@@ -344,7 +348,7 @@ int getopt_next(getopt_t *_this)
 		}
 		_this->cur_cline_arg_idx++; // skip -option
 
-		// if a otion has no optioanl arguemnts, prevent it from
+		// if an option has no optional arguments, prevent it from
 		// parsing into
 	}
 	else // its not an '-option: so its the "nonoption" rest of cline
@@ -385,7 +389,7 @@ int getopt_next(getopt_t *_this)
 		_this->cur_option_argval[i++] = _this->curtoken = _this->argv[_this->cur_cline_arg_idx];
 		_this->cur_option_argval[i] = NULL;
 		assert(i < GETOPT_MAX_OPTION_ARGS);
-		_this->cur_option_argvalcount = i ;
+		_this->cur_option_argvalcount = i;
 		_this->cur_cline_arg_idx++;
 	}
 
@@ -400,9 +404,49 @@ int getopt_next(getopt_t *_this)
 
 int getopt_first(getopt_t *_this, int argc, char **argv)
 {
-	_this->argc = argc;
-	_this->argv = argv;
-	_this->cur_cline_arg_idx = 1; // ignore arg[0]: program path
+	int	i;
+	char	*cb = _this->default_cmdline_buff; // alias 
+	getopt_option_descr_t *odesc;
+	char	*token;
+
+	// for all options with "default" args: 
+	// put strings <option> <args> in front of commandline,
+	// so they are parsed first and overwritten later by actual values
+	// 1) build own cmdline
+	*cb = 0; // clear
+	for (i = 0; odesc = _this->option_descrs[i]; i++)
+		if (odesc->default_args && strlen(odesc->default_args)) {
+			strcat(cb, "--");
+			strcat(cb, odesc->long_name);
+			strcat(cb, " ");
+			strcat(cb, odesc->default_args);
+			strcat(cb, " ");
+		}
+	// 2) separate into words and add to argv
+	// Input in cb like : char space char char space space char char char space 0
+	token = cb;
+	while (*token) {
+		// last token terminated with 0.
+		// clear white space before next token
+		while (*token && isspace(*token)) *token++ = 0;
+		if (*token) {
+			// add to arg list
+			assert(_this->argc < GETOPT_MAX_CMDLINE_TOKEN);
+			_this->argv[_this->argc++] = token;
+			// skip and terminate token
+			while (*token && !isspace(*token)) token++;
+			if (*token) // convert terminating space to 0
+				*token++ = 0;
+		}
+	}
+
+	// 3) append user commandline tokens, so they are processed after defaults
+	for (i = 1; i < argc; i++) { // skip program name of 
+		assert(_this->argc < GETOPT_MAX_CMDLINE_TOKEN);
+		_this->argv[_this->argc++] = argv[i];
+	}
+
+	_this->cur_cline_arg_idx = 0;
 	_this->cur_option = NULL;
 	_this->cur_option_argval[0] = NULL;
 	_this->cur_option_argvalcount = 0;
@@ -444,9 +488,9 @@ int getopt_arg_s(getopt_t *_this, char *argname, char *val, unsigned valsize)
 		// only n args specified, but this has list place > n
 		// the optional argument [argidx] is not given in the arguument list
 		return GETOPT_STATUS_EOF;
-//		return getopt_arg_error(_this, odesc, GETOPT_STATUS_ARGNOTSET, argname, NULL);
+	//		return getopt_arg_error(_this, odesc, GETOPT_STATUS_ARGNOTSET, argname, NULL);
 	strncpy(val, _this->cur_option_argval[argidx], valsize);
-	val[valsize-1] = 0;
+	val[valsize - 1] = 0;
 	return GETOPT_STATUS_OK;
 }
 
@@ -517,7 +561,7 @@ static void output_append(FILE *stream, char *line, int linesize, char *s, int l
 		line[_i_] = 0;
 	}
 	strncat(line, s, linesize);
-	line[linesize-1] = 0;
+	line[linesize - 1] = 0;
 }
 
 
@@ -543,35 +587,35 @@ static char *getopt_getoptionsyntax(getopt_option_descr_t *odesc, int style)
 	else { // both names comma separated: "-short, --long"
 		buffer[0] = 0;
 		if (odesc->short_name) {
-			strncat(buffer, "-", sizeof(buffer)-1);
-			strncat(buffer, odesc->short_name, sizeof(buffer)-1);
+			strncat(buffer, "-", sizeof(buffer) - 1);
+			strncat(buffer, odesc->short_name, sizeof(buffer) - 1);
 		}
 		if (odesc->long_name) {
 			if (odesc->short_name)
-				strncat(buffer, " | ", sizeof(buffer)-1);
-			strncat(buffer, "--", sizeof(buffer)-1);
-			strncat(buffer, odesc->long_name, sizeof(buffer)-1);
+				strncat(buffer, " | ", sizeof(buffer) - 1);
+			strncat(buffer, "--", sizeof(buffer) - 1);
+			strncat(buffer, odesc->long_name, sizeof(buffer) - 1);
 		}
 	}
 
 	for (i = 0; s = odesc->fix_args[i]; i++) {
-		strncat(buffer, " <", sizeof(buffer)-1);
-		strncat(buffer, s, sizeof(buffer)-1);
-		strncat(buffer, ">", sizeof(buffer)-1);
+		strncat(buffer, " <", sizeof(buffer) - 1);
+		strncat(buffer, s, sizeof(buffer) - 1);
+		strncat(buffer, ">", sizeof(buffer) - 1);
 	}
 	for (i = 0; s = odesc->var_args[i]; i++) {
-		strncat(buffer, " ", sizeof(buffer)-1);
-		if (i == 0) strncat(buffer, "[", sizeof(buffer)-1);
-		strncat(buffer, "<", sizeof(buffer)-1);
-		strncat(buffer, s, sizeof(buffer)-1);
-		strncat(buffer, ">", sizeof(buffer)-1);
+		strncat(buffer, " ", sizeof(buffer) - 1);
+		if (i == 0) strncat(buffer, "[", sizeof(buffer) - 1);
+		strncat(buffer, "<", sizeof(buffer) - 1);
+		strncat(buffer, s, sizeof(buffer) - 1);
+		strncat(buffer, ">", sizeof(buffer) - 1);
 	}
-	if (i > 0) strncat(buffer, "]", sizeof(buffer)-1);
+	if (i > 0) strncat(buffer, "]", sizeof(buffer) - 1);
 
 	return buffer;
 }
 
-/* print a multine strin spearted by \n, with indetn and line break
+/* print a multine string separated by \n, with indent and line break
  * lienebuff may already contain some text */
 static void getopt_print_multilinestring(FILE *stream, char *linebuff, unsigned linebuffsize, char *text, unsigned linelen, unsigned indent)
 {
@@ -597,6 +641,7 @@ static void getopt_print_multilinestring(FILE *stream, char *linebuff, unsigned 
 	free(s_text);
 }
 
+
 static void getopt_help_option_intern(getopt_option_descr_t *odesc, FILE *stream, unsigned linelen, unsigned indent)
 {
 	char linebuff[2 * GETOPT_MAX_LINELEN];
@@ -607,7 +652,12 @@ static void getopt_help_option_intern(getopt_option_descr_t *odesc, FILE *stream
 	strncpy(phrase, getopt_getoptionsyntax(odesc, 1), sizeof(phrase));
 	output_append(stream, linebuff, sizeof(linebuff), phrase, /*linebreak*/0, linelen, indent);
 	output_append(stream, linebuff, sizeof(linebuff), "", /*linebreak*/1, linelen, indent); // newline
-	getopt_print_multilinestring(stream, linebuff, sizeof(linebuff), odesc->info, linelen, indent);
+	if (odesc->info)
+		getopt_print_multilinestring(stream, linebuff, sizeof(linebuff), odesc->info, linelen, indent);
+	if (odesc->default_args) {
+		snprintf(phrase, sizeof(phrase), " Default: \"%s\"", odesc->default_args);
+		output_append(stream, linebuff, sizeof(linebuff), phrase, /*linebreak*/0, linelen, indent);
+	}
 
 	// print examples:
 	if (odesc->example_simple_cline_args) {
@@ -684,6 +734,26 @@ void getopt_help(getopt_t *_this, FILE *stream, unsigned linelen, unsigned inden
 	else
 		fprintf(stream, "\nOption names are case sensitive.\n");
 }
+
+
+// display evaluated commandline (defaults and user)
+void getopt_help_commandline(getopt_t *_this, FILE *stream, unsigned linelen, unsigned indent)
+{
+	int	i;
+	char linebuff[2 * GETOPT_MAX_LINELEN];
+	char phrase[2 * GETOPT_MAX_LINELEN];
+	linebuff[0] = 0;
+	for (i = 0; i < _this->argc; i++) {
+		if (i == 0)
+			snprintf(phrase, sizeof(phrase), "\"%s\"", _this->argv[i]);
+		else
+			snprintf(phrase, sizeof(phrase), " \"%s\"", _this->argv[i]);
+		output_append(stream, linebuff, sizeof(linebuff), phrase, /*linebreak*/0, linelen, indent);
+	}
+
+	fprintf(stream, "%s\n", linebuff);
+}
+
 
 
 

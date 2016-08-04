@@ -116,8 +116,8 @@ typedef struct
     blinkenlight_control_t *switch_cont ; // S29 "CONT"
     blinkenlight_control_t *switch_deposit_this ; // S30 "DEP THIS"
     blinkenlight_control_t *switch_examine_this ; // S32 "EXAMINE THIS"
-// S31 "DEP NEXT" & S33 "EXAMINE NEXT" is one signal, combines with EXAM/DEPOSIT THIS
-    blinkenlight_control_t *switch_deposit_examine_next;
+    blinkenlight_control_t *switch_deposit_next ; // constructed
+    blinkenlight_control_t *switch_examine_next ; // constructed
     blinkenlight_control_t *switch_data ;     // S34-S51 "DSW0-17"
 
     blinkenlight_control_t *switch_power; // S53

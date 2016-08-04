@@ -21,6 +21,7 @@
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+ 01-Aug-2016  JH    DEPOSIT/EXAMINE_THIS/NEXT separate (like keys, not internal combo signals)
  25-Jun-2016  JH    DATA/ADDR switches, REGISTER, MEMBUFFER: mirror, Bit17 = LSB
  25-Jun-2016  JH    commandline processing changed to getopt2
  25-Jun-2016  JH    mux frequency settable in command line
@@ -41,7 +42,7 @@
 
 #define MAIN_C_
 
-#define VERSION	"v1.0.0"
+#define VERSION	"v1.1.0"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -117,8 +118,6 @@ blinkenlight_control_t *lamp_instruction_index; // I52 "OP INDEX"
 blinkenlight_control_t *lamp_memory_buffer; // I53-I70 "MB00..17"
 
 // *** Switch Board ***
-blinkenlight_control_t *switch_power; // dummy, always ON
-
 blinkenlight_control_t *switch_stop; // S1 "STOP"
 blinkenlight_control_t *switch_reset; // S2 "RESET"
 blinkenlight_control_t *switch_read_in; // S3 "READ IN"
@@ -135,10 +134,10 @@ blinkenlight_control_t *switch_address; // S12-S26  "ADSW03-17"
 blinkenlight_control_t *switch_start; // S27 "START"
 blinkenlight_control_t *switch_exec; // S28 "EXECUTE"
 blinkenlight_control_t *switch_cont; // S29 "CONT"
-blinkenlight_control_t *switch_deposit_this; // S30 "DEP THIS"
-blinkenlight_control_t *switch_examine_this; // S32 "EXAMINE THIS"
-// S31 "DEP NEXT" & S33 "EXAMINE NEXT" is one signal, combines with EXAM/DEPOSIT THIS
-blinkenlight_control_t *switch_deposit_examine_next;
+blinkenlight_control_t *switch_deposit_this; // constructed
+blinkenlight_control_t *switch_examine_this; // constructed
+blinkenlight_control_t *switch_deposit_next; // constructed
+blinkenlight_control_t *switch_examine_next; // constructed
 blinkenlight_control_t *switch_data; // S34-S51 "DSW0-17"
 
 blinkenlight_control_t *switch_power; // S53
@@ -350,18 +349,18 @@ static void parse_commandline(int argc, char **argv)
 
     // define commandline syntax
     getopt_init(&getopt_parser, /*ignore_case*/1);
-    getopt_def(&getopt_parser, "?", "help", NULL, NULL, "Print help", NULL, NULL, NULL, NULL);
+    getopt_def(&getopt_parser, "?", "help", NULL, NULL, NULL, "Print help", NULL, NULL, NULL, NULL);
 
-    getopt_def(&getopt_parser, "b", "background", NULL, NULL,
+    getopt_def(&getopt_parser, "b", "background", NULL, NULL, NULL,
             "background operation: print to syslog (view with dmesg)\n"
                     "Else default output is stderr",
             NULL, NULL, NULL, NULL);
-    getopt_def(&getopt_parser, "v", "verbose", NULL, NULL, "verbose: tell what I'm doing",
+    getopt_def(&getopt_parser, "v", "verbose", NULL, NULL, NULL, "verbose: tell what I'm doing",
     NULL, NULL, NULL, NULL);
-    getopt_def(&getopt_parser, "t", "test", NULL, NULL, "Test mode",
+    getopt_def(&getopt_parser, "t", "test", NULL, NULL, NULL, "Test mode",
     NULL, NULL, NULL, NULL);
 
-    getopt_def(&getopt_parser, "mf", "muxfrequency", "frequency", NULL,
+    getopt_def(&getopt_parser, "mf", "muxfrequency", "frequency", NULL, "1000",
             "Row frequency for lamp multiplexing. There are 3 rows.\n"
                     "!! For values != 1000 (1 kHz) the lamp protection watchdog will not work correctly !!",
             "10000", "multiplex with 10 kHz, every row is shown 3333x per second", NULL, NULL);
@@ -487,13 +486,6 @@ static void register_controls()
     // *** Indicator Board ***
     // params: value offset, bitlen, muxcode, OUT register, register bit offset
     // see panels/pdp15/schematic.txt
-#define MUX1    1   // gives some optical structure
-#define MUX2    2
-#define MUX3    3
-#define MUX5    5
-#define MUX6    6
-#define MUX7    7
-
     lamp_dch_active = define_lamp_slice(p, "DCH_ACTIVE", 0, 1, MUX7, 8, 0); // Out 8.0
     lamps_api_states_active = define_lamp_slice(p, "API_STATES_ACTIVE", 0, 5, MUX7, 8, 1); // Out8.1:5 "PL00-04"
     lamps_api_states_active = define_lamp_slice(p, "API_STATES_ACTIVE", 5, 3, MUX7, 9, 1); // Out9.1:3 "PL05-07"
@@ -552,9 +544,11 @@ static void register_controls()
     switch_start = define_switch_slice(p, "START", 0, 1, MUX1, 2, 3); // In2.3 "START"
     switch_exec = define_switch_slice(p, "EXECUTE", 0, 1, MUX1, 1, 3); // In1.3 "EXECUTE"
     switch_cont = define_switch_slice(p, "CONT", 0, 1, MUX1, 1, 5); // In1.5 "CONT"
-    switch_deposit_this = define_switch_slice(p, "DEPOSIT_THIS", 0, 1, MUX1, 2, 2); // In 2.2 "DEP THIS", combines with NEXT
-    switch_examine_this = define_switch_slice(p, "EXAMINE_THIS", 0, 1, MUX1, 2, 1); // In2.1 "EXAMINE THIS" , combines with NEXT
-    switch_deposit_examine_next = define_switch_slice(p, "DEP_EXAM_NEXT", 0, 1, MUX1, 1, 0); // In 1.0 "DEPOSIT/EXAMINE NEXT"
+    // EXAM/DEPOSIT THIS/NEXT are constructed in gpio.c;
+    switch_deposit_this = define_switch_slice(p, "DEPOSIT_THIS", 0, 1, MUX1, 0, 0); // register&bit dummy
+    switch_examine_this = define_switch_slice(p, "EXAMINE_THIS", 0, 1, MUX1, 0, 0); // "
+    switch_deposit_next = define_switch_slice(p, "DEPOSIT_NEXT", 0, 1, MUX1, 0, 0); // "
+    switch_examine_next = define_switch_slice(p, "EXAMINE_NEXT", 0, 1, MUX1, 0, 0); // "
 
     switch_data = define_switch_slice(p, "DATA", 0, 8, MUX2, 2, 0); // In2.0:7 "DSW00-07"
     switch_data = define_switch_slice(p, "DATA", 8, 2, MUX2, 3, 0); // In3.0:1 "DSW08-09"

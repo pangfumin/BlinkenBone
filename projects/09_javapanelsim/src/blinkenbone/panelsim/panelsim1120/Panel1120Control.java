@@ -35,7 +35,7 @@ import blinkenbone.blinkenlight_api.Control;
 import blinkenbone.blinkenlight_api.Panel;
 import blinkenbone.panelsim.ControlSliceVisualization;
 import blinkenbone.panelsim.PanelControl;
-import blinkenbone.panelsim.TwoStateControlVisualization;
+import blinkenbone.panelsim.TwoStateControlSliceVisualization;
 
 public class Panel1120Control extends PanelControl {
 

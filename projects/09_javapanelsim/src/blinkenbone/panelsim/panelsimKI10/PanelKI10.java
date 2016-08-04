@@ -112,12 +112,12 @@ import blinkenbone.blinkenlight_api.Control.ControlType;
 import blinkenbone.blinkenlight_api.Panel;
 import blinkenbone.panelsim.ControlSliceStateImage;
 import blinkenbone.panelsim.ControlSliceVisualization;
-import blinkenbone.panelsim.DimmableLEDVisualization;
-import blinkenbone.panelsim.DimmableLightbulbVisualization;
-import blinkenbone.panelsim.LampButtonVisualization;
-import blinkenbone.panelsim.MultiStateControlVisualization;
+import blinkenbone.panelsim.DimmableLedControlSliceVisualization;
+import blinkenbone.panelsim.DimmableLightbulbControlSliceVisualization;
+import blinkenbone.panelsim.LampButtonControlSliceVisualization;
+import blinkenbone.panelsim.MultiStateControlSliceVisualization;
 import blinkenbone.panelsim.ResourceManager;
-import blinkenbone.panelsim.TwoStateControlVisualization;
+import blinkenbone.panelsim.TwoStateControlSliceVisualization;
 import blinkenbone.panelsim.panelsimKI10.PanelKI10Control.KI10ControlType;
 import blinkenbone.rpcgen.rpc_blinkenlight_api;
 
@@ -212,7 +212,7 @@ public class PanelKI10 extends JPanel implements Observer {
 	PanelKI10Control button_DEPOSIT_NEXT;
 
 	// the background
-	TwoStateControlVisualization backgroundVisualization;
+	TwoStateControlSliceVisualization backgroundVisualization;
 
 	private ResourceManager resourceManager;
 
@@ -576,7 +576,7 @@ public class PanelKI10 extends JPanel implements Observer {
 		 * load all visualizations into global list. mark them with the
 		 * Blinkenlight API control and bit pos
 		 */
-		backgroundVisualization = new TwoStateControlVisualization("background.png", null, null,
+		backgroundVisualization = new TwoStateControlSliceVisualization("background.png", null, null,
 				0);
 
 		// clear visualization of all controls
@@ -585,32 +585,32 @@ public class PanelKI10 extends JPanel implements Observer {
 		}
 
 		/*** Define all the backgrounds, used for different controls ***/
-		TwoStateControlVisualization backgroundAlarms = new TwoStateControlVisualization(
+		TwoStateControlSliceVisualization backgroundAlarms = new TwoStateControlSliceVisualization(
 				"background_alarms.png.png", null, null, 0);
-		TwoStateControlVisualization backgroundButtonsRow1 = //
-		new TwoStateControlVisualization("buttons_row1.png", null, null, 0);
-		TwoStateControlVisualization backgroundButtonsRow2 = //
-		new TwoStateControlVisualization("buttons_row2.png", null, null, 0);
-		TwoStateControlVisualization backgroundButtonsRow3Left = //
-		new TwoStateControlVisualization("background_buttons_row3_left.png.png", null, null, 0);
-		TwoStateControlVisualization backgroundButtonsRow3Right = //
-		new TwoStateControlVisualization("background_buttons_row3_right", null, null, 0);
-		TwoStateControlVisualization backgroundLampsRow4 = //
-		new TwoStateControlVisualization("background_lamps_row4.png", null, null, 0);
-		TwoStateControlVisualization backgroundLampsRow5 = //
-		new TwoStateControlVisualization("background_lamps_row5.png", null, null, 0);
-		TwoStateControlVisualization backgroundLampsRow6 = //
-		new TwoStateControlVisualization("background_lamps_row6.png", null, null, 0);
-		TwoStateControlVisualization backgroundLampsRow7 = //
-		new TwoStateControlVisualization("background_lamps_row7.png", null, null, 0);
-		TwoStateControlVisualization backgroundLampsRow8 = //
-		new TwoStateControlVisualization("background_lamps_row8.png", null, null, 0);
-		TwoStateControlVisualization backgroundButtonsRow9 = //
-		new TwoStateControlVisualization("background_buttons_row9.png", null, null, 0);
-		TwoStateControlVisualization backgroundButtonsRow10 = //
-		new TwoStateControlVisualization("background_buttons_row10.png", null, null, 0);
-		TwoStateControlVisualization backgroundButtonsRow11 = //
-		new TwoStateControlVisualization("background_buttons_row11.png", null, null, 0);
+		TwoStateControlSliceVisualization backgroundButtonsRow1 = //
+		new TwoStateControlSliceVisualization("buttons_row1.png", null, null, 0);
+		TwoStateControlSliceVisualization backgroundButtonsRow2 = //
+		new TwoStateControlSliceVisualization("buttons_row2.png", null, null, 0);
+		TwoStateControlSliceVisualization backgroundButtonsRow3Left = //
+		new TwoStateControlSliceVisualization("background_buttons_row3_left.png.png", null, null, 0);
+		TwoStateControlSliceVisualization backgroundButtonsRow3Right = //
+		new TwoStateControlSliceVisualization("background_buttons_row3_right", null, null, 0);
+		TwoStateControlSliceVisualization backgroundLampsRow4 = //
+		new TwoStateControlSliceVisualization("background_lamps_row4.png", null, null, 0);
+		TwoStateControlSliceVisualization backgroundLampsRow5 = //
+		new TwoStateControlSliceVisualization("background_lamps_row5.png", null, null, 0);
+		TwoStateControlSliceVisualization backgroundLampsRow6 = //
+		new TwoStateControlSliceVisualization("background_lamps_row6.png", null, null, 0);
+		TwoStateControlSliceVisualization backgroundLampsRow7 = //
+		new TwoStateControlSliceVisualization("background_lamps_row7.png", null, null, 0);
+		TwoStateControlSliceVisualization backgroundLampsRow8 = //
+		new TwoStateControlSliceVisualization("background_lamps_row8.png", null, null, 0);
+		TwoStateControlSliceVisualization backgroundButtonsRow9 = //
+		new TwoStateControlSliceVisualization("background_buttons_row9.png", null, null, 0);
+		TwoStateControlSliceVisualization backgroundButtonsRow10 = //
+		new TwoStateControlSliceVisualization("background_buttons_row10.png", null, null, 0);
+		TwoStateControlSliceVisualization backgroundButtonsRow11 = //
+		new TwoStateControlSliceVisualization("background_buttons_row11.png", null, null, 0);
 
 		// All coordinates must have been are loaded: loadImageCoordinates()
 
@@ -618,836 +618,836 @@ public class PanelKI10 extends JPanel implements Observer {
 		 * THIS CODE IS generated by the Image2Java" program, which reads the
 		 * info .CSV in the image directory
 		 ***/
-		DimmableLEDVisualization.defaultAveragingInterval_ms = 100;
+		DimmableLedControlSliceVisualization.defaultAveragingInterval_ms = 100;
 		// lamps have a low pass of 1/10 sec
 
 		lamp_CKT_BRKR_TRIPPED.visualization
-				.add(new DimmableLEDVisualization("lamp_CKT_BRKR_TRIPPED_on.png",
+				.add(new DimmableLedControlSliceVisualization("lamp_CKT_BRKR_TRIPPED_on.png",
 						lamp_CKT_BRKR_TRIPPED, lamp_CKT_BRKR_TRIPPED.outputcontrol, 0, false));
-		lamp_DOORS_OPEN.visualization.add(new DimmableLEDVisualization("lamp_DOORS_OPEN_on.png",
+		lamp_DOORS_OPEN.visualization.add(new DimmableLedControlSliceVisualization("lamp_DOORS_OPEN_on.png",
 				lamp_DOORS_OPEN, lamp_DOORS_OPEN.outputcontrol, 0, false));
-		lamp_OVERTEMP.visualization.add(new DimmableLEDVisualization("lamp_OVERTEMP_on.png",
+		lamp_OVERTEMP.visualization.add(new DimmableLedControlSliceVisualization("lamp_OVERTEMP_on.png",
 				lamp_OVERTEMP, lamp_OVERTEMP.outputcontrol, 0, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA00_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA00_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 0, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA01_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA01_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 1, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA02_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA02_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 2, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA03_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA03_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 3, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA04_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA04_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 4, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA05_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA05_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 5, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA06_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA06_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 6, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA07_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA07_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 7, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA08_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA08_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 8, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA09_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA09_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 9, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA10_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA10_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 10, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA11_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA11_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 11, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA12_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA12_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 12, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA13_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA13_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 13, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA14_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA14_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 14, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA15_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA15_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 15, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA16_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA16_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 16, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA17_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA17_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 17, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA18_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA18_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 18, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA19_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA19_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 19, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA20_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA20_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 20, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA21_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA21_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 21, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA22_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA22_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 22, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA23_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA23_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 23, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA24_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA24_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 24, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA25_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA25_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 25, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA26_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA26_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 26, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA27_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA27_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 27, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA28_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA28_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 28, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA29_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA29_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 29, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA30_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA30_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 30, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA31_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA31_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 31, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA32_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA32_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 32, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA33_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA33_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 33, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA34_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA34_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 34, false));
-		leds_DATA.visualization.add(new DimmableLEDVisualization("led_DATA35_on.png", leds_DATA,
+		leds_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_DATA35_on.png", leds_DATA,
 				leds_DATA.outputcontrol, 35 - 35, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION00_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION00_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 0, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION01_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION01_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 1, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION02_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION02_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 2, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION03_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION03_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 3, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION04_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION04_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 4, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION05_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION05_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 5, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION06_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION06_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 6, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION07_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION07_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 7, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION08_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION08_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 8, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION09_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION09_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 9, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION10_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION10_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 10, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION11_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION11_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 11, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION12_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION12_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 12, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION13_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION13_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 13, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION14_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION14_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 14, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION15_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION15_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 15, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION16_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION16_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 16, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION17_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION17_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 17, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION18_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION18_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 18, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION19_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION19_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 19, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION20_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION20_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 20, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION21_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION21_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 21, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION22_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION22_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 22, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION23_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION23_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 23, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION24_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION24_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 24, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION25_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION25_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 25, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION26_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION26_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 26, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION27_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION27_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 27, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION28_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION28_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 28, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION29_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION29_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 29, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION30_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION30_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 30, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION31_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION31_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 31, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION32_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION32_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 32, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION33_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION33_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 33, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION34_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION34_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 34, false));
 		leds_INSTRUCTION.visualization
-				.add(new DimmableLEDVisualization("led_INSTRUCTION35_on.png", leds_INSTRUCTION,
+				.add(new DimmableLedControlSliceVisualization("led_INSTRUCTION35_on.png", leds_INSTRUCTION,
 						leds_INSTRUCTION.outputcontrol, 35 - 35, false));
 		leds_IOB_PI_REQUEST.visualization
-				.add(new DimmableLEDVisualization("led_IOB_PI_REQUEST1_on.png",
+				.add(new DimmableLedControlSliceVisualization("led_IOB_PI_REQUEST1_on.png",
 						leds_IOB_PI_REQUEST, leds_IOB_PI_REQUEST.outputcontrol, 1, false));
 		leds_IOB_PI_REQUEST.visualization
-				.add(new DimmableLEDVisualization("led_IOB_PI_REQUEST2_on.png",
+				.add(new DimmableLedControlSliceVisualization("led_IOB_PI_REQUEST2_on.png",
 						leds_IOB_PI_REQUEST, leds_IOB_PI_REQUEST.outputcontrol, 2, false));
 		leds_IOB_PI_REQUEST.visualization
-				.add(new DimmableLEDVisualization("led_IOB_PI_REQUEST3_on.png",
+				.add(new DimmableLedControlSliceVisualization("led_IOB_PI_REQUEST3_on.png",
 						leds_IOB_PI_REQUEST, leds_IOB_PI_REQUEST.outputcontrol, 3, false));
 		leds_IOB_PI_REQUEST.visualization
-				.add(new DimmableLEDVisualization("led_IOB_PI_REQUEST4_on.png",
+				.add(new DimmableLedControlSliceVisualization("led_IOB_PI_REQUEST4_on.png",
 						leds_IOB_PI_REQUEST, leds_IOB_PI_REQUEST.outputcontrol, 4, false));
 		leds_IOB_PI_REQUEST.visualization
-				.add(new DimmableLEDVisualization("led_IOB_PI_REQUEST5_on.png",
+				.add(new DimmableLedControlSliceVisualization("led_IOB_PI_REQUEST5_on.png",
 						leds_IOB_PI_REQUEST, leds_IOB_PI_REQUEST.outputcontrol, 5, false));
 		leds_IOB_PI_REQUEST.visualization
-				.add(new DimmableLEDVisualization("led_IOB_PI_REQUEST6_on.png",
+				.add(new DimmableLedControlSliceVisualization("led_IOB_PI_REQUEST6_on.png",
 						leds_IOB_PI_REQUEST, leds_IOB_PI_REQUEST.outputcontrol, 6, false));
 		leds_IOB_PI_REQUEST.visualization
-				.add(new DimmableLEDVisualization("led_IOB_PI_REQUEST7_on.png",
+				.add(new DimmableLedControlSliceVisualization("led_IOB_PI_REQUEST7_on.png",
 						leds_IOB_PI_REQUEST, leds_IOB_PI_REQUEST.outputcontrol, 7, false));
-		led_KEY_MAINT.visualization.add(new DimmableLEDVisualization("led_KEY_MAINT_on.png",
+		led_KEY_MAINT.visualization.add(new DimmableLedControlSliceVisualization("led_KEY_MAINT_on.png",
 				led_KEY_MAINT, led_KEY_MAINT.outputcontrol, 0, false));
-		led_KEY_PG_FAIL.visualization.add(new DimmableLEDVisualization("led_KEY_PG_FAIL.png",
+		led_KEY_PG_FAIL.visualization.add(new DimmableLedControlSliceVisualization("led_KEY_PG_FAIL.png",
 				led_KEY_PG_FAIL, led_KEY_PG_FAIL.outputcontrol, 0, false));
-		led_MEMORY_DATA.visualization.add(new DimmableLEDVisualization("led_MEMORY_DATA_on.png",
+		led_MEMORY_DATA.visualization.add(new DimmableLedControlSliceVisualization("led_MEMORY_DATA_on.png",
 				led_MEMORY_DATA, led_MEMORY_DATA.outputcontrol, 0, false));
-		leds_MODE.visualization.add(new DimmableLEDVisualization("led_MODE0_on.png", leds_MODE,
+		leds_MODE.visualization.add(new DimmableLedControlSliceVisualization("led_MODE0_on.png", leds_MODE,
 				leds_MODE.outputcontrol, 0, false));
-		leds_MODE.visualization.add(new DimmableLEDVisualization("led_MODE1_on.png", leds_MODE,
+		leds_MODE.visualization.add(new DimmableLedControlSliceVisualization("led_MODE1_on.png", leds_MODE,
 				leds_MODE.outputcontrol, 1, false));
-		leds_MODE.visualization.add(new DimmableLEDVisualization("led_MODE2_on.png", leds_MODE,
+		leds_MODE.visualization.add(new DimmableLedControlSliceVisualization("led_MODE2_on.png", leds_MODE,
 				leds_MODE.outputcontrol, 2, false));
-		leds_MODE.visualization.add(new DimmableLEDVisualization("led_MODE3_on.png", leds_MODE,
+		leds_MODE.visualization.add(new DimmableLedControlSliceVisualization("led_MODE3_on.png", leds_MODE,
 				leds_MODE.outputcontrol, 3, false));
-		leds_PI_ACTIVE.visualization.add(new DimmableLEDVisualization("led_PI_ACTIVE1_on.png",
+		leds_PI_ACTIVE.visualization.add(new DimmableLedControlSliceVisualization("led_PI_ACTIVE1_on.png",
 				leds_PI_ACTIVE, leds_PI_ACTIVE.outputcontrol, 1, false));
-		leds_PI_ACTIVE.visualization.add(new DimmableLEDVisualization("led_PI_ACTIVE2_on.png",
+		leds_PI_ACTIVE.visualization.add(new DimmableLedControlSliceVisualization("led_PI_ACTIVE2_on.png",
 				leds_PI_ACTIVE, leds_PI_ACTIVE.outputcontrol, 2, false));
-		leds_PI_ACTIVE.visualization.add(new DimmableLEDVisualization("led_PI_ACTIVE3_on.png",
+		leds_PI_ACTIVE.visualization.add(new DimmableLedControlSliceVisualization("led_PI_ACTIVE3_on.png",
 				leds_PI_ACTIVE, leds_PI_ACTIVE.outputcontrol, 3, false));
-		leds_PI_ACTIVE.visualization.add(new DimmableLEDVisualization("led_PI_ACTIVE4_on.png",
+		leds_PI_ACTIVE.visualization.add(new DimmableLedControlSliceVisualization("led_PI_ACTIVE4_on.png",
 				leds_PI_ACTIVE, leds_PI_ACTIVE.outputcontrol, 4, false));
-		leds_PI_ACTIVE.visualization.add(new DimmableLEDVisualization("led_PI_ACTIVE5_on.png",
+		leds_PI_ACTIVE.visualization.add(new DimmableLedControlSliceVisualization("led_PI_ACTIVE5_on.png",
 				leds_PI_ACTIVE, leds_PI_ACTIVE.outputcontrol, 5, false));
-		leds_PI_ACTIVE.visualization.add(new DimmableLEDVisualization("led_PI_ACTIVE6_on.png",
+		leds_PI_ACTIVE.visualization.add(new DimmableLedControlSliceVisualization("led_PI_ACTIVE6_on.png",
 				leds_PI_ACTIVE, leds_PI_ACTIVE.outputcontrol, 6, false));
-		leds_PI_ACTIVE.visualization.add(new DimmableLEDVisualization("led_PI_ACTIVE7_on.png",
+		leds_PI_ACTIVE.visualization.add(new DimmableLedControlSliceVisualization("led_PI_ACTIVE7_on.png",
 				leds_PI_ACTIVE, leds_PI_ACTIVE.outputcontrol, 7, false));
 		leds_PI_IN_PROGRESS.visualization
-				.add(new DimmableLEDVisualization("led_PI_IN_PROGRESS1_on.png",
+				.add(new DimmableLedControlSliceVisualization("led_PI_IN_PROGRESS1_on.png",
 						leds_PI_IN_PROGRESS, leds_PI_IN_PROGRESS.outputcontrol, 1, false));
 		leds_PI_IN_PROGRESS.visualization
-				.add(new DimmableLEDVisualization("led_PI_IN_PROGRESS2_on.png",
+				.add(new DimmableLedControlSliceVisualization("led_PI_IN_PROGRESS2_on.png",
 						leds_PI_IN_PROGRESS, leds_PI_IN_PROGRESS.outputcontrol, 2, false));
 		leds_PI_IN_PROGRESS.visualization
-				.add(new DimmableLEDVisualization("led_PI_IN_PROGRESS3_on.png",
+				.add(new DimmableLedControlSliceVisualization("led_PI_IN_PROGRESS3_on.png",
 						leds_PI_IN_PROGRESS, leds_PI_IN_PROGRESS.outputcontrol, 3, false));
 		leds_PI_IN_PROGRESS.visualization
-				.add(new DimmableLEDVisualization("led_PI_IN_PROGRESS4_on.png",
+				.add(new DimmableLedControlSliceVisualization("led_PI_IN_PROGRESS4_on.png",
 						leds_PI_IN_PROGRESS, leds_PI_IN_PROGRESS.outputcontrol, 4, false));
 		leds_PI_IN_PROGRESS.visualization
-				.add(new DimmableLEDVisualization("led_PI_IN_PROGRESS5_on.png",
+				.add(new DimmableLedControlSliceVisualization("led_PI_IN_PROGRESS5_on.png",
 						leds_PI_IN_PROGRESS, leds_PI_IN_PROGRESS.outputcontrol, 5, false));
 		leds_PI_IN_PROGRESS.visualization
-				.add(new DimmableLEDVisualization("led_PI_IN_PROGRESS6_on.png",
+				.add(new DimmableLedControlSliceVisualization("led_PI_IN_PROGRESS6_on.png",
 						leds_PI_IN_PROGRESS, leds_PI_IN_PROGRESS.outputcontrol, 6, false));
 		leds_PI_IN_PROGRESS.visualization
-				.add(new DimmableLEDVisualization("led_PI_IN_PROGRESS7_on.png",
+				.add(new DimmableLedControlSliceVisualization("led_PI_IN_PROGRESS7_on.png",
 						leds_PI_IN_PROGRESS, leds_PI_IN_PROGRESS.outputcontrol, 7, false));
-		led_PI_OK_8.visualization.add(new DimmableLEDVisualization("led_PI_OK_8_on.png",
+		led_PI_OK_8.visualization.add(new DimmableLedControlSliceVisualization("led_PI_OK_8_on.png",
 				led_PI_OK_8, led_PI_OK_8.outputcontrol, 0, false));
-		led_PI_ON.visualization.add(new DimmableLEDVisualization("led_PI_ON_on.png", led_PI_ON,
+		led_PI_ON.visualization.add(new DimmableLedControlSliceVisualization("led_PI_ON_on.png", led_PI_ON,
 				led_PI_ON.outputcontrol, 0, false));
-		leds_PI_REQUEST.visualization.add(new DimmableLEDVisualization("led_PI_REQUEST1_on.png",
+		leds_PI_REQUEST.visualization.add(new DimmableLedControlSliceVisualization("led_PI_REQUEST1_on.png",
 				leds_PI_REQUEST, leds_PI_REQUEST.outputcontrol, 1, false));
-		leds_PI_REQUEST.visualization.add(new DimmableLEDVisualization("led_PI_REQUEST2_on.png",
+		leds_PI_REQUEST.visualization.add(new DimmableLedControlSliceVisualization("led_PI_REQUEST2_on.png",
 				leds_PI_REQUEST, leds_PI_REQUEST.outputcontrol, 2, false));
-		leds_PI_REQUEST.visualization.add(new DimmableLEDVisualization("led_PI_REQUEST3_on.png",
+		leds_PI_REQUEST.visualization.add(new DimmableLedControlSliceVisualization("led_PI_REQUEST3_on.png",
 				leds_PI_REQUEST, leds_PI_REQUEST.outputcontrol, 3, false));
-		leds_PI_REQUEST.visualization.add(new DimmableLEDVisualization("led_PI_REQUEST4_on.png",
+		leds_PI_REQUEST.visualization.add(new DimmableLedControlSliceVisualization("led_PI_REQUEST4_on.png",
 				leds_PI_REQUEST, leds_PI_REQUEST.outputcontrol, 4, false));
-		leds_PI_REQUEST.visualization.add(new DimmableLEDVisualization("led_PI_REQUEST5_on.png",
+		leds_PI_REQUEST.visualization.add(new DimmableLedControlSliceVisualization("led_PI_REQUEST5_on.png",
 				leds_PI_REQUEST, leds_PI_REQUEST.outputcontrol, 5, false));
-		leds_PI_REQUEST.visualization.add(new DimmableLEDVisualization("led_PI_REQUEST6_on.png",
+		leds_PI_REQUEST.visualization.add(new DimmableLedControlSliceVisualization("led_PI_REQUEST6_on.png",
 				leds_PI_REQUEST, leds_PI_REQUEST.outputcontrol, 6, false));
-		leds_PI_REQUEST.visualization.add(new DimmableLEDVisualization("led_PI_REQUEST7_on.png",
+		leds_PI_REQUEST.visualization.add(new DimmableLedControlSliceVisualization("led_PI_REQUEST7_on.png",
 				leds_PI_REQUEST, leds_PI_REQUEST.outputcontrol, 7, false));
-		led_POWER.visualization.add(new DimmableLEDVisualization("led_POWER_on.png", led_POWER,
+		led_POWER.visualization.add(new DimmableLedControlSliceVisualization("led_POWER_on.png", led_POWER,
 				led_POWER.outputcontrol, 0, false));
-		leds_PROGRAM_COUNTER.visualization.add(new DimmableLEDVisualization(
+		leds_PROGRAM_COUNTER.visualization.add(new DimmableLedControlSliceVisualization(
 				"led_PROGRAM_COUNTER18_on.png", leds_PROGRAM_COUNTER,
 				leds_PROGRAM_COUNTER.outputcontrol, 35 - 18, false));
-		leds_PROGRAM_COUNTER.visualization.add(new DimmableLEDVisualization(
+		leds_PROGRAM_COUNTER.visualization.add(new DimmableLedControlSliceVisualization(
 				"led_PROGRAM_COUNTER19_on.png", leds_PROGRAM_COUNTER,
 				leds_PROGRAM_COUNTER.outputcontrol, 35 - 19, false));
-		leds_PROGRAM_COUNTER.visualization.add(new DimmableLEDVisualization(
+		leds_PROGRAM_COUNTER.visualization.add(new DimmableLedControlSliceVisualization(
 				"led_PROGRAM_COUNTER20_on.png", leds_PROGRAM_COUNTER,
 				leds_PROGRAM_COUNTER.outputcontrol, 35 - 20, false));
-		leds_PROGRAM_COUNTER.visualization.add(new DimmableLEDVisualization(
+		leds_PROGRAM_COUNTER.visualization.add(new DimmableLedControlSliceVisualization(
 				"led_PROGRAM_COUNTER21_on.png", leds_PROGRAM_COUNTER,
 				leds_PROGRAM_COUNTER.outputcontrol, 35 - 21, false));
-		leds_PROGRAM_COUNTER.visualization.add(new DimmableLEDVisualization(
+		leds_PROGRAM_COUNTER.visualization.add(new DimmableLedControlSliceVisualization(
 				"led_PROGRAM_COUNTER22_on.png", leds_PROGRAM_COUNTER,
 				leds_PROGRAM_COUNTER.outputcontrol, 35 - 22, false));
-		leds_PROGRAM_COUNTER.visualization.add(new DimmableLEDVisualization(
+		leds_PROGRAM_COUNTER.visualization.add(new DimmableLedControlSliceVisualization(
 				"led_PROGRAM_COUNTER23_on.png", leds_PROGRAM_COUNTER,
 				leds_PROGRAM_COUNTER.outputcontrol, 35 - 23, false));
-		leds_PROGRAM_COUNTER.visualization.add(new DimmableLEDVisualization(
+		leds_PROGRAM_COUNTER.visualization.add(new DimmableLedControlSliceVisualization(
 				"led_PROGRAM_COUNTER24_on.png", leds_PROGRAM_COUNTER,
 				leds_PROGRAM_COUNTER.outputcontrol, 35 - 24, false));
-		leds_PROGRAM_COUNTER.visualization.add(new DimmableLEDVisualization(
+		leds_PROGRAM_COUNTER.visualization.add(new DimmableLedControlSliceVisualization(
 				"led_PROGRAM_COUNTER25_on.png", leds_PROGRAM_COUNTER,
 				leds_PROGRAM_COUNTER.outputcontrol, 35 - 25, false));
-		leds_PROGRAM_COUNTER.visualization.add(new DimmableLEDVisualization(
+		leds_PROGRAM_COUNTER.visualization.add(new DimmableLedControlSliceVisualization(
 				"led_PROGRAM_COUNTER26_on.png", leds_PROGRAM_COUNTER,
 				leds_PROGRAM_COUNTER.outputcontrol, 35 - 26, false));
-		leds_PROGRAM_COUNTER.visualization.add(new DimmableLEDVisualization(
+		leds_PROGRAM_COUNTER.visualization.add(new DimmableLedControlSliceVisualization(
 				"led_PROGRAM_COUNTER27_on.png", leds_PROGRAM_COUNTER,
 				leds_PROGRAM_COUNTER.outputcontrol, 35 - 27, false));
-		leds_PROGRAM_COUNTER.visualization.add(new DimmableLEDVisualization(
+		leds_PROGRAM_COUNTER.visualization.add(new DimmableLedControlSliceVisualization(
 				"led_PROGRAM_COUNTER28_on.png", leds_PROGRAM_COUNTER,
 				leds_PROGRAM_COUNTER.outputcontrol, 35 - 28, false));
-		leds_PROGRAM_COUNTER.visualization.add(new DimmableLEDVisualization(
+		leds_PROGRAM_COUNTER.visualization.add(new DimmableLedControlSliceVisualization(
 				"led_PROGRAM_COUNTER29_on.png", leds_PROGRAM_COUNTER,
 				leds_PROGRAM_COUNTER.outputcontrol, 35 - 29, false));
-		leds_PROGRAM_COUNTER.visualization.add(new DimmableLEDVisualization(
+		leds_PROGRAM_COUNTER.visualization.add(new DimmableLedControlSliceVisualization(
 				"led_PROGRAM_COUNTER30_on.png", leds_PROGRAM_COUNTER,
 				leds_PROGRAM_COUNTER.outputcontrol, 35 - 30, false));
-		leds_PROGRAM_COUNTER.visualization.add(new DimmableLEDVisualization(
+		leds_PROGRAM_COUNTER.visualization.add(new DimmableLedControlSliceVisualization(
 				"led_PROGRAM_COUNTER31_on.png", leds_PROGRAM_COUNTER,
 				leds_PROGRAM_COUNTER.outputcontrol, 35 - 31, false));
-		leds_PROGRAM_COUNTER.visualization.add(new DimmableLEDVisualization(
+		leds_PROGRAM_COUNTER.visualization.add(new DimmableLedControlSliceVisualization(
 				"led_PROGRAM_COUNTER32_on.png", leds_PROGRAM_COUNTER,
 				leds_PROGRAM_COUNTER.outputcontrol, 35 - 32, false));
-		leds_PROGRAM_COUNTER.visualization.add(new DimmableLEDVisualization(
+		leds_PROGRAM_COUNTER.visualization.add(new DimmableLedControlSliceVisualization(
 				"led_PROGRAM_COUNTER33_on.png", leds_PROGRAM_COUNTER,
 				leds_PROGRAM_COUNTER.outputcontrol, 35 - 33, false));
-		leds_PROGRAM_COUNTER.visualization.add(new DimmableLEDVisualization(
+		leds_PROGRAM_COUNTER.visualization.add(new DimmableLedControlSliceVisualization(
 				"led_PROGRAM_COUNTER34_on.png", leds_PROGRAM_COUNTER,
 				leds_PROGRAM_COUNTER.outputcontrol, 35 - 34, false));
-		leds_PROGRAM_COUNTER.visualization.add(new DimmableLEDVisualization(
+		leds_PROGRAM_COUNTER.visualization.add(new DimmableLedControlSliceVisualization(
 				"led_PROGRAM_COUNTER35_on.png", leds_PROGRAM_COUNTER,
 				leds_PROGRAM_COUNTER.outputcontrol, 35 - 35, false));
 		led_PROGRAM_DATA.visualization
-				.add(new DimmableLEDVisualization("led_PROGRAM_DATA_on.png", led_PROGRAM_DATA,
+				.add(new DimmableLedControlSliceVisualization("led_PROGRAM_DATA_on.png", led_PROGRAM_DATA,
 						led_PROGRAM_DATA.outputcontrol, 0, false));
-		led_RUN.visualization.add(new DimmableLEDVisualization("led_RUN_on.png", led_RUN,
+		led_RUN.visualization.add(new DimmableLedControlSliceVisualization("led_RUN_on.png", led_RUN,
 				led_RUN.outputcontrol, 0, false));
-		leds_STOP.visualization.add(new DimmableLEDVisualization("led_STOP0_on.png", leds_STOP,
+		leds_STOP.visualization.add(new DimmableLedControlSliceVisualization("led_STOP0_on.png", leds_STOP,
 				leds_STOP.outputcontrol, 0, false));
-		leds_STOP.visualization.add(new DimmableLEDVisualization("led_STOP1_on.png", leds_STOP,
+		leds_STOP.visualization.add(new DimmableLedControlSliceVisualization("led_STOP1_on.png", leds_STOP,
 				leds_STOP.outputcontrol, 1, false));
-		leds_STOP.visualization.add(new DimmableLEDVisualization("led_STOP2_on.png", leds_STOP,
+		leds_STOP.visualization.add(new DimmableLedControlSliceVisualization("led_STOP2_on.png", leds_STOP,
 				leds_STOP.outputcontrol, 2, false));
 
-		LampButtonVisualization.defaultAveragingInterval_ms = 250;
+		LampButtonControlSliceVisualization.defaultAveragingInterval_ms = 250;
 		// buttons lights have a low pass of 1/4 sec
 
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 14, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 14, buttons_ADDRESS, //
 						"sw_ADDRESS14_down_off.png", "sw_ADDRESS14_down_on.png",
 						"sw_ADDRESS14_up_off.png", "sw_ADDRESS14_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 15, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 15, buttons_ADDRESS, //
 						"sw_ADDRESS15_down_off.png", "sw_ADDRESS15_down_on.png",
 						"sw_ADDRESS15_up_off.png", "sw_ADDRESS15_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 16, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 16, buttons_ADDRESS, //
 						"sw_ADDRESS16_down_off.png", "sw_ADDRESS16_down_on.png",
 						"sw_ADDRESS16_up_off.png", "sw_ADDRESS16_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 17, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 17, buttons_ADDRESS, //
 						"sw_ADDRESS17_down_off.png", "sw_ADDRESS17_down_on.png",
 						"sw_ADDRESS17_up_off.png", "sw_ADDRESS17_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 18, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 18, buttons_ADDRESS, //
 						"sw_ADDRESS18_down_off.png", "sw_ADDRESS18_down_on.png",
 						"sw_ADDRESS18_up_off.png", "sw_ADDRESS18_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 19, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 19, buttons_ADDRESS, //
 						"sw_ADDRESS19_down_off.png", "sw_ADDRESS19_down_on.png",
 						"sw_ADDRESS19_up_off.png", "sw_ADDRESS19_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 20, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 20, buttons_ADDRESS, //
 						"sw_ADDRESS20_down_off.png", "sw_ADDRESS20_down_on.png",
 						"sw_ADDRESS20_up_off.png", "sw_ADDRESS20_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 21, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 21, buttons_ADDRESS, //
 						"sw_ADDRESS21_down_off.png", "sw_ADDRESS21_down_on.png",
 						"sw_ADDRESS21_up_off.png", "sw_ADDRESS21_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 22, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 22, buttons_ADDRESS, //
 						"sw_ADDRESS22_down_off.png", "sw_ADDRESS22_down_on.png",
 						"sw_ADDRESS22_up_off.png", "sw_ADDRESS22_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 23, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 23, buttons_ADDRESS, //
 						"sw_ADDRESS23_down_off.png", "sw_ADDRESS23_down_on.png",
 						"sw_ADDRESS23_up_off.png", "sw_ADDRESS23_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 24, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 24, buttons_ADDRESS, //
 						"sw_ADDRESS24_down_off.png", "sw_ADDRESS24_down_on.png",
 						"sw_ADDRESS24_up_off.png", "sw_ADDRESS24_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 25, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 25, buttons_ADDRESS, //
 						"sw_ADDRESS25_down_off.png", "sw_ADDRESS25_down_on.png",
 						"sw_ADDRESS25_up_off.png", "sw_ADDRESS25_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 26, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 26, buttons_ADDRESS, //
 						"sw_ADDRESS26_down_off.png", "sw_ADDRESS26_down_on.png",
 						"sw_ADDRESS26_up_off.png", "sw_ADDRESS26_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 27, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 27, buttons_ADDRESS, //
 						"sw_ADDRESS27_down_off.png", "sw_ADDRESS27_down_on.png",
 						"sw_ADDRESS27_up_off.png", "sw_ADDRESS27_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 28, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 28, buttons_ADDRESS, //
 						"sw_ADDRESS28_down_off.png", "sw_ADDRESS28_down_on.png",
 						"sw_ADDRESS28_up_off.png", "sw_ADDRESS28_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 29, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 29, buttons_ADDRESS, //
 						"sw_ADDRESS29_down_off.png", "sw_ADDRESS29_down_on.png",
 						"sw_ADDRESS29_up_off.png", "sw_ADDRESS29_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 30, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 30, buttons_ADDRESS, //
 						"sw_ADDRESS30_down_off.png", "sw_ADDRESS30_down_on.png",
 						"sw_ADDRESS30_up_off.png", "sw_ADDRESS30_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 31, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 31, buttons_ADDRESS, //
 						"sw_ADDRESS31_down_off.png", "sw_ADDRESS31_down_on.png",
 						"sw_ADDRESS31_up_off.png", "sw_ADDRESS31_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 32, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 32, buttons_ADDRESS, //
 						"sw_ADDRESS32_down_off.png", "sw_ADDRESS32_down_on.png",
 						"sw_ADDRESS32_up_off.png", "sw_ADDRESS32_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 33, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 33, buttons_ADDRESS, //
 						"sw_ADDRESS33_down_off.png", "sw_ADDRESS33_down_on.png",
 						"sw_ADDRESS33_up_off.png", "sw_ADDRESS33_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 34, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 34, buttons_ADDRESS, //
 						"sw_ADDRESS34_down_off.png", "sw_ADDRESS34_down_on.png",
 						"sw_ADDRESS34_up_off.png", "sw_ADDRESS34_up_on.png"));
 		buttons_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_ADDRESS", 35 - 35, buttons_ADDRESS, //
+				new LampButtonControlSliceVisualization("buttons_ADDRESS", 35 - 35, buttons_ADDRESS, //
 						"sw_ADDRESS35_down_off.png", "sw_ADDRESS35_down_on.png",
 						"sw_ADDRESS35_up_off.png", "sw_ADDRESS35_up_on.png"));
 		button_ADDRESS_BREAK.visualization.add( //
-				new LampButtonVisualization("button_ADDRESS_BREAK", 0, button_ADDRESS_BREAK, //
+				new LampButtonControlSliceVisualization("button_ADDRESS_BREAK", 0, button_ADDRESS_BREAK, //
 						"sw_ADDRESS_BREAK_down_off.png", "sw_ADDRESS_BREAK_down_on.png",
 						"sw_ADDRESS_BREAK_up_off.png", "sw_ADDRESS_BREAK_up_on.png"));
 		button_ADDRESS_CLEAR.visualization.add( //
-				new LampButtonVisualization("button_ADDRESS_CLEAR", 0, button_ADDRESS_CLEAR, //
+				new LampButtonControlSliceVisualization("button_ADDRESS_CLEAR", 0, button_ADDRESS_CLEAR, //
 						"sw_ADDRESS_CLEAR_down_off.png", "sw_ADDRESS_CLEAR_down_on.png",
 						"sw_ADDRESS_CLEAR_up_off.png", "sw_ADDRESS_CLEAR_up_on.png"));
 		button_ADDRESS_LOAD.visualization.add( //
-				new LampButtonVisualization("button_ADDRESS_LOAD", 0, button_ADDRESS_LOAD, //
+				new LampButtonControlSliceVisualization("button_ADDRESS_LOAD", 0, button_ADDRESS_LOAD, //
 						"sw_ADDRESS_LOAD_down_off.png", "sw_ADDRESS_LOAD_down_on.png",
 						"sw_ADDRESS_LOAD_up_off.png", "sw_ADDRESS_LOAD_up_on.png"));
 		button_ADDRESS_STOP.visualization.add( //
-				new LampButtonVisualization("button_ADDRESS_STOP", 0, button_ADDRESS_STOP, //
+				new LampButtonControlSliceVisualization("button_ADDRESS_STOP", 0, button_ADDRESS_STOP, //
 						"sw_ADDRESS_STOP_down_off.png", "sw_ADDRESS_STOP_down_on.png",
 						"sw_ADDRESS_STOP_up_off.png", "sw_ADDRESS_STOP_up_on.png"));
 		button_CONSOLE_DATALOCK.visualization.add( //
-				new LampButtonVisualization("button_CONSOLE_DATALOCK", 0,
+				new LampButtonControlSliceVisualization("button_CONSOLE_DATALOCK", 0,
 						button_CONSOLE_DATALOCK, //
 						"sw_CONSOLE_DATALOCK_down_off.png", "sw_CONSOLE_DATALOCK_down_on.png",
 						"sw_CONSOLE_DATALOCK_up_off.png", "sw_CONSOLE_DATALOCK_up_on.png"));
 		button_CONSOLE_LOCK.visualization.add( //
-				new LampButtonVisualization("button_CONSOLE_LOCK", 0, button_CONSOLE_LOCK, //
+				new LampButtonControlSliceVisualization("button_CONSOLE_LOCK", 0, button_CONSOLE_LOCK, //
 						"sw_CONSOLE_LOCK_down_off.png", "sw_CONSOLE_LOCK_down_on.png",
 						"sw_CONSOLE_LOCK_up_off.png", "sw_CONSOLE_LOCK_up_on.png"));
 		button_CONT.visualization.add( //
-				new LampButtonVisualization("button_CONT", 0, button_CONT, //
+				new LampButtonControlSliceVisualization("button_CONT", 0, button_CONT, //
 						"sw_CONT_down_off.png", "sw_CONT_down_on.png", "sw_CONT_up_off.png",
 						"sw_CONT_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 0, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 0, buttons_DATA, //
 						"sw_DATA00_down_off.png", "sw_DATA00_down_on.png",
 						"sw_DATA00_up_off.png", "sw_DATA00_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 1, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 1, buttons_DATA, //
 						"sw_DATA01_down_off.png", "sw_DATA01_down_on.png",
 						"sw_DATA01_up_off.png", "sw_DATA01_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 2, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 2, buttons_DATA, //
 						"sw_DATA02_down_off.png", "sw_DATA02_down_on.png",
 						"sw_DATA02_up_off.png", "sw_DATA02_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 3, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 3, buttons_DATA, //
 						"sw_DATA03_down_off.png", "sw_DATA03_down_on.png",
 						"sw_DATA03_up_off.png", "sw_DATA03_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 4, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 4, buttons_DATA, //
 						"sw_DATA04_down_off.png", "sw_DATA04_down_on.png",
 						"sw_DATA04_up_off.png", "sw_DATA04_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 5, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 5, buttons_DATA, //
 						"sw_DATA05_down_off.png", "sw_DATA05_down_on.png",
 						"sw_DATA05_up_off.png", "sw_DATA05_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 6, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 6, buttons_DATA, //
 						"sw_DATA06_down_off.png", "sw_DATA06_down_on.png",
 						"sw_DATA06_up_off.png", "sw_DATA06_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 7, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 7, buttons_DATA, //
 						"sw_DATA07_down_off.png", "sw_DATA07_down_on.png",
 						"sw_DATA07_up_off.png", "sw_DATA07_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 8, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 8, buttons_DATA, //
 						"sw_DATA08_down_off.png", "sw_DATA08_down_on.png",
 						"sw_DATA08_up_off.png", "sw_DATA08_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 9, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 9, buttons_DATA, //
 						"sw_DATA09_down_off.png", "sw_DATA09_down_on.png",
 						"sw_DATA09_up_off.png", "sw_DATA09_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 10, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 10, buttons_DATA, //
 						"sw_DATA10_down_off.png", "sw_DATA10_down_on.png",
 						"sw_DATA10_up_off.png", "sw_DATA10_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 11, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 11, buttons_DATA, //
 						"sw_DATA11_down_off.png", "sw_DATA11_down_on.png",
 						"sw_DATA11_up_off.png", "sw_DATA11_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 12, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 12, buttons_DATA, //
 						"sw_DATA12_down_off.png", "sw_DATA12_down_on.png",
 						"sw_DATA12_up_off.png", "sw_DATA12_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 13, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 13, buttons_DATA, //
 						"sw_DATA13_down_off.png", "sw_DATA13_down_on.png",
 						"sw_DATA13_up_off.png", "sw_DATA13_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 14, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 14, buttons_DATA, //
 						"sw_DATA14_down_off.png", "sw_DATA14_down_on.png",
 						"sw_DATA14_up_off.png", "sw_DATA14_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 15, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 15, buttons_DATA, //
 						"sw_DATA15_down_off.png", "sw_DATA15_down_on.png",
 						"sw_DATA15_up_off.png", "sw_DATA15_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 16, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 16, buttons_DATA, //
 						"sw_DATA16_down_off.png", "sw_DATA16_down_on.png",
 						"sw_DATA16_up_off.png", "sw_DATA16_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 17, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 17, buttons_DATA, //
 						"sw_DATA17_down_off.png", "sw_DATA17_down_on.png",
 						"sw_DATA17_up_off.png", "sw_DATA17_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 18, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 18, buttons_DATA, //
 						"sw_DATA18_down_off.png", "sw_DATA18_down_on.png",
 						"sw_DATA18_up_off.png", "sw_DATA18_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 19, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 19, buttons_DATA, //
 						"sw_DATA19_down_off.png", "sw_DATA19_down_on.png",
 						"sw_DATA19_up_off.png", "sw_DATA19_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 20, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 20, buttons_DATA, //
 						"sw_DATA20_down_off.png", "sw_DATA20_down_on.png",
 						"sw_DATA20_up_off.png", "sw_DATA20_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 21, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 21, buttons_DATA, //
 						"sw_DATA21_down_off.png", "sw_DATA21_down_on.png",
 						"sw_DATA21_up_off.png", "sw_DATA21_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 22, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 22, buttons_DATA, //
 						"sw_DATA22_down_off.png", "sw_DATA22_down_on.png",
 						"sw_DATA22_up_off.png", "sw_DATA22_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 23, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 23, buttons_DATA, //
 						"sw_DATA23_down_off.png", "sw_DATA23_down_on.png",
 						"sw_DATA23_up_off.png", "sw_DATA23_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 24, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 24, buttons_DATA, //
 						"sw_DATA24_down_off.png", "sw_DATA24_down_on.png",
 						"sw_DATA24_up_off.png", "sw_DATA24_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 25, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 25, buttons_DATA, //
 						"sw_DATA25_down_off.png", "sw_DATA25_down_on.png",
 						"sw_DATA25_up_off.png", "sw_DATA25_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 26, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 26, buttons_DATA, //
 						"sw_DATA26_down_off.png", "sw_DATA26_down_on.png",
 						"sw_DATA26_up_off.png", "sw_DATA26_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 27, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 27, buttons_DATA, //
 						"sw_DATA27_down_off.png", "sw_DATA27_down_on.png",
 						"sw_DATA27_up_off.png", "sw_DATA27_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 28, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 28, buttons_DATA, //
 						"sw_DATA28_down_off.png", "sw_DATA28_down_on.png",
 						"sw_DATA28_up_off.png", "sw_DATA28_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 29, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 29, buttons_DATA, //
 						"sw_DATA29_down_off.png", "sw_DATA29_down_on.png",
 						"sw_DATA29_up_off.png", "sw_DATA29_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 30, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 30, buttons_DATA, //
 						"sw_DATA30_down_off.png", "sw_DATA30_down_on.png",
 						"sw_DATA30_up_off.png", "sw_DATA30_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 31, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 31, buttons_DATA, //
 						"sw_DATA31_down_off.png", "sw_DATA31_down_on.png",
 						"sw_DATA31_up_off.png", "sw_DATA31_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 32, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 32, buttons_DATA, //
 						"sw_DATA32_down_off.png", "sw_DATA32_down_on.png",
 						"sw_DATA32_up_off.png", "sw_DATA32_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 33, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 33, buttons_DATA, //
 						"sw_DATA33_down_off.png", "sw_DATA33_down_on.png",
 						"sw_DATA33_up_off.png", "sw_DATA33_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 34, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 34, buttons_DATA, //
 						"sw_DATA34_down_off.png", "sw_DATA34_down_on.png",
 						"sw_DATA34_up_off.png", "sw_DATA34_up_on.png"));
 		buttons_DATA.visualization.add( //
-				new LampButtonVisualization("buttons_DATA", 35 - 35, buttons_DATA, //
+				new LampButtonControlSliceVisualization("buttons_DATA", 35 - 35, buttons_DATA, //
 						"sw_DATA35_down_off.png", "sw_DATA35_down_on.png",
 						"sw_DATA35_up_off.png", "sw_DATA35_up_on.png"));
 		button_DATA_CLEAR.visualization.add( //
-				new LampButtonVisualization("button_DATA_CLEAR", 0, button_DATA_CLEAR, //
+				new LampButtonControlSliceVisualization("button_DATA_CLEAR", 0, button_DATA_CLEAR, //
 						"sw_DATA_CLEAR_down_off.png", "sw_DATA_CLEAR_down_on.png",
 						"sw_DATA_CLEAR_up_off.png", "sw_DATA_CLEAR_up_on.png"));
 		button_DATA_LOAD.visualization.add( //
-				new LampButtonVisualization("button_DATA_LOAD", 0, button_DATA_LOAD, //
+				new LampButtonControlSliceVisualization("button_DATA_LOAD", 0, button_DATA_LOAD, //
 						"sw_DATA_LOAD_down_off.png", "sw_DATA_LOAD_down_on.png",
 						"sw_DATA_LOAD_up_off.png", "sw_DATA_LOAD_up_on.png"));
 		button_DEPOSIT_NEXT.visualization.add( //
-				new LampButtonVisualization("button_DEPOSIT_NEXT", 0, button_DEPOSIT_NEXT, //
+				new LampButtonControlSliceVisualization("button_DEPOSIT_NEXT", 0, button_DEPOSIT_NEXT, //
 						"sw_DEPOSIT_NEXT_down_off.png", "sw_DEPOSIT_NEXT_down_on.png",
 						"sw_DEPOSIT_NEXT_up_off.png", "sw_DEPOSIT_NEXT_up_on.png"));
 		button_DEPOSIT_THIS.visualization.add( //
-				new LampButtonVisualization("button_DEPOSIT_THIS", 0, button_DEPOSIT_THIS, //
+				new LampButtonControlSliceVisualization("button_DEPOSIT_THIS", 0, button_DEPOSIT_THIS, //
 						"sw_DEPOSIT_THIS_down_off.png", "sw_DEPOSIT_THIS_down_on.png",
 						"sw_DEPOSIT_THIS_up_off.png", "sw_DEPOSIT_THIS_up_on.png"));
 		button_EXAMINE_NEXT.visualization.add( //
-				new LampButtonVisualization("button_EXAMINE_NEXT", 0, button_EXAMINE_NEXT, //
+				new LampButtonControlSliceVisualization("button_EXAMINE_NEXT", 0, button_EXAMINE_NEXT, //
 						"sw_EXAMINE_NEXT_down_off.png", "sw_EXAMINE_NEXT_down_on.png",
 						"sw_EXAMINE_NEXT_up_off.png", "sw_EXAMINE_NEXT_up_on.png"));
 		button_EXAMINE_THIS.visualization.add( //
-				new LampButtonVisualization("button_EXAMINE_THIS", 0, button_EXAMINE_THIS, //
+				new LampButtonControlSliceVisualization("button_EXAMINE_THIS", 0, button_EXAMINE_THIS, //
 						"sw_EXAMINE_THIS_down_off.png", "sw_EXAMINE_THIS_down_on.png",
 						"sw_EXAMINE_THIS_up_off.png", "sw_EXAMINE_THIS_up_on.png"));
 		button_FETCH_DATA.visualization.add( //
-				new LampButtonVisualization("button_FETCH_DATA", 0, button_FETCH_DATA, //
+				new LampButtonControlSliceVisualization("button_FETCH_DATA", 0, button_FETCH_DATA, //
 						"sw_FETCH_DATA_down_off.png", "sw_FETCH_DATA_down_on.png",
 						"sw_FETCH_DATA_up_off.png", "sw_FETCH_DATA_up_on.png"));
 		button_FETCH_INST.visualization.add( //
-				new LampButtonVisualization("button_FETCH_INST", 0, button_FETCH_INST, //
+				new LampButtonControlSliceVisualization("button_FETCH_INST", 0, button_FETCH_INST, //
 						"sw_FETCH_INST_down_off.png", "sw_FETCH_INST_down_on.png",
 						"sw_FETCH_INST_up_off.png", "sw_FETCH_INST_up_on.png"));
 		buttons_FM_BLOCK.visualization.add( //
-				new LampButtonVisualization("buttons_FM_BLOCK", 0, buttons_FM_BLOCK, //
+				new LampButtonControlSliceVisualization("buttons_FM_BLOCK", 0, buttons_FM_BLOCK, //
 						"sw_FM_BLOCK0_down_off.png", "sw_FM_BLOCK0_down_on.png",
 						"sw_FM_BLOCK0_up_off.png", "sw_FM_BLOCK0_up_on.png"));
 		buttons_FM_BLOCK.visualization.add( //
-				new LampButtonVisualization("buttons_FM_BLOCK", 1, buttons_FM_BLOCK, //
+				new LampButtonControlSliceVisualization("buttons_FM_BLOCK", 1, buttons_FM_BLOCK, //
 						"sw_FM_BLOCK1_down_off.png", "sw_FM_BLOCK1_down_on.png",
 						"sw_FM_BLOCK1_up_off.png", "sw_FM_BLOCK1_up_on.png"));
 		button_FM_MANUAL.visualization.add( //
-				new LampButtonVisualization("button_FM_MANUAL", 0, button_FM_MANUAL, //
+				new LampButtonControlSliceVisualization("button_FM_MANUAL", 0, button_FM_MANUAL, //
 						"sw_FM_MANUAL_down_off.png", "sw_FM_MANUAL_down_on.png",
 						"sw_FM_MANUAL_up_off.png", "sw_FM_MANUAL_up_on.png"));
 		// "button_LAMP_TEST" has no light bulb: "on" becomes "off"
 		button_LAMP_TEST.visualization.add( //
-				new LampButtonVisualization("button_LAMP_TEST", 0, button_LAMP_TEST, //
+				new LampButtonControlSliceVisualization("button_LAMP_TEST", 0, button_LAMP_TEST, //
 						"sw_LAMP_TEST_down_off.png", "sw_LAMP_TEST_down_off.png",
 						"sw_LAMP_TEST_up_off.png", "sw_LAMP_TEST_up_off.png"));
 		buttons_MANUAL_MARGIN_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_MANUAL_MARGIN_ADDRESS", 0,
+				new LampButtonControlSliceVisualization("buttons_MANUAL_MARGIN_ADDRESS", 0,
 						buttons_MANUAL_MARGIN_ADDRESS, //
 						"sw_MANUAL_MARGIN_ADDRESS0_down_off.png",
 						"sw_MANUAL_MARGIN_ADDRESS0_down_on.png",
 						"sw_MANUAL_MARGIN_ADDRESS0_up_off.png",
 						"sw_MANUAL_MARGIN_ADDRESS0_up_on.png"));
 		buttons_MANUAL_MARGIN_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_MANUAL_MARGIN_ADDRESS", 1,
+				new LampButtonControlSliceVisualization("buttons_MANUAL_MARGIN_ADDRESS", 1,
 						buttons_MANUAL_MARGIN_ADDRESS, //
 						"sw_MANUAL_MARGIN_ADDRESS1_down_off.png",
 						"sw_MANUAL_MARGIN_ADDRESS1_down_on.png",
 						"sw_MANUAL_MARGIN_ADDRESS1_up_off.png",
 						"sw_MANUAL_MARGIN_ADDRESS1_up_on.png"));
 		buttons_MANUAL_MARGIN_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_MANUAL_MARGIN_ADDRESS", 2,
+				new LampButtonControlSliceVisualization("buttons_MANUAL_MARGIN_ADDRESS", 2,
 						buttons_MANUAL_MARGIN_ADDRESS, //
 						"sw_MANUAL_MARGIN_ADDRESS2_down_off.png",
 						"sw_MANUAL_MARGIN_ADDRESS2_down_on.png",
 						"sw_MANUAL_MARGIN_ADDRESS2_up_off.png",
 						"sw_MANUAL_MARGIN_ADDRESS2_up_on.png"));
 		buttons_MANUAL_MARGIN_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_MANUAL_MARGIN_ADDRESS", 3,
+				new LampButtonControlSliceVisualization("buttons_MANUAL_MARGIN_ADDRESS", 3,
 						buttons_MANUAL_MARGIN_ADDRESS, //
 						"sw_MANUAL_MARGIN_ADDRESS3_down_off.png",
 						"sw_MANUAL_MARGIN_ADDRESS3_down_on.png",
 						"sw_MANUAL_MARGIN_ADDRESS3_up_off.png",
 						"sw_MANUAL_MARGIN_ADDRESS3_up_on.png"));
 		buttons_MANUAL_MARGIN_ADDRESS.visualization.add( //
-				new LampButtonVisualization("buttons_MANUAL_MARGIN_ADDRESS", 4,
+				new LampButtonControlSliceVisualization("buttons_MANUAL_MARGIN_ADDRESS", 4,
 						buttons_MANUAL_MARGIN_ADDRESS, //
 						"sw_MANUAL_MARGIN_ADDRESS4_down_off.png",
 						"sw_MANUAL_MARGIN_ADDRESS4_down_on.png",
 						"sw_MANUAL_MARGIN_ADDRESS4_up_off.png",
 						"sw_MANUAL_MARGIN_ADDRESS4_up_on.png"));
 		button_MARGIN_ENABLE.visualization.add( //
-				new LampButtonVisualization("button_MARGIN_ENABLE", 0, button_MARGIN_ENABLE, //
+				new LampButtonControlSliceVisualization("button_MARGIN_ENABLE", 0, button_MARGIN_ENABLE, //
 						"sw_MARGIN_ENABLE_down_off.png", "sw_MARGIN_ENABLE_down_on.png",
 						"sw_MARGIN_ENABLE_up_off.png", "sw_MARGIN_ENABLE_up_on.png"));
 		button_MEM_OVERLAP_DIS.visualization.add( //
-				new LampButtonVisualization("button_MEM_OVERLAP_DIS", 0, button_MEM_OVERLAP_DIS, //
+				new LampButtonControlSliceVisualization("button_MEM_OVERLAP_DIS", 0, button_MEM_OVERLAP_DIS, //
 						"sw_MEM_OVERLAP_DIS_down_off.png", "sw_MEM_OVERLAP_DIS_down_on.png",
 						"sw_MEM_OVERLAP_DIS_up_off.png", "sw_MEM_OVERLAP_DIS_up_on.png"));
 		button_MI_PROG_DIS.visualization.add( //
-				new LampButtonVisualization("button_MI_PROG_DIS", 0, button_MI_PROG_DIS, //
+				new LampButtonControlSliceVisualization("button_MI_PROG_DIS", 0, button_MI_PROG_DIS, //
 						"sw_MI_PROG_DIS_down_off.png", "sw_MI_PROG_DIS_down_on.png",
 						"sw_MI_PROG_DIS_up_off.png", "sw_MI_PROG_DIS_up_on.png"));
 		button_PAGING_EXEC.visualization.add( //
-				new LampButtonVisualization("button_PAGING_EXEC", 0, button_PAGING_EXEC, //
+				new LampButtonControlSliceVisualization("button_PAGING_EXEC", 0, button_PAGING_EXEC, //
 						"sw_PAGING_EXEC_down_off.png", "sw_PAGING_EXEC_down_on.png",
 						"sw_PAGING_EXEC_up_off.png", "sw_PAGING_EXEC_up_on.png"));
 		button_PAGING_USER.visualization.add( //
-				new LampButtonVisualization("button_PAGING_USER", 0, button_PAGING_USER, //
+				new LampButtonControlSliceVisualization("button_PAGING_USER", 0, button_PAGING_USER, //
 						"sw_PAGING_USER_down_off.png", "sw_PAGING_USER_down_on.png",
 						"sw_PAGING_USER_up_off.png", "sw_PAGING_USER_up_on.png"));
 		button_POWER.visualization.add( //
-				new LampButtonVisualization("button_POWER", 0, button_POWER, //
+				new LampButtonControlSliceVisualization("button_POWER", 0, button_POWER, //
 						"sw_POWER_down_off.png", "sw_POWER_down_on.png", "sw_POWER_up_off.png",
 						"sw_POWER_up_on.png"));
 		button_READ_IN.visualization.add( //
-				new LampButtonVisualization("button_READ_IN", 0, button_READ_IN, //
+				new LampButtonControlSliceVisualization("button_READ_IN", 0, button_READ_IN, //
 						"sw_READ_IN_down_off.png", "sw_READ_IN_down_on.png",
 						"sw_READ_IN_up_off.png", "sw_READ_IN_up_on.png"));
 		buttons_READ_IN_DEVICE.visualization.add( //
-				new LampButtonVisualization("buttons_READ_IN_DEVICE", 9 - 3,
+				new LampButtonControlSliceVisualization("buttons_READ_IN_DEVICE", 9 - 3,
 						buttons_READ_IN_DEVICE, //
 						"sw_READ_IN_DEVICE3_down_off.png", "sw_READ_IN_DEVICE3_down_on.png",
 						"sw_READ_IN_DEVICE3_up_off.png", "sw_READ_IN_DEVICE3_up_on.png"));
 		buttons_READ_IN_DEVICE.visualization.add( //
-				new LampButtonVisualization("buttons_READ_IN_DEVICE", 9 - 4,
+				new LampButtonControlSliceVisualization("buttons_READ_IN_DEVICE", 9 - 4,
 						buttons_READ_IN_DEVICE, //
 						"sw_READ_IN_DEVICE4_down_off.png", "sw_READ_IN_DEVICE4_down_on.png",
 						"sw_READ_IN_DEVICE4_up_off.png", "sw_READ_IN_DEVICE4_up_on.png"));
 		buttons_READ_IN_DEVICE.visualization.add( //
-				new LampButtonVisualization("buttons_READ_IN_DEVICE", 9 - 5,
+				new LampButtonControlSliceVisualization("buttons_READ_IN_DEVICE", 9 - 5,
 						buttons_READ_IN_DEVICE, //
 						"sw_READ_IN_DEVICE5_down_off.png", "sw_READ_IN_DEVICE5_down_on.png",
 						"sw_READ_IN_DEVICE5_up_off.png", "sw_READ_IN_DEVICE5_up_on.png"));
 		buttons_READ_IN_DEVICE.visualization.add( //
-				new LampButtonVisualization("buttons_READ_IN_DEVICE", 9 - 6,
+				new LampButtonControlSliceVisualization("buttons_READ_IN_DEVICE", 9 - 6,
 						buttons_READ_IN_DEVICE, //
 						"sw_READ_IN_DEVICE6_down_off.png", "sw_READ_IN_DEVICE6_down_on.png",
 						"sw_READ_IN_DEVICE6_up_off.png", "sw_READ_IN_DEVICE6_up_on.png"));
 		buttons_READ_IN_DEVICE.visualization.add( //
-				new LampButtonVisualization("buttons_READ_IN_DEVICE", 9 - 7,
+				new LampButtonControlSliceVisualization("buttons_READ_IN_DEVICE", 9 - 7,
 						buttons_READ_IN_DEVICE, //
 						"sw_READ_IN_DEVICE7_down_off.png", "sw_READ_IN_DEVICE7_down_on.png",
 						"sw_READ_IN_DEVICE7_up_off.png", "sw_READ_IN_DEVICE7_up_on.png"));
 		buttons_READ_IN_DEVICE.visualization.add( //
-				new LampButtonVisualization("buttons_READ_IN_DEVICE", 9 - 8,
+				new LampButtonControlSliceVisualization("buttons_READ_IN_DEVICE", 9 - 8,
 						buttons_READ_IN_DEVICE, //
 						"sw_READ_IN_DEVICE8_down_off.png", "sw_READ_IN_DEVICE8_down_on.png",
 						"sw_READ_IN_DEVICE8_up_off.png", "sw_READ_IN_DEVICE8_up_on.png"));
 		buttons_READ_IN_DEVICE.visualization.add( //
-				new LampButtonVisualization("buttons_READ_IN_DEVICE", 9 - 9,
+				new LampButtonControlSliceVisualization("buttons_READ_IN_DEVICE", 9 - 9,
 						buttons_READ_IN_DEVICE, //
 						"sw_READ_IN_DEVICE9_down_off.png", "sw_READ_IN_DEVICE9_down_on.png",
 						"sw_READ_IN_DEVICE9_up_off.png", "sw_READ_IN_DEVICE9_up_on.png"));
 		button_REPEAT.visualization.add( //
-				new LampButtonVisualization("button_REPEAT", 0, button_REPEAT, //
+				new LampButtonControlSliceVisualization("button_REPEAT", 0, button_REPEAT, //
 						"sw_REPEAT_down_off.png", "sw_REPEAT_down_on.png",
 						"sw_REPEAT_up_off.png", "sw_REPEAT_up_on.png"));
 		button_RESET.visualization.add( //
-				new LampButtonVisualization("button_RESET", 0, button_RESET, //
+				new LampButtonControlSliceVisualization("button_RESET", 0, button_RESET, //
 						"sw_RESET_down_off.png", "sw_RESET_down_on.png", "sw_RESET_up_off.png",
 						"sw_RESET_up_on.png"));
 		buttons_SENSE.visualization.add( //
-				new LampButtonVisualization("buttons_SENSE", 6 - 1, buttons_SENSE, //
+				new LampButtonControlSliceVisualization("buttons_SENSE", 6 - 1, buttons_SENSE, //
 						"sw_SENSE1_down_off.png", "sw_SENSE1_down_on.png",
 						"sw_SENSE1_up_off.png", "sw_SENSE1_up_on.png"));
 		buttons_SENSE.visualization.add( //
-				new LampButtonVisualization("buttons_SENSE", 6 - 2, buttons_SENSE, //
+				new LampButtonControlSliceVisualization("buttons_SENSE", 6 - 2, buttons_SENSE, //
 						"sw_SENSE2_down_off.png", "sw_SENSE2_down_on.png",
 						"sw_SENSE2_up_off.png", "sw_SENSE2_up_on.png"));
 		buttons_SENSE.visualization.add( //
-				new LampButtonVisualization("buttons_SENSE", 6 - 3, buttons_SENSE, //
+				new LampButtonControlSliceVisualization("buttons_SENSE", 6 - 3, buttons_SENSE, //
 						"sw_SENSE3_down_off.png", "sw_SENSE3_down_on.png",
 						"sw_SENSE3_up_off.png", "sw_SENSE3_up_on.png"));
 		buttons_SENSE.visualization.add( //
-				new LampButtonVisualization("buttons_SENSE", 6 - 4, buttons_SENSE, //
+				new LampButtonControlSliceVisualization("buttons_SENSE", 6 - 4, buttons_SENSE, //
 						"sw_SENSE4_down_off.png", "sw_SENSE4_down_on.png",
 						"sw_SENSE4_up_off.png", "sw_SENSE4_up_on.png"));
 		buttons_SENSE.visualization.add( //
-				new LampButtonVisualization("buttons_SENSE", 6 - 5, buttons_SENSE, //
+				new LampButtonControlSliceVisualization("buttons_SENSE", 6 - 5, buttons_SENSE, //
 						"sw_SENSE5_down_off.png", "sw_SENSE5_down_on.png",
 						"sw_SENSE5_up_off.png", "sw_SENSE5_up_on.png"));
 		buttons_SENSE.visualization.add( //
-				new LampButtonVisualization("buttons_SENSE", 6 - 6, buttons_SENSE, //
+				new LampButtonControlSliceVisualization("buttons_SENSE", 6 - 6, buttons_SENSE, //
 						"sw_SENSE6_down_off.png", "sw_SENSE6_down_on.png",
 						"sw_SENSE6_up_off.png", "sw_SENSE6_up_on.png"));
 		button_SINGLE_INST.visualization.add( //
-				new LampButtonVisualization("button_SINGLE_INST", 0, button_SINGLE_INST, //
+				new LampButtonControlSliceVisualization("button_SINGLE_INST", 0, button_SINGLE_INST, //
 						"sw_SINGLE_INST_down_off.png", "sw_SINGLE_INST_down_on.png",
 						"sw_SINGLE_INST_up_off.png", "sw_SINGLE_INST_up_on.png"));
 		button_SINGLE_PULSE.visualization.add( //
-				new LampButtonVisualization("button_SINGLE_PULSE", 0, button_SINGLE_PULSE, //
+				new LampButtonControlSliceVisualization("button_SINGLE_PULSE", 0, button_SINGLE_PULSE, //
 						"sw_SINGLE_PULSE_down_off.png", "sw_SINGLE_PULSE_down_on.png",
 						"sw_SINGLE_PULSE_up_off.png", "sw_SINGLE_PULSE_up_on.png"));
 		button_SINGLE_PULSER.visualization.add( //
-				new LampButtonVisualization("button_SINGLE_PULSER", 0, button_SINGLE_PULSER, //
+				new LampButtonControlSliceVisualization("button_SINGLE_PULSER", 0, button_SINGLE_PULSER, //
 						"sw_SINGLE_PULSER_down_off.png", "sw_SINGLE_PULSER_down_on.png",
 						"sw_SINGLE_PULSER_up_off.png", "sw_SINGLE_PULSER_up_on.png"));
 		button_START.visualization.add( //
-				new LampButtonVisualization("button_START", 0, button_START, //
+				new LampButtonControlSliceVisualization("button_START", 0, button_START, //
 						"sw_START_down_off.png", "sw_START_down_on.png", "sw_START_up_off.png",
 						"sw_START_up_on.png"));
 		button_STOP.visualization.add( //
-				new LampButtonVisualization("button_STOP", 0, button_STOP, //
+				new LampButtonControlSliceVisualization("button_STOP", 0, button_STOP, //
 						"sw_STOP_down_off.png", "sw_STOP_down_on.png", "sw_STOP_up_off.png",
 						"sw_STOP_up_on.png"));
 		button_STOP_NXM.visualization.add( //
-				new LampButtonVisualization("button_STOP_NXM", 0, button_STOP_NXM, //
+				new LampButtonControlSliceVisualization("button_STOP_NXM", 0, button_STOP_NXM, //
 						"sw_STOP_NXM_down_off.png", "sw_STOP_NXM_down_on.png",
 						"sw_STOP_NXM_up_off.png", "sw_STOP_NXM_up_on.png"));
 		button_STOP_PAR.visualization.add( //
-				new LampButtonVisualization("button_STOP_PAR", 0, button_STOP_PAR, //
+				new LampButtonControlSliceVisualization("button_STOP_PAR", 0, button_STOP_PAR, //
 						"sw_STOP_PAR_down_off.png", "sw_STOP_PAR_down_on.png",
 						"sw_STOP_PAR_up_off.png", "sw_STOP_PAR_up_on.png"));
 		button_WRITE.visualization.add( //
-				new LampButtonVisualization("button_WRITE", 0, button_WRITE, //
+				new LampButtonControlSliceVisualization("button_WRITE", 0, button_WRITE, //
 						"sw_WRITE_down_off.png", "sw_WRITE_down_on.png", "sw_WRITE_up_off.png",
 						"sw_WRITE_up_on.png"));
 		button_XCT.visualization.add( //
-				new LampButtonVisualization("button_XCT", 0, button_XCT, //
+				new LampButtonControlSliceVisualization("button_XCT", 0, button_XCT, //
 						"sw_XCT_down_off.png", "sw_XCT_down_on.png", "sw_XCT_up_off.png",
 						"sw_XCT_up_on.png"));
 		/***** end paste *****/
 		
-		MultiStateControlVisualization msvc;
+		MultiStateControlSliceVisualization msvc;
 		// add knob states
-		msvc = new MultiStateControlVisualization(knob_IND_SELECT,
+		msvc = new MultiStateControlSliceVisualization(knob_IND_SELECT,
 				knob_IND_SELECT.inputcontrol);
 		knob_IND_SELECT.visualization.add(msvc);
 		msvc.addStateImageFilename("knob_IND_SELECT_0.png", 0);
@@ -1456,7 +1456,7 @@ public class PanelKI10 extends JPanel implements Observer {
 		msvc.addStateImageFilename("knob_IND_SELECT_2.png", 2);
 		msvc.addStateImageFilename("knob_IND_SELECT_3.png", 3);
 
-		msvc = new MultiStateControlVisualization(knob_MARGIN_SELECT,
+		msvc = new MultiStateControlSliceVisualization(knob_MARGIN_SELECT,
 				knob_MARGIN_SELECT.inputcontrol);
 		knob_MARGIN_SELECT.visualization.add(msvc);
 		msvc.addStateImageFilename("knob_MARGIN_SELECT_0.png", 0);
@@ -1468,7 +1468,7 @@ public class PanelKI10 extends JPanel implements Observer {
 		msvc.addStateImageFilename("knob_MARGIN_SELECT_6.png", 6);
 		msvc.addStateImageFilename("knob_MARGIN_SELECT_7.png", 7);
 
-		msvc = new MultiStateControlVisualization(knob_SPEED_CONTROL_COARSE,
+		msvc = new MultiStateControlSliceVisualization(knob_SPEED_CONTROL_COARSE,
 				knob_SPEED_CONTROL_COARSE.inputcontrol);
 		knob_SPEED_CONTROL_COARSE.visualization.add(msvc);
 		msvc.addStateImageFilename("knob_SPEED_CONTROL_COARSE_0.png", 0);
@@ -1478,7 +1478,7 @@ public class PanelKI10 extends JPanel implements Observer {
 		msvc.addStateImageFilename("knob_SPEED_CONTROL_COARSE_4.png", 4);
 		msvc.addStateImageFilename("knob_SPEED_CONTROL_COARSE_5.png", 5);
 
-		msvc = new MultiStateControlVisualization(knob_SPEED_CONTROL_FINE,
+		msvc = new MultiStateControlSliceVisualization(knob_SPEED_CONTROL_FINE,
 				knob_SPEED_CONTROL_FINE.inputcontrol);
 		knob_SPEED_CONTROL_FINE.visualization.add(msvc);
 		// should give values 0..99 instead 0..7!
@@ -1490,7 +1490,7 @@ public class PanelKI10 extends JPanel implements Observer {
 		msvc.addStateImageFilename("knob_SPEED_CONTROL_FINE_5.png", 99);
 
 		// should give values 0..99 instead 0..7!
-		msvc = new MultiStateControlVisualization(knob_MARGIN_VOLTAGE,
+		msvc = new MultiStateControlSliceVisualization(knob_MARGIN_VOLTAGE,
 				knob_MARGIN_VOLTAGE.inputcontrol);
 		knob_MARGIN_VOLTAGE.visualization.add(msvc);
 		msvc.addStateImageFilename("knob_VOLTAGE_0.png", 0);
@@ -1521,7 +1521,7 @@ public class PanelKI10 extends JPanel implements Observer {
 
 		// full file name is something like
 		// "pdp10ki10_size=1200_coordinates.csv"
-		ControlSliceStateImage.loadImageCoordinates("coordinates.csv");
+		ControlSliceStateImage.loadImageInfos("coordinates.csv");
 
 		// background: load image
 		backgroundVisualization.createStateImages();
@@ -1595,16 +1595,16 @@ public class PanelKI10 extends JPanel implements Observer {
 			case rpc_blinkenlight_api.RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST:
 				// lamptest: light button lamp, without changing "up/down" state
 				switch (csv.getState()) {
-				case LampButtonVisualization.stateButtonDownLampOn:
-				case LampButtonVisualization.stateButtonDownLampOff:
-					return csv.getStateImage(LampButtonVisualization.stateButtonDownLampOn);
-				case LampButtonVisualization.stateButtonUpLampOn:
-				case LampButtonVisualization.stateButtonUpLampOff:
-					return csv.getStateImage(LampButtonVisualization.stateButtonUpLampOn);
+				case LampButtonControlSliceVisualization.stateButtonDownLampOn:
+				case LampButtonControlSliceVisualization.stateButtonDownLampOff:
+					return csv.getStateImage(LampButtonControlSliceVisualization.stateButtonDownLampOn);
+				case LampButtonControlSliceVisualization.stateButtonUpLampOn:
+				case LampButtonControlSliceVisualization.stateButtonUpLampOff:
+					return csv.getStateImage(LampButtonControlSliceVisualization.stateButtonUpLampOn);
 				}
 			case rpc_blinkenlight_api.RPC_PARAM_VALUE_PANEL_MODE_ALLTEST:
 				// total test: show as "pressed and on"
-				return csv.getStateImage(LampButtonVisualization.stateButtonDownLampOn);
+				return csv.getStateImage(LampButtonControlSliceVisualization.stateButtonDownLampOn);
 			}
 			break;
 		case PDP10_KNOB:
@@ -1782,43 +1782,43 @@ public class PanelKI10 extends JPanel implements Observer {
 			// lamp state
 			// toggle between state 1 and 0 (not found, so invisible)
 			switch (csv.getState()) {
-			case LampButtonVisualization.stateButtonDownLampOn:
+			case LampButtonControlSliceVisualization.stateButtonDownLampOn:
 				if (ki10c.wiredFeedback)
 					// up = off
-					csv.setStateExact(LampButtonVisualization.stateButtonUpLampOff);
+					csv.setStateExact(LampButtonControlSliceVisualization.stateButtonUpLampOff);
 				else
-					csv.setStateExact(LampButtonVisualization.stateButtonUpLampOn);
+					csv.setStateExact(LampButtonControlSliceVisualization.stateButtonUpLampOn);
 				break;
-			case LampButtonVisualization.stateButtonDownLampOff:
-				csv.setStateExact(LampButtonVisualization.stateButtonUpLampOff);
+			case LampButtonControlSliceVisualization.stateButtonDownLampOff:
+				csv.setStateExact(LampButtonControlSliceVisualization.stateButtonUpLampOff);
 				break;
-			case LampButtonVisualization.stateButtonUpLampOn:
-				csv.setStateExact(LampButtonVisualization.stateButtonDownLampOn);
+			case LampButtonControlSliceVisualization.stateButtonUpLampOn:
+				csv.setStateExact(LampButtonControlSliceVisualization.stateButtonDownLampOn);
 				break;
-			case LampButtonVisualization.stateButtonUpLampOff:
+			case LampButtonControlSliceVisualization.stateButtonUpLampOff:
 				if (ki10c.wiredFeedback)
 					// down = on
-					csv.setStateExact(LampButtonVisualization.stateButtonDownLampOn);
+					csv.setStateExact(LampButtonControlSliceVisualization.stateButtonDownLampOn);
 				else
-					csv.setStateExact(LampButtonVisualization.stateButtonDownLampOff);
+					csv.setStateExact(LampButtonControlSliceVisualization.stateButtonDownLampOff);
 				break;
 			}
 			break;
 		case PDP10_KEY:
 			// activate button (= press down) while mouse pressed
 			switch (csv.getState()) {
-			case LampButtonVisualization.stateButtonDownLampOn:
-			case LampButtonVisualization.stateButtonDownLampOff:
+			case LampButtonControlSliceVisualization.stateButtonDownLampOn:
+			case LampButtonControlSliceVisualization.stateButtonDownLampOff:
 				break;
-			case LampButtonVisualization.stateButtonUpLampOn:
-				csv.setStateExact(LampButtonVisualization.stateButtonDownLampOn);
+			case LampButtonControlSliceVisualization.stateButtonUpLampOn:
+				csv.setStateExact(LampButtonControlSliceVisualization.stateButtonDownLampOn);
 				break;
-			case LampButtonVisualization.stateButtonUpLampOff:
+			case LampButtonControlSliceVisualization.stateButtonUpLampOff:
 				if (ki10c.wiredFeedback)
 					// down = on
-					csv.setStateExact(LampButtonVisualization.stateButtonDownLampOn);
+					csv.setStateExact(LampButtonControlSliceVisualization.stateButtonDownLampOn);
 				else
-					csv.setStateExact(LampButtonVisualization.stateButtonDownLampOff);
+					csv.setStateExact(LampButtonControlSliceVisualization.stateButtonDownLampOff);
 				break;
 			}
 			break;
@@ -1847,17 +1847,17 @@ public class PanelKI10 extends JPanel implements Observer {
 			// deactivate button (= unpress) because mouse button is
 			// released
 			switch (csv.getState()) {
-			case LampButtonVisualization.stateButtonDownLampOn:
+			case LampButtonControlSliceVisualization.stateButtonDownLampOn:
 				if (ki10c.wiredFeedback)
 					// up = off
-					csv.setStateExact(LampButtonVisualization.stateButtonUpLampOff);
-				csv.setStateExact(LampButtonVisualization.stateButtonUpLampOn);
+					csv.setStateExact(LampButtonControlSliceVisualization.stateButtonUpLampOff);
+				csv.setStateExact(LampButtonControlSliceVisualization.stateButtonUpLampOn);
 				break;
-			case LampButtonVisualization.stateButtonDownLampOff:
-				csv.setStateExact(LampButtonVisualization.stateButtonUpLampOff);
+			case LampButtonControlSliceVisualization.stateButtonDownLampOff:
+				csv.setStateExact(LampButtonControlSliceVisualization.stateButtonUpLampOff);
 				break;
-			case LampButtonVisualization.stateButtonUpLampOn:
-			case LampButtonVisualization.stateButtonUpLampOff:
+			case LampButtonControlSliceVisualization.stateButtonUpLampOn:
+			case LampButtonControlSliceVisualization.stateButtonUpLampOff:
 				break;
 			}
 		default:
@@ -1930,14 +1930,14 @@ public class PanelKI10 extends JPanel implements Observer {
 					// RPC server may not change control values in parallel
 					c.value = 0; // init value
 					for (ControlSliceVisualization csv : ki10c.visualization)
-						if (csv.getClass() == LampButtonVisualization.class) {
+						if (csv.getClass() == LampButtonControlSliceVisualization.class) {
 							// control is a Lampbutton, and csv.state must
 							// be checked for Button/up/down.
 							// Button down -> Bit set!
-							if (csv.getState() == LampButtonVisualization.stateButtonDownLampOn
-									|| csv.getState() == LampButtonVisualization.stateButtonDownLampOff)
+							if (csv.getState() == LampButtonControlSliceVisualization.stateButtonDownLampOn
+									|| csv.getState() == LampButtonControlSliceVisualization.stateButtonDownLampOff)
 								c.value |= (1L << csv.controlSlicePosition);
-						} else if (csv.getClass() == MultiStateControlVisualization.class) {
+						} else if (csv.getClass() == MultiStateControlSliceVisualization.class) {
 							// knobs: value is simply the state
 							c.value = csv.getState();
 						}
@@ -1974,27 +1974,27 @@ public class PanelKI10 extends JPanel implements Observer {
 							if ((c.value & (1L << csv.controlSlicePosition)) > 0)
 								visible = true;
 							// all outputs are LEDS, or LampButtons, or ....
-							if (csv.getClass() == DimmableLEDVisualization.class) {
+							if (csv.getClass() == DimmableLedControlSliceVisualization.class) {
 								// LEDs: : select between off and max
 								if (visible)
 									csv.setStateAveraging(csv.maxState);
 								else
 									csv.setStateAveraging(0);
-							} else if (csv.getClass() == LampButtonVisualization.class) {
+							} else if (csv.getClass() == LampButtonControlSliceVisualization.class) {
 								if (visible) { // button lamp ON
-									if (csv.getState() == LampButtonVisualization.stateButtonDownLampOff)
+									if (csv.getState() == LampButtonControlSliceVisualization.stateButtonDownLampOff)
 										csv.setStateExact(
-												LampButtonVisualization.stateButtonDownLampOn);
-									if (csv.getState() == LampButtonVisualization.stateButtonUpLampOff)
+												LampButtonControlSliceVisualization.stateButtonDownLampOn);
+									if (csv.getState() == LampButtonControlSliceVisualization.stateButtonUpLampOff)
 										csv.setStateExact(
-												LampButtonVisualization.stateButtonUpLampOn);
+												LampButtonControlSliceVisualization.stateButtonUpLampOn);
 								} else { // button lamp OFF
-									if (csv.getState() == LampButtonVisualization.stateButtonDownLampOn)
+									if (csv.getState() == LampButtonControlSliceVisualization.stateButtonDownLampOn)
 										csv.setStateExact(
-												LampButtonVisualization.stateButtonDownLampOff);
-									if (csv.getState() == LampButtonVisualization.stateButtonUpLampOn)
+												LampButtonControlSliceVisualization.stateButtonDownLampOff);
+									if (csv.getState() == LampButtonControlSliceVisualization.stateButtonUpLampOn)
 										csv.setStateExact(
-												LampButtonVisualization.stateButtonUpLampOff);
+												LampButtonControlSliceVisualization.stateButtonUpLampOff);
 								}
 							} // else if knob ....
 						}
@@ -2037,10 +2037,10 @@ public class PanelKI10 extends JPanel implements Observer {
 					c.value = 0; // atomic, not synchronized
 			}
 			// Power button visual OFF
-			newPowerbuttonMode = LampButtonVisualization.stateButtonUpLampOff;
+			newPowerbuttonMode = LampButtonControlSliceVisualization.stateButtonUpLampOff;
 		} else {
 			// make sure power button is ON in normal & test modes
-			newPowerbuttonMode = LampButtonVisualization.stateButtonDownLampOn;
+			newPowerbuttonMode = LampButtonControlSliceVisualization.stateButtonDownLampOn;
 		}
 		// power button state: change only if user does not operate it
 		if (currentMouseControlSliceVisualization != powerButtonCsv
