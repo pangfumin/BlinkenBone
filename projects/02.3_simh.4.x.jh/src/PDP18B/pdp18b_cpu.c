@@ -405,8 +405,16 @@ t_stat Ia (int32 ma, int32 *ea, t_bool jmp);
 int32 Incr_addr (int32 addr);
 int32 Jms_word (int32 t);
 #if defined (PDP15)
+#ifdef USE_REALCONS
+// Indexing in PAGE MODE (memm == 0). i = IR, x = MA = 12bit operand address from IR
+#define INDEX(i,x)      if (!memm && ((i) & I_IDX)) do {    \
+    x = ((x) + XR) & DMASK ;                                \
+    realcons_operand_address_register = x ;                 \
+} while(0)
+#else
 #define INDEX(i,x)      if (!memm && ((i) & I_IDX)) \
                             x = ((x) + XR) & DMASK
+#endif
 int32 Prot15 (int32 ma, t_bool bndchk);
 int32 Reloc15 (int32 ma, int32 acc);
 int32 RelocXVM (int32 ma, int32 acc);
@@ -784,6 +792,18 @@ while (reason == 0) {                                   /* loop until halted */
     MA = (MA & B_EPCMASK) | (IR & B_DAMASK);            /* bank mode only */
 
 #endif
+#ifdef USE_REALCONS
+    // register "OA" = effective operand address: 3 cases
+    // 1) BANK MODE (memm == 1)
+    //      OA = lower 13 bits of IR = IR & B_DAMASK
+    // 2) PAGE MODE (memm == 0), not indexed (bit IR.5 = 0)
+    //      OA = lower 12 bits  of IR = (IR & P_DAMASK)
+    // 3) PAGE MODE (memm == 0), indexed (bit IR.5 = 1)
+    //      OA = lower 12 bits  of IR + XR = (IR & P_DAMASK) + XR
+
+    realcons_operand_address_register = MA ; // case 1) and 2)
+    // case 3) is handled in the INDEX macro.
+    #endif
 
     switch ((IR >> 13) & 037) {                         /* decode IR<0:4> */
 

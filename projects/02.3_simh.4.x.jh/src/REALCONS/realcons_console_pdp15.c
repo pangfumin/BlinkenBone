@@ -21,6 +21,7 @@
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+   07-Aug-2016  JH      fix BANK/PAGE mode
    18-Jun-2016  JH      created
 
 
@@ -247,7 +248,7 @@ void realcons_console_pdp15_interface_connect(realcons_console_logic_pdp15_t *_t
         extern int32    LR;
         extern int32    realcons_IR;
         extern int32    realcons_operand_address_register;
-        extern int32    memm; // memory mode, always 1 for PDP-15?
+        extern int32    memm; // memory mode. 1 = BANK MODE, 0 = PAGE MODE with indexing
 
         realcons_console_halt = 0;
         // is "sim_is_running" indeed identical with our "cpu_is_running" ?
@@ -718,7 +719,7 @@ t_stat realcons_console_pdp15_service(realcons_console_logic_pdp15_t *_this)
                 break;
             default:
                 // "The PDP-15 in page mode trades an address bit for indexing capability:"
-                if (! bank_mode)
+                if (!bank_mode)
                     ir_index = (ir >> 12) & 1; // bit 5  = address MSB
             }
             _this->lamps_instruction->value = ir_opcode;

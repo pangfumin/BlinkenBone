@@ -723,12 +723,14 @@ public class PanelPDP15 extends JPanel implements Observer {
 		tsscsv.addStateImageFilename("switch_reset_2user(+2user).png", 0, 0); // both OFF
 		tsscsv.addStateImageFilename("switch_reset_2panel(+2user).png", 1, 0); // ON, neighbor OFF
 		tsscsv.addStateImageFilename("switch_reset_2user(+2panel).png", 0, 1); // OFF, neighbor ON
+		tsscsv.addStateImageFilename("switch_reset_2panel(+2panel).png", 1, 1); // both ON (only test mode)
 		switch_reset.visualizationAll().add(tsscsv);
 		neighborTsscsv = tsscsv;
 		tsscsv = new TwoStateSituativeControlSliceVisualization(switch_stop, switch_stop.control, 0, neighborTsscsv);
 		tsscsv.addStateImageFilename("switch_stop_2user(+2user).png", 0, 0); // both OFF
 		tsscsv.addStateImageFilename("switch_stop_2panel(+2user).png", 1, 0); // ON, neighbor OFF
 		tsscsv.addStateImageFilename("switch_stop_2user(+2panel).png", 0, 1); // OFF, neighbor ON
+		tsscsv.addStateImageFilename("switch_stop_2panel(+2panel).png", 1, 1); // both ON (only test mode)
 		switch_stop.visualizationAll().add(tsscsv);
 
 		neighborTsscsv = null;
@@ -890,6 +892,7 @@ public class PanelPDP15 extends JPanel implements Observer {
 		tsscsv.addStateImageFilename("switch_examine_this_2panel(+2panel).png", 0, 0); // both OFF
 		tsscsv.addStateImageFilename("switch_examine_this_2user(+2panel).png", 1, 0); // ON, neighbor OFF
 		tsscsv.addStateImageFilename("switch_examine_this_2panel(+2user).png", 0, 1); // OFF, neighbor ON
+		tsscsv.addStateImageFilename("switch_examine_this_2user(+2user).png", 1, 1); // both ON (only test mode)
 		switch_examine_this.visualizationAll().add(tsscsv);
 		// DEPOSIT properties see EXAMINE above
 		neighborTsscsv = null;
@@ -904,6 +907,7 @@ public class PanelPDP15 extends JPanel implements Observer {
 		tsscsv.addStateImageFilename("switch_deposit_this_2panel(+2panel).png", 0, 0); // both OFF
 		tsscsv.addStateImageFilename("switch_deposit_this_2user(+2panel).png", 1, 0); // ON, neighbor OFF
 		tsscsv.addStateImageFilename("switch_deposit_this_2panel(+2user).png", 0, 1); // OFF, neighbor ON
+		tsscsv.addStateImageFilename("switch_deposit_this_2user(+2user).png", 1, 1); // both ON (only test mode)
 		switch_deposit_this.visualizationAll().add(tsscsv);
 		// START, EXEC,CONT momentary action. START& CONT reversed
 		neighborTsscsv = null;
@@ -916,12 +920,14 @@ public class PanelPDP15 extends JPanel implements Observer {
 		tsscsv.addStateImageFilename("switch_exec_2user(+2panel).png", 0, 0); // both OFF
 		tsscsv.addStateImageFilename("switch_exec_2panel(+2panel).png", 1, 0); // ON, neighbor OFF
 		tsscsv.addStateImageFilename("switch_exec_2user(+2user).png", 0, 1); // OFF, neighbor ON
+		tsscsv.addStateImageFilename("switch_exec_2panel(+2user).png", 1, 1); // both ON (only test mode)
 		switch_exec.visualizationAll().add(tsscsv);
 		neighborTsscsv = tsscsv;
 		tsscsv = new TwoStateSituativeControlSliceVisualization(switch_start, switch_start.control, 0, neighborTsscsv);
 		tsscsv.addStateImageFilename("switch_start_2panel(+2user).png", 0, 0); // both OFF
 		tsscsv.addStateImageFilename("switch_start_2user(+2user).png", 1, 0); // ON, neighbor OFF
 		tsscsv.addStateImageFilename("switch_start_2panel(+2panel).png", 0, 1); // OFF, neighbor ON
+		tsscsv.addStateImageFilename("switch_start_2user(+2panel).png", 1, 1); // both ON (only test mode)
 		switch_start.visualizationAll().add(tsscsv);
 
 		MultiStateControlSliceVisualization mscsv;
