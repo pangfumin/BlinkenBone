@@ -483,7 +483,7 @@ REG cpu_reg[] = {
     { FLDATAD (INT_PEND, int_pend, 0, "interrupt pending"), REG_RO },
     { FLDATAD (ION, ion, 0, "interrupt enable") },
     { ORDATAD (ION_DELAY, ion_defer, 2, "interrupt enable delay") },
-#if defined (PDP7) 
+#if defined (PDP7)
     { FLDATAD (TRAPM, usmd, 0, "trap mode") },
     { FLDATAD (TRAPP, trap_pending, 0, "trap pending") },
     { FLDATAD (EXTM, memm, 0, "extend mode") },
@@ -597,8 +597,9 @@ extern 	int realcons_console_halt; // 1: CPU halted by realcons console
 // 2. state extension for PDP15, initialize in cpu_reset()
 int32   realcons_operand_address_register; // effective address, counter for EXAM/DEPOIST NEXT
 int32   realcons_IR; // must be global
-#endif
 
+int32   realcons_eae_enabled;  
+#endif
 
 
 t_stat sim_instr (void)
@@ -793,6 +794,8 @@ while (reason == 0) {                                   /* loop until halted */
 
 #endif
 #ifdef USE_REALCONS
+    realcons_eae_enabled = cpu_unit.flags & UNIT_NOEAE;
+
     // register "OA" = effective operand address: 3 cases
     // 1) BANK MODE (memm == 1)
     //      OA = lower 13 bits of IR = IR & B_DAMASK
@@ -1026,7 +1029,7 @@ while (reason == 0) {                                   /* loop until halted */
             else if (((MA ^ (PC - 1)) & AMASK) == 0) {  /* 2) JMP *? */
                 if (iof)                                /*    iof? inf loop */
                     reason = STOP_LOOP;
-                else sim_idle (0, FALSE);               /*    ion? idle */                
+                else sim_idle (0, FALSE);               /*    ion? idle */
                 }
             }                                           /* end idle */
         PC = MA & AMASK;
@@ -1053,7 +1056,7 @@ while (reason == 0) {                                   /* loop until halted */
             break;
         case 3:                                         /* SZA | SMA */
             if (((LAC & DMASK) == 0) || ((LAC & SIGN) != 0))
-                skp = 1; 
+                skp = 1;
             break;
         case 4:                                         /* SNL */
             if (LAC >= LINK)
@@ -1203,7 +1206,7 @@ while (reason == 0) {                                   /* loop until halted */
             PC = Incr_addr (PC);
         break;                                          /* end OPR */
 
-/* EAE: opcode 64 
+/* EAE: opcode 64
 
    The EAE is microprogrammed to execute variable length signed and
    unsigned shift, multiply, divide, and normalize.  Most commands are
@@ -1419,7 +1422,7 @@ while (reason == 0) {                                   /* loop until halted */
         break;                                          /* end case */
 #endif
 
-/* IOT: opcode 70 
+/* IOT: opcode 70
 
    The 18b PDP's have different definitions of various control IOT's.
 
@@ -1532,7 +1535,7 @@ while (reason == 0) {                                   /* loop until halted */
         ion_defer = 1;                                  /* delay interrupts */
         usmd_defer = 1;                                 /* defer load user */
         switch (device) {                               /* decode IR<6:11> */
- 
+
        case 000:                                       /* CPU and clock */
             if (pulse == 002)                           /* IOF */
                 ion = 0;

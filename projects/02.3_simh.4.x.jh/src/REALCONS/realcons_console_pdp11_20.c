@@ -111,7 +111,7 @@ static char *realcons_console_pdp11_20_addr_panel2simh(t_addr panel_addr)
 
 /* PDP-11/20 is 16 bit, SimH is 22 bit
     Internal the console address uses a 18 bit register.
-   "The processor ignores bits 17 and 16; these switches may be set to either position. 
+   "The processor ignores bits 17 and 16; these switches may be set to either position.
     For addresses using bits 17 and 16, these bits are set within the processor if bits 15, 14, and 13 are set."
     expand a 16 bit address to 22 bit: bits 21:16 = 11, if bits 15,14,13 =111 (IOpage)
     */
@@ -128,7 +128,7 @@ static t_addr encode_SimH_addr_22_to_18(t_addr addr) {
     return addr & 0777777;
 }
 
-    
+
 /* make a 16 bit value from the 18 bit SR switches
  " The processor ignores bits 17 and 16; these switches may be set to either position."
  */
@@ -368,7 +368,7 @@ void realcons_console_pdp11_20_interface_connect(realcons_console_logic_pdp11_20
         extern int32 SR; // switch register, global in pdp11_cpu_mod.c
         extern int32 sim_is_running; // global in scp.c
         //extern t_addr realcons_console_address_register; // set by LOAD ADDR
-        extern t_value realcons_DATAPATH_shifter; // output of ALU 
+        extern t_value realcons_DATAPATH_shifter; // output of ALU
         extern t_value realcons_IR; // buffer for instruction register (opcode)
         extern t_value realcons_PSW; // buffer for program status word
 
@@ -385,7 +385,7 @@ void realcons_console_pdp11_20_interface_connect(realcons_console_logic_pdp11_20
         // may cpu stops, but some device are still serviced?
         _this->cpusignal_run = &(sim_is_running);
 
-        _this->cpusignal_DATAPATH_shifter = &realcons_DATAPATH_shifter; // not used 
+        _this->cpusignal_DATAPATH_shifter = &realcons_DATAPATH_shifter; // not used
         //_this->cpusignal_console_address_register = &realcons_console_address_register; // not used
         _this->cpusignal_PC = &(R[7]); // or "saved_PC" ???
 
@@ -557,7 +557,7 @@ t_stat realcons_console_pdp11_20_service(realcons_console_logic_pdp11_20_t *_thi
     else
         SIGNAL_SET(cpusignal_console_halt, (t_value )_this->switch_HALT->value);
 
-    /* which command switch was activated? Process only one of these 
+    /* which command switch was activated? Process only one of these
      * "command switch" is NO term of 11/20 docs, but excluding logic seems useful */
     action_switch = NULL;
     if (!panel_lock) {
@@ -769,7 +769,7 @@ t_stat realcons_console_pdp11_20_service(realcons_console_logic_pdp11_20_t *_thi
             // Running: ON 1/4 of the time => flickering and "faint glow": 50%
             _this->led_RUN->value = !(_this->realcons->service_cycle_count % 2);
     } else
-        // not running. 
+        // not running.
         _this->led_RUN->value = 0;
 
     /*" When the BUS indicator is on, a peripheral device (other than the console) is controlling the bus.
@@ -781,7 +781,7 @@ t_stat realcons_console_pdp11_20_service(realcons_console_logic_pdp11_20_t *_thi
         is not on.
       FETCH: "When on, the processor is in the FETCH major state and is obtaining an instruction.
         During the Fetch major state, only FETCH and RUN indicators are on if no NPRs are honored."
-        
+
        EXEC: When on the processor is in the EXECUTE major state. The processor performs the action specified by the
         instruction. (HALT, WAIT, and trap instructions are executed in Service.)
         During the Execute major state, only EXEC and RUN indicators are on if no NPRs are honored.
@@ -796,14 +796,14 @@ t_stat realcons_console_pdp11_20_service(realcons_console_logic_pdp11_20_t *_thi
         processor calculates destination address data as indicated by cycles of the ADDRESS lights.
         During the Destination major state, DESTINATION and RUN indicators are both on; ADDRESS lights may be on in
         various combinations. The BUS indicator is off if no NPRs are honored.
-        
+
         ADDRESS: When lit, indicate bus cycles used to obtain address data during Source and Destination major states.
         The 2-bit binary code indicates which address cycle (1, 2, or 3) the machine is in during the Source or
         Destination major state.
         Whenever either one or both ADDRESS lights are lit, either the SOURCE or DESTINATION indicator is on.
         The BUS indicator is off if no NPRs are honored.
         "*/
-    // if CPU is running, simulate some plausible light patterns (SimH does not simualte single cycles)
+    // if CPU is running, simulate some plausible light patterns (SimH does not simulate single cycles)
     // FETCH 50%, EXEC 33%, SOURCE 25%, DESTINATION 15%, ADDRESS: 20% 1 access, 5% 2 accesses, 0 % 3 accesses
     _this->led_BUS = 0; // well ...
     if (SIGNAL_GET(cpusignal_run) && _this->run_state == RUN_STATE_RUN) {

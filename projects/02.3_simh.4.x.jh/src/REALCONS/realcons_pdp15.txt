@@ -1,5 +1,8 @@
 PDP-15 Systems Reference Manual (Aug 1969, DEC-15-BRZA-D) Chapter 10 Console.pdf
 
+Lamps from
+XVM system reference manual (Jun 1976, EK-15XVM-OP-001).pdf, Chapter 4
+
 
 CHAPTER 10: PDP-15 CONSOLE
 ##########################
@@ -283,4 +286,131 @@ The console indicator panel displays the following:
         1
         2
         3
+
+
+#############################################################
+
+XVM SWITCHES
+....
+
+
+STOP is the only switch active while the machine is running. If, at any time,
+the machine must be reset while the RUN light is on, the RESET and STOP switches
+should be pressed simultaneously. This is an unconditional reset procedure that
+should be used with caution, beacuse data can be lost.
+
+
+
+USER
+----
+When set (back half of switch pressed), pressing START causes the system to
+start in User mode.
+
+
+BANK MODE
+----------
+When set (back half of switch pressed), pressing START causes the system to
+start in Bank mode permitting direct addressing of 8,192 (17777o) word of core
+memory. When switch is not set (front half pressed), pressing START causes the
+system to start in Page mode permitting direct addressing of 4,096 (7777o) words
+of core memory.
+
+.....
+
+
+XVM INDICATORS
+----------------
+
+POWER
+-----
+Indicates that the power supply voltages are at operating levels.
+
+RUN
+---
+Indicates that program execution is in progress.
+
+G MODE
+-------
+Indicates that system is in GM 1,2 or 3.
+
+CLOCK
+-----
+Indicates that the real-time clock facility is enabled.
+
+IOTD
+----
+Indicates that IOTs are trapped in user mode.
+
+USER
+-----
+Indicates that system is in user mode.
+
+DCH ACTIVE
+----------
+Lights when the data channel is beeing serviced, i.e., data is being transferred
+between core memory and a device via the I/O bus.
+
+API ENABLE
+-----------
+Lights when the automatic priority interrupt system is activated.
+
+API STATES ACTIVE
+-----------------
+Indicates  API level(s) active.
+0-3 Hardware levels.
+4-7 Software levels.
+
+MAJOR STATES
+------------
+FETCH   Indicates that the processor is in the Fetch state.
+INC   Indicates that the processor is in the Increment state.
+DEFER  Indicates that the processor is in the Defer state.
+EAE  Indicates that the processor is in the EAE (extended arithmetic element) instruction state.
+EXEC  Indicates that the processor is in the Execute state.
+
+TIME STATES 1,2,3
+-----------------
+Indicates the processor time states. When all time states are off, machine is in
+time state 2A of the Add instruction.
+
+PI ACTIVE
+---------
+Indicates that a program interrupt is pending service.
+
+PI ENABLE
+---------
+Indicates that the program interrupt system is enabled (under program control).
+
+MODE INDEX
+----------
+Indicates that the processor is operating in Page mode and therefore indexing
+can be accomplished.
+
+LINK
+----
+Display state of Link bit.
+
+INSTRUCTION
+-----------
+Displays contents of 6-bit program word instruction field.
+0-3 Displays the instruction operation code.
+DEFER Indicates that the operand is indirectly addressed.
+INDEX Indicates that the operand address is indexed when in Page mode or that
+    the upper 4K (of an 8K bank) is addressed when in Bank mode.
+
+MEMORY BUFFER 00-17
+-------------------
+Displays the content of the currently addressed memory address.
+
+REGISTER 00-17
+--------------
+Used with the setting of the REG GROUP and Register Select switches to display:
+a. Data in a register
+b. Data on a bus
+c. Coontrol signal levels
+
+
+
+
+
 
