@@ -20,6 +20,7 @@
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+ 15-Aug-2016  JH      fix lamps_api_states_active, new address_switch_register
  14-Aug-2016  JH      added fake "major state" and "time state" light patterns,
                       DATA switches set SR register
  09-Aug-2016  JH      fix BANK/PAGE mode: BANK MODE switch is SimH BANKM_INIT / memm_init
@@ -246,6 +247,7 @@ void realcons_console_pdp15_interface_connect(realcons_console_logic_pdp15_t *_t
         extern int32 XR;
         extern int32 LR;
         extern int32 SR;
+        extern int32 ASW;
         extern int32 realcons_IR;
         extern int32 realcons_operand_address_register;
         extern int32 memm; // memory mode. 1 = BANK MODE, 0 = PAGE MODE with indexing
@@ -272,7 +274,8 @@ void realcons_console_pdp15_interface_connect(realcons_console_logic_pdp15_t *_t
         _this->cpusignal_sc = &SC;
         _this->cpusignal_xr = &XR;
         _this->cpusignal_lr = &LR;
-        _this->cpusignal_sr = &SR;
+        _this->cpusignal_switch_register = &SR;
+        _this->cpusignal_address_switches = &ASW;
         _this->cpusignal_bank_mode = &memm;
         _this->cpusignal_bank_mode_init = &memm_init;
 
@@ -534,8 +537,9 @@ t_stat realcons_console_pdp15_service(realcons_console_logic_pdp15_t *_this)
      * react on changed action switches
      */
 
-    // always set SR to DATA switches
-    SIGNAL_SET(cpusignal_sr, _this->switch_data->value);
+    // always set switch register
+    SIGNAL_SET(cpusignal_switch_register, _this->switch_data->value);
+    SIGNAL_SET(cpusignal_address_switches, _this->switch_address->value);
 
     // fetch switch register
     //SIGNAL_SET(cpusignal_switch_register, _this->switch_switch_register->value);
@@ -656,7 +660,7 @@ t_stat realcons_console_pdp15_service(realcons_console_logic_pdp15_t *_this)
             || _this->switch_sing_time->value;
 
         if (momentary_switch_signal(_this, _this->switch_reset, repeat_triggered)) {
-            SIGNAL_SET(cpusignal_console_halt, 1); // stop execution 
+            SIGNAL_SET(cpusignal_console_halt, 1); // stop execution
             realcons_simh_add_cmd(_this->realcons, "reset\n");
         }
         if (console_mode && momentary_switch_signal(_this, _this->switch_start, repeat_triggered)) {
@@ -689,7 +693,7 @@ t_stat realcons_console_pdp15_service(realcons_console_logic_pdp15_t *_this)
             // read - in begins at the memory location specified by the ADDRESS switches. At the
             // completion of tape read - in, the processor reads the last word entered and
             // executes it."
-            // SIGNAL_SET(cpusignal_console_halt, 1); // stop execution 
+            // SIGNAL_SET(cpusignal_console_halt, 1); // stop execution
             // Here SimH load, see pdp18b.doc, "LOAD" command
             if (strlen(boot_image_filepath) == 0)
                 realcons_simh_add_cmd(_this->realcons,
@@ -741,7 +745,7 @@ t_stat realcons_console_pdp15_service(realcons_console_logic_pdp15_t *_this)
 
         // Interrupts
         // states active: bit mask encoding
-        _this->lamps_api_states_active->value = !!SIGNAL_GET(cpusignal_api_active);
+        _this->lamps_api_states_active->value = SIGNAL_GET(cpusignal_api_active) & 0377;
 
         _this->lamp_api_enable->value = !!SIGNAL_GET(cpusignal_api_enable);
 
@@ -820,7 +824,7 @@ t_stat realcons_console_pdp15_service(realcons_console_logic_pdp15_t *_this)
             case 00020: // EAE
                 // "DEC-15-H2BB-D_MaintManVol1.pdf", page 6-22
                 // "The EAE switch position indicates the complement of 18 control fucntions"
-                // => 18 hardware signal, none is emulated 
+                // => 18 hardware signal, none is emulated
                 break;
             case 00010: // DSR     Data Storage Register
                 break;
@@ -903,7 +907,7 @@ t_stat realcons_console_pdp15_service(realcons_console_logic_pdp15_t *_this)
             }
         }
 
-        /* dummies 
+        /* dummies
          */
         _this->lamp_prot->value = _this->switch_prot->value;
         _this->lamp_clock->value = _this->switch_clock->value;

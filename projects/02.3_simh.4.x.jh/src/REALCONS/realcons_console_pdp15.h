@@ -60,7 +60,8 @@ typedef struct
     int32   *cpusignal_sc; // EAE step counter
     int32   *cpusignal_xr; // index register
     int32   *cpusignal_lr; // limit register
-    int32   *cpusignal_sr; // switch register
+    int32   *cpusignal_switch_register; 
+    int32   *cpusignal_address_switches;
     int32   *cpusignal_bank_mode; // 1 = bank mode, 0 = page mode, switched by EBA/DBA
     int32   *cpusignal_bank_mode_init; // bank mode after RESET
                                   // bank-mode = comaptibility with PDP-9
@@ -71,8 +72,6 @@ typedef struct
                                    //   int32 api_req = 0;                                      /* API requests */
     int32   *cpusignal_pi_enable; // Program interrupt ENABLE/DISABLE by opcodes IOF/ION
 
-
-    t_value *cpusignal_switch_register;
     int32 	*cpusignal_multiplier_quotient ;
     int32   *cpusignal_operand_address_register; // effektive address, console helper
 
