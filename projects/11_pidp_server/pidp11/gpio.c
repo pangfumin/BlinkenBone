@@ -20,8 +20,9 @@
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+ 01-Jul-2017  MH    remove INP_GPIO before OUT_GPIO and change knobValue
  01-Apr-2016  OV    almost perfect before VCF SE
- 15-Mar-2016  JH	display patterns for brightness levels
+ 15-Mar-2016  JH    display patterns for brightness levels
  16-Nov-2015  JH    acquired from Oscar
 
 
@@ -64,7 +65,10 @@ long intervl = 50000; // light each row of leds 50 us
 
 // PART 1 - GPIO and RT process stuff ----------------------------------
 
-// GPIO setup macros. Always use INP_GPIO(x) before using OUT_GPIO(x)
+// GPIO setup macros.
+// In early versions INP_GPIO(x) was used always before OUT_GPIO(x),
+// this is disabled now by INO_GPIO(g)
+#define INO_GPIO(g) //INP_GPIO(g) // Use this before OUT_GPIO
 #define INP_GPIO(g)   *(gpio.addr + ((g)/10)) &= ~(7<<(((g)%10)*3))
 #define OUT_GPIO(g)   *(gpio.addr + ((g)/10)) |=  (1<<(((g)%10)*3))
 #define SET_GPIO_ALT(g,a) *(gpio.addr + (((g)/10))) |= (((a)<=3?(a) + 4:(a)==4?3:2)<<(((g)%10)*3))
@@ -106,8 +110,8 @@ void unmap_peripheral(struct bcm2835_peripheral *p)
 uint8_t ledrows[] = {20, 21, 22, 23, 24, 25};
 uint8_t rows[] = {16, 17, 18};
 // pidp11 setup:
-//uint8_t cols[] = {13, 12, 11,    10, 9, 8,    7, 6, 5,    4, 27, 26};  
-uint8_t cols[] = {26,27,4, 5,6,7, 8,9,10, 11,12,13};  
+//uint8_t cols[] = {13, 12, 11,    10, 9, 8,    7, 6, 5,    4, 27, 26};
+uint8_t cols[] = {26,27,4, 5,6,7, 8,9,10, 11,12,13};
 
 
 void *blink(int *terminate)
@@ -154,7 +158,7 @@ void *blink(int *terminate)
 	// BCM2835 ARM Peripherals PDF p 101 & elinux.org/RPi_Low-level_peripherals#Internal_Pull-Ups_.26_Pull-Downs
 	GPIO_PULL = 2; // pull-up
 	short_wait(); // must wait 150 cycles
-	GPIO_PULLCLK0 = 0x0c003ff0; // selects GPIO pins 4..13 and 26,27 
+	GPIO_PULLCLK0 = 0x0c003ff0; // selects GPIO pins 4..13 and 26,27
 
 	short_wait();
 	GPIO_PULL = 0; // reset GPPUD register
@@ -203,7 +207,7 @@ void *blink(int *terminate)
 
 			// prepare for lighting LEDs by setting col pins to output
 			for (i = 0; i < 12; i++) {
-				INP_GPIO(cols[i]); //
+				INO_GPIO(cols[i]); //
 				OUT_GPIO(cols[i]); // Define cols as output
 			}
 
@@ -219,7 +223,7 @@ void *blink(int *terminate)
 				}
 
 				// Toggle this ledrow on
-				INP_GPIO(ledrows[i]);
+				INO_GPIO(ledrows[i]);
 				GPIO_SET = 1 << ledrows[i]; // test for flash problem
 				OUT_GPIO(ledrows[i]);
 				/*test* /			GPIO_SET = 1 << ledrows[i]; /**/
@@ -240,9 +244,9 @@ void *blink(int *terminate)
 				INP_GPIO(cols[i]); // flip columns to input. Need internal pull-ups enabled.
 
 			// read three rows of switches
-			for (i = 0; i < 3; i++) 
+			for (i = 0; i < 3; i++)
 			{
-				INP_GPIO(rows[i]); //			GPIO_CLR = 1 << rows[i];	// and output 0V to overrule built-in pull-up from column input pin
+				INO_GPIO(rows[i]); //			GPIO_CLR = 1 << rows[i];	// and output 0V to overrule built-in pull-up from column input pin
 				OUT_GPIO(rows[i]); // turn on one switch row
 				GPIO_CLR = 1 << rows[i]; // and output 0V to overrule built-in pull-up from column input pin
 
@@ -349,16 +353,19 @@ void check_rotary_encoders(int switchscan)
 		}
 	}
 
-	
-	if (knobValue[0]>7)
-		knobValue[0] = 0;
-	if (knobValue[1]>3)
-		knobValue[1] = 0;
-	if (knobValue[0]<0)
-		knobValue[0] = 7;
-	if (knobValue[1]<0)
-		knobValue[1] = 3;
-	
+
+//	if (knobValue[0]>7)
+//		knobValue[0] = 0;
+//	if (knobValue[1]>3)
+//		knobValue[1] = 0;
+//	if (knobValue[0]<0)
+//		knobValue[0] = 7;
+//	if (knobValue[1]<0)
+//		knobValue[1] = 3;
+
+	knobValue[0] = knobValue[0] & 7;
+	knobValue[1] = knobValue[1] & 3;
+
 	// end result: bits 8,9 are 00 normally, 01 if UP, 10 if DOWN. Same for bits 10,11 (knob 2)
 	// these bits are not used, actually. Status is communicated through global variable knobValue[i]
 

@@ -1,0 +1,19 @@
+
+; Minimal system for PDP-15: paper tape FOCAL
+; http://www.ibm.com/developerworks/library/os-emulatehistory/
+
+
+set cpu history=100
+
+; set realcons host=localhost interval=1
+set realcons host=vmubuprog interval=1
+; set realcons host=blinkenbone15 interval=1
+set realcons bootimage=focal15.bin
+set realcons connect
+show realcons
+echo Boot FOCAL15.BIN by pressing "READ-IN"
+
+; must be booted with "READ_IN"
+
+; load focal15.bin
+; run

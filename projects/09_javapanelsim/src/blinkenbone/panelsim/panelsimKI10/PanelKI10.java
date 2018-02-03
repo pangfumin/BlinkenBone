@@ -267,7 +267,7 @@ public class PanelKI10 extends JPanel implements Observer {
 	 * return user-selectable Widths
 	 */
 	public Integer[] getSupportedWidths() {
-		return new Integer[] { 1200, 1340, 1580, 1900, 2500 };
+		return new Integer[] { 1200, 1340, 1580, 1900, 2500, 2950 };
 	}
 
 	/*

@@ -21,15 +21,19 @@
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+ 03-Feb-2018  JH    fixed SUPER-USER-KERNEL encoding
+ 07-Sep-2017  MH    Added further command line option (-L)
+ 05-Jul-2017  MH    Added more options to the command line (-h -a -d -s)
+ 04-Jul-2017  MH    V 1.4.1 fix: ADDR and DATA SELECT rotary positions + KSU modes
  08-May-2016  JH    V 1.4 fix: MMR0 converted code -> led pattern BEFORE history/low pass
  01-Apr-2016  OV    almost perfect before VCF SE
  22-Mar-2016  JH    allow a control value to be distributed over several hw registers
  20-Mar-2016  OV    test hack to convert pidp8 into pidp11 server.
 
- 15-Mar-2016  JH	V 1.3 Low-pass for SimH output, display patterns for brightness levels
- 09-Mar-2016  JH	V 1.2 inverted "Deposit" switch
+ 15-Mar-2016  JH    V 1.3 Low-pass for SimH output, display patterns for brightness levels
+ 09-Mar-2016  JH    V 1.2 inverted "Deposit" switch
  06-Mar-2016  JH    renamed from "blinkenlightd" to "pidp8_blinkenlightd"
- 22-Feb-2016  JH	V 1.1 added panel modes LAMPTEST, POWERLESS
+ 22-Feb-2016  JH    V 1.1 added panel modes LAMPTEST, POWERLESS
  13-Nov-2015  JH    V 1.0 created
 
 
@@ -44,7 +48,7 @@
 
 #define MAIN_C_
 
-#define VERSION	"v1.4.0"
+#define VERSION	"v1.4.1"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -76,12 +80,21 @@ char program_name[1024]; // argv[0]
 char program_options[1024]; // argv[1.argc-1]
 int opt_test = 0;
 int opt_background = 0;
+int panel_lock = 0; // Default to panel unlocked
+
+extern long gpiopattern_update_period_us;
 
 int knobValue[2] =
-{ 7, 0 }; // default start value for knobs. 0=ADDR, 1=DATA
+{ 1, 1 }; // default start value for knobs. 0=ADDR[1=CONS_PHY], 1=DATA[1=DATA_PATHS] match Panelsim
+
+int knobAddrMap[8] = // Map rotary positioner to ADDR SELECT pseudo switches
+{ 7, 4, 6, 3, 1, 0, 2, 5 };
+
+int knobDataMap[4] = // Map rotary positioner to DATA SELECT pseudo switches
+{ 3, 2, 0, 1 };
 
 /*
- *	PiDP11 controls wich are accessible over Blinkenlight API
+ *	PiDP11 controls which are accessible over Blinkenlight API
  */
 blinkenlight_control_t *control_raw_switchstatus[2];
 blinkenlight_control_t *control_raw_ledstatus[6]; //6 not 8 for PiDP11
@@ -100,11 +113,12 @@ blinkenlight_control_t *leds_ADDRESS, *leds_DATA, *led_PARITY_HIGH, *led_PARITY_
         *leds_ADDR_SELECT;
 
 // bits in artificially constructed control value for DATA SELECT KNOB feedback LEDs
-
+/*
 #define VALMASK_LED_BUS_REG 0x01
 #define VALMASK_LED_DATA_PATHS 0x02
 #define VALMASK_LED_UADDRS 0x04
 #define VALMASK_LED_DISP_REG 0x08
+ */
 
 // bits in artificially constructed control value for ADDR SELECT KNOB feedback LEDs
 /*    #define VALMASK_LED_USER_D 0x01
@@ -116,6 +130,7 @@ blinkenlight_control_t *leds_ADDRESS, *leds_DATA, *led_PARITY_HIGH, *led_PARITY_
  #define VALMASK_LED_KERNEL_I 0x40
  #define VALMASK_LED_PROG_PHY 0x80
  */
+/*
 #define VALMASK_LED_PROG_PHY 0x01
 #define VALMASK_LED_CONS_PHY 0x02
 #define VALMASK_LED_KERNEL_D 0x04
@@ -124,6 +139,7 @@ blinkenlight_control_t *leds_ADDRESS, *leds_DATA, *led_PARITY_HIGH, *led_PARITY_
 #define VALMASK_LED_USER_I 0x20
 #define VALMASK_LED_SUPER_I 0x40
 #define VALMASK_LED_KERNEL_I 0x80
+ */
 
 // ---------------------------------------------------------------------
 
@@ -145,7 +161,7 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
                 c->value = 1; // send "power"" switch as ON
 
             else if (c == switch_PANEL_LOCK)
-                c->value = 0; // send "panel lock" switch as OFF
+                c->value = panel_lock; // send "panel lock" switch as defined by -L
 
             else {
                 // mount switch value from register bit fields
@@ -171,6 +187,9 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
                 // individual fixup/logic
 
                 if (c == switch_ADDR_SELECT) {
+                    c->value = knobAddrMap[knobValue[0]];
+                    leds_ADDR_SELECT->value = 1<<knobValue[0];
+/*
                     c->value = 7 - knobValue[0];
                     switch (c->value) {
 
@@ -201,8 +220,11 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
                         break;
 
                     };
-
+*/
                 } else if (c == switch_DATA_SELECT) {
+                    c->value = knobDataMap[knobValue[1]];
+                    leds_DATA_SELECT->value = 1<<knobValue[1];
+/*
                     c->value = 3 - knobValue[1];
                     switch (c->value) {
                     // INSERT CORRECT HW VALUES IN CASE SELECTORS
@@ -220,6 +242,7 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
                         break;
 
                     };
+*/
                 }
             }
         }
@@ -232,7 +255,7 @@ static void on_blinkenlight_api_panel_set_controlvalue(blinkenlight_panel_t *p,
 {
     // convert MMR= code number to LED pattern BEFORE historybuffer/lowpass is applied to value
     if (c == leds_MMR0_MODE) {
-        // val: 0 = Kernel, 1= off,  2 = Super, 3 = User
+        // input:  0=K, 1=off, 2=S, 3=U (see src/REALCONS/realcons_console_pdp11_70.c)
         // leds: kernel = reg[2].4, super= reg[2].5 user=reg[2].6
         switch (c->value) {
         case 0:
@@ -244,7 +267,7 @@ static void on_blinkenlight_api_panel_set_controlvalue(blinkenlight_panel_t *p,
         case 3:
             c->value = 4 ; // USER;
             break;
-        default: // encode 1 as "all off"
+        default: // encode any other(s) as "all off"
             c->value = 0;
         }
     }
@@ -439,18 +462,28 @@ void info(void)
 static void help(void)
 {
     fprintf(stderr, "\n");
-    fprintf(stderr, "pidp11_blinkenlightd %s - Blinkenlight RPC server for PiDP11 \n",
-    VERSION);
+    fprintf(stderr, "pidp11_blinkenlightd %s - Blinkenlight RPC server for PiDP11 \n", VERSION);
     fprintf(stderr, "  (compiled " __DATE__ " " __TIME__ ")\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "Call:\n");
-    fprintf(stderr, "pidp11_blinkenlightd [-b] [-v] [-t]\n");
+    fprintf(stderr, "Usage:\n");
+    fprintf(stderr, "  pidp11_blinkenlightd [-h] [-b] [-v] [-t] [-L] [-a 0..7] [-d 0..3] [-s <n>]\n");
     fprintf(stderr, "\n");
-//	fprintf(stderr, "- <port>:               TCP port for RCP access.\n") ;
-    fprintf(stderr, "-b               : background operation: print to syslog (view with dmesg)\n");
-    fprintf(stderr, "                  default output is stderr\n");
-    fprintf(stderr, "-v               : verbose: tell what I'm doing\n");
-    fprintf(stderr, "-t               : Test mode\n");
+    fprintf(stderr, "  -h          display this help and exit\n");
+//  fprintf(stderr, "  - <port>    TCP port for RCP access.\n");
+    fprintf(stderr, "  -b          background operation: print to syslog (view with dmesg)\n");
+    fprintf(stderr, "                default output is stderr\n");
+    fprintf(stderr, "  -v          verbose: tell what I'm doing\n");
+    fprintf(stderr, "  -t          test mode\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "  -L          permanently engage PANEL LOCK\n");
+    fprintf(stderr, "  -a 0..7     starting position of the ADDR SELECT knob\n");
+    fprintf(stderr, "                clockwise from 0=PROG PHY .. 7=KERNEL I\n");
+    fprintf(stderr, "                default is -a%d\n", knobValue[0]);
+    fprintf(stderr, "  -d 0..3     starting position of the DATA SELECT knob\n");
+    fprintf(stderr, "                clockwise from 0=BUS REG .. 3=DISPLAY REGISTER\n");
+    fprintf(stderr, "                default is -d%d\n", knobValue[0]);
+    fprintf(stderr, "  -s <n>      refresh value for panel updates: use with caution\n");
+    fprintf(stderr, "                default is -s%ld\n", gpiopattern_update_period_us);
     fprintf(stderr, "\n");
 }
 
@@ -473,16 +506,35 @@ static int parse_commandline(int argc, char **argv)
 
     opterr = 0;
 
-    while ((c = getopt(argc, argv, "bvt")) != -1)
+    while ((c = getopt(argc, argv, "hbvtLa:d:s:")) != -1)
         switch (c) {
-        case 'v':
-            print_level = LOG_DEBUG;
-            break;
+        case 'h':
+            help();
+            exit(0);
         case 'b':
             opt_background = 1;
             break;
+        case 'v':
+            print_level = LOG_DEBUG;
+            break;
         case 't':
             opt_test = 1;
+            break;
+        case 'L':
+            panel_lock = 1;
+            break;
+        case 'a':
+            knobValue[0] = *optarg & 0x7;
+            break;
+        case 'd':
+            knobValue[1] = *optarg & 0x3;
+            break;
+        case 's':
+            { char *eos; gpiopattern_update_period_us = strtol(optarg, &eos, 10); }
+            if (!gpiopattern_update_period_us) {
+                fprintf(stderr, "Illegal value to `-s' (must be integer).\n");
+                return 0;
+            }
             break;
         case '?': // getopt detected an error. "opterr=0", so own error message here
             if (isprint(optopt))
@@ -655,12 +707,14 @@ static void register_controls()
     // bit encoding in API value: BUG? BELOW ORDER INCORRECT ACC TO JAVA CODE
     // 0..7 = user_d, super_d, kernel_d, cons_phy, user_i, super_i, kernel_i, prog_phy
     // see VALMASK_LED_*
+    // Should be okay now (MH 04-Jul-2017)
     leds_ADDR_SELECT = define_led_slice(p, "ADDR_SELECT_FEEDBACK", 0, 4, 4, 6);
     leds_ADDR_SELECT = define_led_slice(p, "ADDR_SELECT_FEEDBACK", 4, 4, 5, 5);
 
     // bit encoding in API value: BUG? BELOW ORDER INCORRECT ACC TO JAVA CODE
     //0..3 = data_paths, bus_reg, muaddr, disp_reg
     // see VALMASK_LED_*
+    // Should be okay now (MH 04-Jul-2017)
     leds_DATA_SELECT = define_led_slice(p, "DATA_SELECT_FEEDBACK", 0, 2, 4, 10); // bus_reg, data_paths
     leds_DATA_SELECT = define_led_slice(p, "DATA_SELECT_FEEDBACK", 2, 2, 5, 10); // disp_reg, muaddr
 
@@ -720,4 +774,3 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-

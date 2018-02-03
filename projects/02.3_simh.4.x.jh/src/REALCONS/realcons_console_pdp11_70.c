@@ -20,6 +20,8 @@
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+ 03-Feb-2018    JH      fixed SUPER-USER-KERNEL encoding
+ 04-Jul-2017    MH      fixed 16-BIT mode and console register access
  22-Apr-2016    JH      added POWER and PANEL_LOCK logic
  01-Apr-2016    JH      added ADRESSING 16/18/22, ADDR SELECT knob VIRTUAL positions
  18-Mar-2016    JH      access to SimHs I/O page and CPU registers (18->22bit addr)
@@ -60,12 +62,12 @@
 #define TIMER_DATA_FLASH	1
 
 #define TIME_TEST_MS		3000	// self test terminates after 3 seconds
-#define TIME_DATA_FLASH_MS	50		// if DATA LEDs flash, they are ON for 1/20 sec
+#define TIME_DATA_FLASH_MS	50	// if DATA LEDs flash, they are ON for 1/20 sec
 // the RUN LED behaves a bit difficult, so distinguish these states:
 #define RUN_STATE_HALT	0
 #define RUN_STATE_RESET	1
 #define RUN_STATE_WAIT	2
-#define RUN_STATE_RUN		3
+#define RUN_STATE_RUN	3
 
 // encoding of addr select knob positions
 #define ADDR_SELECT_VALUE_USER_I    0
@@ -89,9 +91,12 @@
  */
 static t_addr realcons_console_pdp11_70_addr_inc(t_addr addr)
 {
-    if (addr >= 017777700 && addr <= 017777707)
-        addr += 1; // inc to next register
-    else
+    if (addr >= 017777676 && addr <= 017777717) {
+        if (addr >= 017777700) { // do not allow increment into registers (need to verify on real 11/70)
+           addr += 1;            // inc to next register
+           addr &= 017777717;    // wrap around to start of registers after 017777717
+        }
+    } else
         addr += 2; // inc by word
     addr &= 017777777; // trunc to 22 bit
     return addr;
@@ -137,21 +142,37 @@ static char *realcons_console_pdp11_70_addr_panel2simh(t_addr panel_addr, uint64
         // physical 22 bit address
         switch (panel_addr) {
         case 017777700:
-            return "r0";
+            return "r00";
         case 017777701:
-            return "r1";
+            return "r01";
         case 017777702:
-            return "r2";
+            return "r02";
         case 017777703:
-            return "r3";
+            return "r03";
         case 017777704:
-            return "r4";
+            return "r04";
         case 017777705:
-            return "r5";
+            return "r05";
         case 017777706:
-            return "sp";
+            return "ksp";
         case 017777707:
             return "pc";
+        case 017777710:
+            return "r10";
+        case 017777711:
+            return "r11";
+        case 017777712:
+            return "r12";
+        case 017777713:
+            return "r13";
+        case 017777714:
+            return "r14";
+        case 017777715:
+            return "r15";
+        case 017777716:
+            return "ssp";
+        case 017777717:
+            return "usp";
         default:
             panel_addr &= ~1; // clear LSB, according to DEC doc
             sprintf(buff, "%o", panel_addr);
@@ -359,22 +380,39 @@ void realcons_console_pdp11_70__event_operator_reg_exam_deposit(
         printf("realcons_console_pdp11_70__event_operator_reg_exam_deposit\n");
     // exam on SimH console sets also console address (like LOAD ADR)
     // convert register into UNIBUS address
-    if (!strcasecmp(regname, "r0"))
+    if      ((!strcasecmp(regname, "r00")) || (!strcasecmp(regname, "r0")))
         addr = 017777700;
-    else if (!strcasecmp(regname, "r1"))
+    else if ((!strcasecmp(regname, "r01")) || (!strcasecmp(regname, "r1")))
         addr = 017777701;
-    else if (!strcasecmp(regname, "r2"))
+    else if ((!strcasecmp(regname, "r02")) || (!strcasecmp(regname, "r2")))
         addr = 017777702;
-    else if (!strcasecmp(regname, "r3"))
+    else if ((!strcasecmp(regname, "r03")) || (!strcasecmp(regname, "r3")))
         addr = 017777703;
-    else if (!strcasecmp(regname, "r4"))
+    else if ((!strcasecmp(regname, "r04")) || (!strcasecmp(regname, "r4")))
         addr = 017777704;
-    else if (!strcasecmp(regname, "r5"))
+    else if ((!strcasecmp(regname, "r05")) || (!strcasecmp(regname, "r5")))
         addr = 017777705;
-    else if (!strcasecmp(regname, "sp"))
+    else if ((!strcasecmp(regname, "ksp")) || (!strcasecmp(regname, "sp")))
         addr = 017777706;
     else if (!strcasecmp(regname, "pc"))
         addr = 017777707;
+    else if (!strcasecmp(regname, "r10"))
+        addr = 017777710;
+    else if (!strcasecmp(regname, "r11"))
+        addr = 017777711;
+    else if (!strcasecmp(regname, "r12"))
+        addr = 017777712;
+    else if (!strcasecmp(regname, "r13"))
+        addr = 017777713;
+    else if (!strcasecmp(regname, "r14"))
+        addr = 017777714;
+    else if (!strcasecmp(regname, "r15"))
+        addr = 017777715;
+    else if (!strcasecmp(regname, "ssp"))
+        addr = 017777716;
+    else if (!strcasecmp(regname, "usp"))
+        addr = 017777717;
+
     if (addr) {
         SIGNAL_SET(cpusignal_memory_address_register, addr);
         realcons_console_pdp11_70__event_operator_exam_deposit(_this);
@@ -578,7 +616,7 @@ t_stat realcons_console_pdp11_70_reset(realcons_console_logic_pdp11_70_t *_this)
 #ifdef USED
 /*
  * Translate the console address register (LOAD ADDR) to a physical 22bit address
- * This is necessary, if the ADDR SLECT KMOB is in one ofthe VIRTUAL positions
+ * This is necessary, if the ADDR SLECT KNOB is in one of the VIRTUAL positions
  * DEC : "VIRTUAL - Six positions: KERNEL, SUPER and USER I space and KERNEL, SUPER and
  * USER D space. The address displayed is a 16-bit virtual address; bits
  * 21 -16 are always off. During Console DEP or EXAM operations, bits
@@ -867,7 +905,7 @@ t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_thi
     // DATA shows intern 11/70 processor ALU output (SHIFTER)
     if (_this->realcons->timer_running_msec[TIMER_DATA_FLASH])
         // all LEDs pulse ON after DEPOSIT, LOADADR etc
-        _this->leds_DATA->value = 0xfffff;
+	_this->leds_DATA->value = 0xfffff;
     else
         switch (_this->switch_DATA_SELECT->value) {
         case DATA_SELECT_VALUE_uADDR_FPU_CPU:
@@ -884,16 +922,18 @@ t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_thi
             _this->leds_DATA->value = SIGNAL_GET(cpusignal_memory_data_register);
             break;
         }
-    /// User, Super, Kernel mode?
+    // Encode User, Super, Kernel mode.
+    // Panel electronic does not bit-encode the USER/SUPER/KERNEL LEDs,
+    // but uses an LED addressing scheme: 0=Kernel, 1=off, 2=Super, 3=User
     switch (SIGNAL_GET(cpusignal_cpu_mode)) {
     case REALCONS_CPU_PDP11_CPUMODE_USER:
-        _this->leds_MMR0_MODE->value = 0;
+        _this->leds_MMR0_MODE->value = 3;
         break;
     case REALCONS_CPU_PDP11_CPUMODE_SUPERVISOR:
-        _this->leds_MMR0_MODE->value = 1;
+        _this->leds_MMR0_MODE->value = 2;
         break;
     case REALCONS_CPU_PDP11_CPUMODE_KERNEL:
-        _this->leds_MMR0_MODE->value = 2;
+        _this->leds_MMR0_MODE->value = 0;
         break;
     }
     // ADDRESSING 16,18,22 determined by MMR0 and MMR3 bits, see
@@ -904,8 +944,8 @@ t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_thi
     _this->led_ADDRESSING_16->value = 0;
     _this->led_ADDRESSING_18->value = 0;
     _this->led_ADDRESSING_22->value = 0;
-    // "16 bit mapping if MMR0 cleared"
-    if ( SIGNAL_GET(cpusignal_MMR0) == 0)
+    // "16 bit mapping if MMR0[0] cleared"
+    if (!(SIGNAL_GET(cpusignal_MMR0) & 0x01)) // bit0=0 means MMU is off
         _this->led_ADDRESSING_16->value = 1;
     // "18 bit mapping when bit 4 of MMR3 is cleared and bit 0 of MMR0 set"
     if (!(SIGNAL_GET(cpusignal_MMR3) & 0x10) && ( SIGNAL_GET(cpusignal_MMR0) & 0x01))

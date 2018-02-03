@@ -1,0 +1,30 @@
+
+; Maximal system for PDP-15: XVM RSX
+; From http://simh.trailing-edge.com/kits/xvmrsx_simh_kit.zip
+
+set cpu api
+set cpu xvm
+set ttix lines=5
+
+attach ttix 2311
+attach rp0 xvmrsx_rp02.dsk
+
+set realcons host=vmubuprog interval=1
+; set realcons host=blinkenbone15 interval=1
+; set realcons host=192.168.1.109 interval=1
+set realcons connect
+show realcons
+
+load rpboot.rim 77637
+
+; update BANK MODE switch
+reset
+
+echo
+echo To boot XVM/RSX, type "RSX" and press enter at the XVM/DOS "$" prompt.
+echo To return to XVM/DOS, type "DOS" and press enter at the RSX MCR prompt.
+echo To access the extra terminals, telnet to 127.0.0.1 on port 2311 and press Ctrl-T
+echo to bring up the login prompt.
+echo To log off MULTIACCESS, use the TDV command "OFF".
+echo
+run

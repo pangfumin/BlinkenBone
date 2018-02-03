@@ -20,6 +20,7 @@
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+ 05-Jul-2017  MH    added a variable for GPIOPATTERN_UPDATE_PERIOD_US
  08-May-2016  JH    fix: MMR0 converted code -> led pattern BEFORE history/low pass
  01-Apr-2016  OV    almost perfect before VCF SE
  14-Mar-2016  JH    created
@@ -100,7 +101,7 @@ int gpiopattern_ledstatus_phases_writeidx = 1; // writepage page, written from B
 // thread functional if != nULL
 blinkenlight_panel_t *gpiopattern_blinkenlight_panel = NULL;
 
-
+long gpiopattern_update_period_us = GPIOPATTERN_UPDATE_PERIOD_US;
 
 extern int knobValue[2];
 
@@ -277,7 +278,7 @@ static void value2gpio_ledstatus_value(blinkenlight_panel_t *p, blinkenlight_con
     int panel_mode = p->mode ;
 
     // local LAMPTEST overrides mode set over API
-    if (switch_LAMPTEST->value)
+    if (!switch_LAMPTEST->value)				// prototype has lamptest inverted
         panel_mode = RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST ;
 
 
@@ -494,7 +495,7 @@ void *gpiopattern_update_leds(int *terminate)
 
 		// wait for one period
 		nanosleep((struct timespec[]
-		) {	{	0, GPIOPATTERN_UPDATE_PERIOD_US * 1000}}, NULL);
+		) {	{	0, gpiopattern_update_period_us * 1000}}, NULL);
 
 		if (p == NULL)
 			continue;

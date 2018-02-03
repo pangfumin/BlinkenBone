@@ -217,7 +217,7 @@ public class ControlSliceStateImage extends Object {
 	 * pdp10ki10_size=1200_background.png;0; 0
 	 * pdp10ki10_size=1200_org_picture.png;0; 0
 	 *
-	 * HashMap assoziates each filename with a Pint(left,top)
+	 * HashMap assoziates each filename with a Point(left,top)
 	 */
 	public static void loadImageInfos(String csvFilepathSuffix) {
 		csvImageCoordinates = new HashMap<String, Point>();
