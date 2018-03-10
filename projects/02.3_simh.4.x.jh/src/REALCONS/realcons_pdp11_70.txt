@@ -1,4 +1,44 @@
 
+Tests on LCM 11/70 "Miss Piggy"
+- Duration of RESET: not 70ms, but 10ms! (PDP-11_70_Handbook_1977-78.pdf, 4-81)
+
+- RUN LED: on during RESET, off during PAUSE.
+
+- PAUSE:
+on during WAIT? script 10 NO!
+ON during disk I/O (script 18 UnixV7 tests), then RUN is OFF.
+
+- MASTER
+- ON bei HALT (script10), OFF bei RUN (contradiction to DEC manual?)
+MASTER = UBCA CPBSY =>
+
+
+Parity LEDs:
+- not always in SYNC with DAT LEDs. Only on Memory READ?
+- "OFF on write" ?
+- Both OFF on manual DEPOSIT & EXAM (script17_TB8A3106)  ???
+- But Works on EXAM script01_TB8A3110 ?			 ???
+
+
+"ADRS ERR" LED:
+LCM2018, script 8:
+Set SWR=17777754
+Press LOAD ADRS
+Press and hold down EXAM
+->ADDRESS display changes to 17600000 ! -> bits 15..0 cleared?
+LCM2018, script 9:
+ADDRESS display does not change when in auto increment !!
+
+R0 in WAIT,RESET,HALT:
+see PDP-11-70 Field Maintenance Print Set (Nov 1975, MP0KB11-C0).pdf, sheet "FLOWS 3"
+WAIT: ADRS light = PC, SHifter = DR = R0
+HALT:  R0->DR
+RESET: R0 -> DR
+"DR" is "destination register" (not "Display register). Input to shifter
+-> DR is visible if selection is DATA PATH.
+
+
+################################################################################
 
 II Original DEC documentation
 From "KB11C PROCESSOR MANUAL (PDP-11-70) (1975, EK-KB11C-TM-001).pdf"
@@ -189,7 +229,7 @@ DATA PATHS - Displays the output of the Shifter. This position is the normal
 
 BUS REG - Displays the output of the Bus Register (BR).
 
-µADRS FPP/CPU - Bits 15 - 08 display the current address of the Floating Point
+uADRS FPP/CPU - Bits 15 - 08 display the current address of the Floating Point
           Processor microprogram ROM.
           Bits 07 - 00 display the current address of the processor microprogram
           ROM.

@@ -20,6 +20,7 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+   10-Mar-2018  JH      lot of fixes to match the tests at LCM "Miss Piggy"
       Dec-2015  JH      migration from SimH 3.82 to 4.x
                         CPU extensions moved to pdp11_cpu.c
    25-Mar-2012  JH      created
@@ -68,6 +69,8 @@ typedef struct
 		t_addr *cpusignal_memory_address_register; // address of last bus cycle (EXAM/DEPOSIT)
 		char **cpusignal_register_name; // name of last accessed exam/deposit register
 		t_value *cpusignal_memory_data_register; // data of last bus cycle
+		int		*cpusignal_memory_write_access ; // is last memory accessa WRITE?
+        t_stat *cpusignal_memory_status; // last memory access status
 		int *cpusignal_console_halt; // 1, if a real console halts program execution
 		int *cpusignal_run; // 1, if simulated cpu is running
 
@@ -94,7 +97,7 @@ typedef struct
 	    blinkenlight_control_t *keyswitch_power;
 	    blinkenlight_control_t *keyswitch_panel_lock;
 
-	blinkenlight_control_t *switch_SR, *switch_LOADADRS, *switch_EXAM, *switch_DEPOSIT,
+	blinkenlight_control_t *switch_SR, *switch_LOAD_ADRS, *switch_EXAM, *switch_DEPOSIT,
 			*switch_CONT, *switch_HALT, *switch_S_BUS_CYCLE, *switch_START, *switch_DATA_SELECT,
 			*switch_ADDR_SELECT, *switch_PANEL_LOCK;
 	// output controls on the panel

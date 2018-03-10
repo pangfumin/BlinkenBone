@@ -91,7 +91,7 @@ typedef struct
 
 	/* KY11D specific */
 	// input controls on the panel
-	blinkenlight_control_t *switch_SR, *switch_LOADADRS, *switch_EXAM, *switch_CONT, *switch_HALT,
+	blinkenlight_control_t *switch_SR, *switch_LOAD_ADRS, *switch_EXAM, *switch_CONT, *switch_HALT,
 			*switch_START, *switch_DEPOSIT;
 	// output controls on the panel
 	blinkenlight_control_t *led_ADDRESS, *led_DATA, *led_RUN, *led_BUS, *led_USER, *led_PROCESSOR,

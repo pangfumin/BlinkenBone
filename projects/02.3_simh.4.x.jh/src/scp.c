@@ -1872,6 +1872,9 @@ static SHTAB show_unit_tab[] = {
 	// Additional CPU state for exam, deposit, start stop etc.
 	t_addr realcons_memory_address_register; // physical memory address
 	t_value realcons_memory_data_register; // memory data
+	int	realcons_memory_write_access ; // 1 = last access to realcons_memory_* was WRITE
+    t_stat realcons_memory_status; // OK, NXM?
+
 	const char *realcons_register_name; // pseudo: name of last accessed register
 	int realcons_console_halt; // 1: CPU halted by realcons console
 
@@ -1944,6 +1947,8 @@ cpu_realcons = realcons_constructor() ;
 // init scp cpu state
 realcons_memory_address_register = 0 ;
 realcons_memory_data_register = 0 ;
+realcons_memory_write_access = 0 ;
+realcons_memory_status = SCPE_OK;
 realcons_console_halt = 0 ;
 
 #endif
@@ -3127,7 +3132,7 @@ for (; *ip && (op < oend); ) {
                         int leaps = days/4 - days/100 + days/400;
                         int lyear = ((year % 4) == 0) && (((year % 100) != 0) || ((year % 400) == 0));
                         int selector = ((days + leaps + 7) % 7) + lyear * 7;
-                        static int years[] = {90, 91, 97, 98, 99, 94, 89, 
+                        static int years[] = {90, 91, 97, 98, 99, 94, 89,
                                               96, 80, 92, 76, 88, 72, 84};
                         int cal_year = years[selector];
 
@@ -3315,7 +3320,7 @@ t_bool result;
 t_addr addr;
 t_stat reason;
 
-cptr = (CONST char *)get_sim_opt (CMD_OPT_SW|CMD_OPT_DFT, (CONST char *)cptr, &r);  
+cptr = (CONST char *)get_sim_opt (CMD_OPT_SW|CMD_OPT_DFT, (CONST char *)cptr, &r);
                                                         /* get sw, default */
 sim_stabr.boolop = sim_staba.boolop = -1;               /* no relational op dflt */
 if (*cptr == 0)                                         /* must be more */
@@ -4403,7 +4408,7 @@ if (vdelt)
 fprintf (st, " %s", SIM_VERSION_MODE);
 #endif
 #ifdef USE_REALCONS
-fprintf (st, " %s", " REALCONS") ;
+fprintf (st, " %s", " REALCONS build " __DATE__) ;
 #endif
 
 if (flag) {
@@ -4504,7 +4509,7 @@ if (flag) {
     if (1) {
         char osversion[2*PATH_MAX+1] = "";
         FILE *f;
-        
+
         if ((f = popen ("uname -a", "r"))) {
             memset (osversion, 0, sizeof(osversion));
             do {
@@ -6130,7 +6135,7 @@ return r;
    go [new PC]          start simulation
    co[nt]               start simulation
    s[tep] [step limit]  start simulation for 'limit' instructions
-   next                 start simulation for 1 instruction 
+   next                 start simulation for 1 instruction
                         stepping over subroutine calls
    b[oot] device        bootstrap from device and start simulation
 
@@ -6179,7 +6184,7 @@ if ((flag == RU_RUN) || (flag == RU_GO)) {              /* run or go */
         if (MATCH_CMD (gbuf, "UNTIL") != 0)
             cptr = get_glyph (cptr, gbuf, 0);           /* get next glyph */
         if (MATCH_CMD (gbuf, "UNTIL") != 0)
-            return sim_messagef (SCPE_2MARG, "Unexpected %s command argument: %s %s\n", 
+            return sim_messagef (SCPE_2MARG, "Unexpected %s command argument: %s %s\n",
                                              (flag == RU_RUN) ? "RUN" : "GO", gbuf, cptr);
         sim_switches = 0;
         GET_SWITCHES (cptr);
@@ -7070,6 +7075,8 @@ if ((reason = fprint_sym (ofile, addr, sim_eval, uptr, sim_switches)) > 0) {
 			{
 				realcons_memory_address_register = addr;
 				realcons_memory_data_register = sim_eval[0] ;
+				realcons_memory_write_access = 0 ;
+                realcons_memory_status = reason;
 				REALCONS_EVENT(cpu_realcons, realcons_event_operator_exam) ;
 			}
 #endif
@@ -7141,7 +7148,12 @@ for (i = 0, j = addr; i < sim_emax; i++, j = j + dptr->aincr) {
         }
     sim_last_val = sim_eval[i] = sim_eval[i] & mask;
     }
-if ((reason != SCPE_OK) && (i == 0))
+#ifdef USE_REALCONS
+    realcons_memory_status = SCPE_OK;
+    if ((reason != SCPE_OK) && (i == 0)) 
+        realcons_memory_status = reason;
+#endif
+if ((reason != SCPE_OK) && (i == 0)) 
     return reason;
 return SCPE_OK;
 }
@@ -7197,13 +7209,15 @@ count = (1 - reason + (dptr->aincr - 1)) / dptr->aincr;
 for (i = 0, j = addr; i < count; i++, j = j + dptr->aincr) {
     sim_eval[i] = sim_eval[i] & mask;
     if (dptr->deposit != NULL) {
-#ifdef USE_REALCONS
-				// called for all addresses, all devices .. should be CPU only!
-				realcons_memory_address_register = j;
-				realcons_memory_data_register =  sim_eval[i] ;
-				REALCONS_EVENT(cpu_realcons, realcons_event_operator_deposit) ;
-#endif
         r = dptr->deposit (sim_eval[i], j, uptr, sim_switches);
+#ifdef USE_REALCONS
+        // called for all addresses, all devices .. should be CPU only!
+        realcons_memory_address_register = j;
+        realcons_memory_data_register = sim_eval[i];
+        realcons_memory_write_access = 1;
+        realcons_memory_status = r;
+        REALCONS_EVENT(cpu_realcons, realcons_event_operator_deposit);
+#endif
         if (r != SCPE_OK)
             return r;
         }
@@ -7951,7 +7965,7 @@ if (double_quote_found && (!single_quote_found))
 *tptr++ = quote;
 while (size--) {
     switch (*iptr) {
-        case '\r': 
+        case '\r':
             *tptr++ = '\\'; *tptr++ = 'r'; break;
         case '\n':
             *tptr++ = '\\'; *tptr++ = 'n'; break;

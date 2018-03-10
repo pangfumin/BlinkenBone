@@ -217,6 +217,14 @@ void realcons_console_pdp11_40__event_opcode_reset(realcons_console_logic_pdp11_
 	_this->led_BUS->value = 1; // http://www.youtube.com/watch?v=iIsZVqhaneo
 	_this->led_PROCESSOR->value = 1;
 	_this->run_state = RUN_STATE_RESET;
+
+    // the RESET opcode sets the UNIBUS signal INIT active for 20ms
+    // After that there's a 50ms delay
+    // PDP-11-40 system engineering drawings, Rev P(Jun 1974, Rev P),
+    // page  "FLOW DIAGRAM (TRAPS,PWRUP,RESET,RTI,RTS,RTT) (6)"
+    // Some programs use it as display delay to show R0
+    realcons_ms_sleep(_this->realcons, 70); // keep realcons logic active
+
 }
 
 void realcons_console_pdp11_40__event_opcode_wait(realcons_console_logic_pdp11_40_t *_this)
@@ -424,7 +432,7 @@ t_stat realcons_console_pdp11_40_reset(realcons_console_logic_pdp11_40_t *_this)
 	 */
 	if (!(_this->switch_SR = realcons_console_get_input_control(_this->realcons, "SR")))
 		return SCPE_NOATT;
-	if (!(_this->switch_LOADADRS = realcons_console_get_input_control(_this->realcons, "LOAD ADRS")))
+	if (!(_this->switch_LOAD_ADRS = realcons_console_get_input_control(_this->realcons, "LOAD ADRS")))
 		return SCPE_NOATT;
 	if (!(_this->switch_EXAM = realcons_console_get_input_control(_this->realcons, "EXAM")))
 		return SCPE_NOATT;
@@ -494,9 +502,9 @@ t_stat realcons_console_pdp11_40_service(realcons_console_logic_pdp11_40_t *_thi
 
 	/* which command switch was activated? Process only one of these */
 	action_switch = NULL;
-	if (!action_switch && _this->switch_LOADADRS->value == 1
-		&& _this->switch_LOADADRS->value_previous == 0)
-		action_switch = _this->switch_LOADADRS;
+	if (!action_switch && _this->switch_LOAD_ADRS->value == 1
+		&& _this->switch_LOAD_ADRS->value_previous == 0)
+		action_switch = _this->switch_LOAD_ADRS;
 	if (!action_switch && _this->switch_EXAM->value == 1 && _this->switch_EXAM->value_previous == 0)
 		action_switch = _this->switch_EXAM;
 	if (!action_switch && _this->switch_DEPOSIT->value == 1
@@ -534,7 +542,7 @@ t_stat realcons_console_pdp11_40_service(realcons_console_logic_pdp11_40_t *_thi
 			SIGNAL_SET(cpusignal_console_address_register,
 				realcons_console_pdp11_40_addr_inc(SIGNAL_GET(cpusignal_console_address_register)) );
 
-		if (action_switch == _this->switch_LOADADRS) {
+		if (action_switch == _this->switch_LOAD_ADRS) {
 			SIGNAL_SET(cpusignal_console_address_register,
 				(realcons_machine_word_t)(_this->switch_SR->value & 0x3ffff)); // 18 bit
 			SIGNAL_SET(cpusignal_memory_address_register,
@@ -704,7 +712,7 @@ int realcons_console_pdp11_40_test(realcons_console_logic_pdp11_40_t *_this, int
 	realcons_printf(_this->realcons, stdout, "Verify lamp test!\n");
 	realcons_printf(_this->realcons, stdout, "Switch SR        = %llo\n", _this->switch_SR->value);
 	realcons_printf(_this->realcons, stdout, "Switch LOAD ADRS = %llo\n",
-		_this->switch_LOADADRS->value);
+		_this->switch_LOAD_ADRS->value);
 	realcons_printf(_this->realcons, stdout, "Switch EXAM      = %llo\n",
 		_this->switch_EXAM->value);
 	realcons_printf(_this->realcons, stdout, "Switch CONT      = %llo\n",

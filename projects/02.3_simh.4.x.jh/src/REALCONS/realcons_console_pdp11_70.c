@@ -20,6 +20,7 @@
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+ 10-Mar-2018    JH      lot of fixes to match the tests at LCM "Miss Piggy"
  03-Feb-2018    JH      fixed SUPER-USER-KERNEL encoding
  04-Jul-2017    MH      fixed 16-BIT mode and console register access
  22-Apr-2016    JH      added POWER and PANEL_LOCK logic
@@ -59,10 +60,8 @@
 
 // indexes of used general timers
 #define TIMER_TEST	0
-#define TIMER_DATA_FLASH	1
 
 #define TIME_TEST_MS		3000	// self test terminates after 3 seconds
-#define TIME_DATA_FLASH_MS	50	// if DATA LEDs flash, they are ON for 1/20 sec
 // the RUN LED behaves a bit difficult, so distinguish these states:
 #define RUN_STATE_HALT	0
 #define RUN_STATE_RESET	1
@@ -85,17 +84,50 @@
 #define DATA_SELECT_VALUE_DATA_PATH 2
 #define DATA_SELECT_VALUE_BUS_REG   3
 
+// Table with const uAdr-patterns
+// display const pattern, from LCM2018 script "Unixv7 idle"
+// 100% 100% 50% 10% 100% 50% 80% 100% 10% 50%
+// bits 16..8 = FPP (always 11?) bits 7..0 = microprogram address
+#define MICROADDRPATTERN_LEN    5
+static unsigned MicroAddrPattern[MICROADDRPATTERN_LEN] =
+{ 0x3bf, // 1 1  1 0 1 1  1 1 1 1
+        0x32a, // 1 1  0 0 1 0  1 1 0 0
+        0x3bd, // 1 1  1 0 1 1  1 1 0 1
+        0x32c, // 1 1  0 0 1 0  1 1 0 0
+        0x3f5 // 1 1  1 1 1 1  0 1 0 1
+        };
+
+// count bits in a value
+    static int bitcount(unsigned val) {
+    unsigned n=0 ;
+    while (val) {
+        if (val & 1) n++ ;
+        val >>= 1 ;
+    }
+    return n ;
+}
+
+
+// SHORTER macros for signal access
+// assume "realcons_console_logic_pdp11_70_t *_this" in context
+#define SIGNAL_SET(signal,value) REALCONS_SIGNAL_SET(_this,signal,value)
+#define SIGNAL_GET(signal) REALCONS_SIGNAL_GET(_this,signal)
+
+
 /*
  * SimH gives not the CPU registers, if their IO page addresses are exam/deposit
  * So convert addr -> reg, and revers in the *_operator_reg_exam_deposit()
  */
-static t_addr realcons_console_pdp11_70_addr_inc(t_addr addr)
+static t_addr realcons_console_pdp11_70_addr_inc(t_addr addr, int *addr_inc_error)
 {
-    if (addr >= 017777676 && addr <= 017777717) {
-        if (addr >= 017777700) { // do not allow increment into registers (need to verify on real 11/70)
-           addr += 1;            // inc to next register
-           addr &= 017777717;    // wrap around to start of registers after 017777717
-        }
+    *addr_inc_error = 0;
+    if (addr == 017777676) {
+        // do not switch from "+2 increment" into "+1 increment" of register file
+        // see LCM2018, script 9
+        *addr_inc_error = 1;
+    } else if (addr >= 017777700 && addr <= 017777717) {
+        addr += 1; // inc to next register
+        addr &= 017777717; // wrap around to start of registers after 017777717
     } else
         addr += 2; // inc by word
     addr &= 017777777; // trunc to 22 bit
@@ -105,7 +137,7 @@ static t_addr realcons_console_pdp11_70_addr_inc(t_addr addr)
 // generate SimH expression for panel address
 // - result string to be used in "sim>" exam or deposit cmd
 // - translate memory addr to register, if CPU is accessed
-// - trunc to 16 bit and add MMU space ürefixes, if ADDR SELECT knob is in virtual position
+// - trunc to 16 bit and add MMU space prefixes, if ADDR SELECT knob is in virtual position
 // TODO: the "-d" option means "data space" and also "decimal ???
 // Tests indicated that -d -o could be a solution. To be investigated!
 static char *realcons_console_pdp11_70_addr_panel2simh(t_addr panel_addr, uint64_t addr_select)
@@ -220,10 +252,6 @@ void realcons_console_pdp11_70_destructor(realcons_console_logic_pdp11_70_t *_th
  * return 0, if not accepted
  */
 
-// SHORTER macros for signal access
-// assume "realcons_console_logic_pdp11_70_t *_this" in context
-#define SIGNAL_SET(signal,value) REALCONS_SIGNAL_SET(_this,signal,value)
-#define SIGNAL_GET(signal) REALCONS_SIGNAL_GET(_this,signal)
 
 void realcons_console_pdp11_70_event_connect(realcons_console_logic_pdp11_70_t *_this)
 {
@@ -248,9 +276,11 @@ void realcons_console_pdp11_70__event_opcode_any(realcons_console_logic_pdp11_70
     // after any opcode: ADDR shows PC, DATA shows IR = opcode
     SIGNAL_SET(cpusignal_memory_address_register, SIGNAL_GET(cpusignal_PC));
     // opcode fetch: ALU_output already set
-    SIGNAL_SET(cpusignal_memory_data_register, SIGNAL_GET(cpusignal_instruction_register));
+  //  SIGNAL_SET(cpusignal_memory_data_register, SIGNAL_GET(cpusignal_instruction_register));
+
+    SIGNAL_SET(cpusignal_memory_write_access, 0) ; // "fetch" = read
+
     // SIGNAL_SET(cpusignal_bus_register, SIGNAL_GET(cpusignal_instruction_register));
-    _this->led_MASTER->value = 1; // processor fetches, is unibus master
     _this->led_PAUSE->value = 0; // see 1.3.4
     _this->run_state = RUN_STATE_RUN;
 }
@@ -261,10 +291,7 @@ void realcons_console_pdp11_70__event_opcode_halt(realcons_console_logic_pdp11_7
         printf("realcons_console_pdp11_70__event_opcode_halt\n");
 //	SIGNAL_SET(cpusignal_console_halt, 1);
     SIGNAL_SET(cpusignal_memory_address_register, SIGNAL_GET(cpusignal_PC));
-    // what is in the unibus interface on HALT? IR == HALT Opcode?
-    // SIGNAL_SET(cpusignal_busregister, ...)
-    // _this->DMUX = SIGNAL_GET(cpusignal_R0);
-    _this->led_MASTER->value = 0; // sure ?
+    SIGNAL_SET(cpusignal_DATAPATH_shifter, SIGNAL_GET(cpusignal_R0)); // HALT displays R0
     _this->led_PAUSE->value = 0; // see 1.3.4
     _this->run_state = RUN_STATE_HALT;
 }
@@ -276,11 +303,12 @@ void realcons_console_pdp11_70__event_opcode_reset(realcons_console_logic_pdp11_
 //	SIGNAL_SET(cpusignal_console_halt, 0);
     SIGNAL_SET(cpusignal_memory_address_register, SIGNAL_GET(cpusignal_PC));
     // what is in the unibus interface on RESET? IR == RESET Opcode ?
-    // SIGNAL_SET(cpusignal_busregister, ...)
-    // _this->DMUX = SIGNAL_GET(cpusignal_R0);
-    _this->led_MASTER->value = 0; // sure ?
+    SIGNAL_SET(cpusignal_DATAPATH_shifter, SIGNAL_GET(cpusignal_R0)); // RESET displays R0
     _this->led_PAUSE->value = 0; // see 1.3.4
     _this->run_state = RUN_STATE_RESET;
+    // RESET lasts 10ms on 11/70
+    realcons_ms_sleep(_this->realcons, 10); // keep realcons logic active
+
 }
 
 void realcons_console_pdp11_70__event_opcode_wait(realcons_console_logic_pdp11_70_t *_this)
@@ -290,9 +318,8 @@ void realcons_console_pdp11_70__event_opcode_wait(realcons_console_logic_pdp11_7
 //	SIGNAL_SET(cpusignal_console_halt, 0);
     SIGNAL_SET(cpusignal_memory_address_register, SIGNAL_GET(cpusignal_PC));
     SIGNAL_SET(cpusignal_memory_data_register, SIGNAL_GET(cpusignal_instruction_register));
-    //SIGNAL_SET(cpusignal_bus_register, SIGNAL_GET(cpusignal_instruction_register));
-    _this->led_MASTER->value = 0; // sure ?
-    _this->led_PAUSE->value = 1; // see 1.3.4
+    SIGNAL_SET(cpusignal_DATAPATH_shifter, SIGNAL_GET(cpusignal_R0)); // WAIT displays R0
+    _this->led_PAUSE->value = 0; // see 1.3.4
     _this->run_state = RUN_STATE_WAIT; // RUN led off
 }
 
@@ -304,7 +331,6 @@ void realcons_console_pdp11_70__event_run_start(realcons_console_logic_pdp11_70_
         return; // do not accept RUN command
     // set property RUNMODE, so SimH can read it back
 //	SIGNAL_SET(cpusignal_console_halt, 0); // running
-    _this->led_MASTER->value = 1; // sure ?
     _this->led_PAUSE->value = 0; // see 1.3.4
     _this->run_state = RUN_STATE_RUN;
 }
@@ -314,7 +340,6 @@ void realcons_console_pdp11_70__event_step_start(realcons_console_logic_pdp11_70
     if (_this->realcons->debug)
         printf("realcons_console_pdp11_70__event_step_start\n");
 //	SIGNAL_SET(cpusignal_console_halt, 0); // running
-    _this->led_MASTER->value = 1; // processor fetches, is unibus master
     _this->led_PAUSE->value = 0; // see 1.3.4
 }
 
@@ -325,7 +350,6 @@ void realcons_console_pdp11_70__event_operator_halt(realcons_console_logic_pdp11
 //	SIGNAL_SET(cpusignal_console_halt, 1);
     SIGNAL_SET(cpusignal_memory_address_register, SIGNAL_GET(cpusignal_PC));
     // SIGNAL_SET(cpusignal_DATAPATH_shifter, SIGNAL_GET(cpusignal_PSW));
-    _this->led_MASTER->value = 1; // processor fetches, is unibus master
     _this->led_PAUSE->value = 0; // see 1.3.4
     _this->run_state = RUN_STATE_HALT;
 }
@@ -337,7 +361,6 @@ void realcons_console_pdp11_70__event_step_halt(realcons_console_logic_pdp11_70_
 //	SIGNAL_SET(cpusignal_console_halt, 1);
     SIGNAL_SET(cpusignal_memory_address_register, SIGNAL_GET(cpusignal_PC));
     // SIGNAL_SET(cpusignal_DATAPATH_shifter, SIGNAL_GET(cpusignal_PSW));
-    _this->led_MASTER->value = 0; // sure ?
     _this->led_PAUSE->value = 0; // see 1.3.4
     _this->run_state = RUN_STATE_HALT;
 }
@@ -363,7 +386,6 @@ void realcons_console_pdp11_70__event_operator_exam_deposit(
                 SIGNAL_GET(cpusignal_memory_address_register));
     }
     SIGNAL_SET(cpusignal_DATAPATH_shifter, SIGNAL_GET(cpusignal_memory_data_register));
-    _this->led_MASTER->value = 0; // sure ?
     _this->led_PAUSE->value = 0; // see 1.3.4
 }
 
@@ -380,7 +402,7 @@ void realcons_console_pdp11_70__event_operator_reg_exam_deposit(
         printf("realcons_console_pdp11_70__event_operator_reg_exam_deposit\n");
     // exam on SimH console sets also console address (like LOAD ADR)
     // convert register into UNIBUS address
-    if      ((!strcasecmp(regname, "r00")) || (!strcasecmp(regname, "r0")))
+    if ((!strcasecmp(regname, "r00")) || (!strcasecmp(regname, "r0")))
         addr = 017777700;
     else if ((!strcasecmp(regname, "r01")) || (!strcasecmp(regname, "r1")))
         addr = 017777701;
@@ -441,6 +463,8 @@ void realcons_console_pdp11_70_interface_connect(realcons_console_logic_pdp11_70
         extern t_addr realcons_memory_address_register; // REALCONS extension in scp.c
 
         extern t_value realcons_memory_data_register; // REALCONS extension in scp.c
+        extern int realcons_memory_write_access ; // 1: last mem access was WRITE
+        extern t_stat realcons_memory_status; // error of last memory access
         extern char *realcons_register_name; // pseudo: name of last accessed register
         extern int realcons_console_halt; // 1: CPU halted by realcons console
         extern int32 sim_is_running; // global in scp.c
@@ -462,6 +486,8 @@ void realcons_console_pdp11_70_interface_connect(realcons_console_logic_pdp11_70
         _this->cpusignal_memory_address_register = &realcons_memory_address_register;
         _this->cpusignal_register_name = &realcons_register_name; // pseudo: name of last accessed register
         _this->cpusignal_memory_data_register = &realcons_memory_data_register;
+		_this->cpusignal_memory_write_access = &realcons_memory_write_access ;
+        _this->cpusignal_memory_status = &realcons_memory_status;
         _this->cpusignal_console_halt = &realcons_console_halt;
 
         // from pdp11_cpu.c
@@ -484,7 +510,7 @@ void realcons_console_pdp11_70_interface_connect(realcons_console_logic_pdp11_70
         _this->cpusignal_cpu_mode = &cm; // MD_SUP,MD_
         _this->cpusignal_MMR0 = &MMR0; // MMU register 17 777 572
         _this->cpusignal_MMR3 = &MMR3; // MMU register 17 772 516
-        _this->cpusignal_R0 = &(R[0]); // R: global of pdp11_cpu.c
+        _this->cpusignal_R0 = &(R[0]); // R: global of pdp11_cpu.c. "Working Register Set"!
         _this->cpusignal_PC = &(R[7]); // R: global of pdp11_cpu.c
         _this->cpusignal_switch_register = &SR; // see pdp11_cpumod.SR_rd()
         _this->cpusignal_display_register = &DR;
@@ -547,12 +573,13 @@ t_stat realcons_console_pdp11_70_reset(realcons_console_logic_pdp11_70_t *_this)
      */
     if (!(_this->keyswitch_power = realcons_console_get_input_control(_this->realcons, "POWER")))
         return SCPE_NOATT;
-    if (!(_this->keyswitch_panel_lock = realcons_console_get_input_control(_this->realcons, "PANEL_LOCK")))
+    if (!(_this->keyswitch_panel_lock = realcons_console_get_input_control(_this->realcons,
+            "PANEL_LOCK")))
         return SCPE_NOATT;
 
     if (!(_this->switch_SR = realcons_console_get_input_control(_this->realcons, "SR")))
         return SCPE_NOATT;
-    if (!(_this->switch_LOADADRS = realcons_console_get_input_control(_this->realcons, "LOAD_ADRS")))
+    if (!(_this->switch_LOAD_ADRS = realcons_console_get_input_control(_this->realcons, "LOAD_ADRS")))
         return SCPE_NOATT;
     if (!(_this->switch_EXAM = realcons_console_get_input_control(_this->realcons, "EXAM")))
         return SCPE_NOATT;
@@ -585,7 +612,7 @@ t_stat realcons_console_pdp11_70_reset(realcons_console_logic_pdp11_70_t *_this)
             "PARITY_HIGH")))
         return SCPE_NOATT;
     if (!(_this->led_PARITY_LOW = realcons_console_get_output_control(_this->realcons,
-            "PARITY_HIGH")))
+            "PARITY_LOW")))
         return SCPE_NOATT;
     if (!(_this->led_PAR_ERR = realcons_console_get_output_control(_this->realcons, "PAR_ERR")))
         return SCPE_NOATT;
@@ -678,10 +705,11 @@ t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_thi
     int panel_lock;
     int console_mode;
     int user_mode;
+    int addr_inc_error = 0 ; // 1 = error while auto incrementing EXAM/DEPOSIT address
 
     blinkenlight_control_t *action_switch; // current action switch
 
-    if (_this->keyswitch_power->value == 0 ) {
+    if (_this->keyswitch_power->value == 0) {
         SIGNAL_SET(cpusignal_console_halt, 1); // stop execution
         if (_this->keyswitch_power->value_previous == 1) {
             // Power switch transition to POWER OFF: terminate SimH
@@ -695,12 +723,11 @@ t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_thi
     }
 
     /*
-    LOCK - Same as POWER, except that the LOAD ADRS, EXAM, DEP, CONT, ENABLE/HALT, S
-           INST/S BUS CYCLE and START switches are disabled. All other switches are
-           operational.
-    */
-    panel_lock = (_this->keyswitch_panel_lock->value != 0) ;
-
+     LOCK - Same as POWER, except that the LOAD ADRS, EXAM, DEP, CONT, ENABLE/HALT, S
+     INST/S BUS CYCLE and START switches are disabled. All other switches are
+     operational.
+     */
+    panel_lock = (_this->keyswitch_panel_lock->value != 0);
 
     /* test time expired? */
 
@@ -725,26 +752,28 @@ t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_thi
 
     // fetch HALT mode, must be sensed by simulated processor to produce state OPERATOR_HALT
     if (panel_lock)
-        SIGNAL_SET(cpusignal_console_halt,0) ;
+        SIGNAL_SET(cpusignal_console_halt,0);
     else
         SIGNAL_SET(cpusignal_console_halt, (t_value )_this->switch_HALT->value);
 
     /* which command switch was activated? Process only one of these */
     action_switch = NULL;
     if (!panel_lock) {
-    if (!action_switch && _this->switch_LOADADRS->value == 1
-            && _this->switch_LOADADRS->value_previous == 0)
-        action_switch = _this->switch_LOADADRS;
-    if (!action_switch && _this->switch_EXAM->value == 1 && _this->switch_EXAM->value_previous == 0)
-        action_switch = _this->switch_EXAM;
-    if (!action_switch && _this->switch_DEPOSIT->value == 1
-            && _this->switch_DEPOSIT->value_previous == 0)
-        action_switch = _this->switch_DEPOSIT;
-    if (!action_switch && _this->switch_CONT->value == 1 && _this->switch_CONT->value_previous == 0)
-        action_switch = _this->switch_CONT;
-    if (!action_switch && // START actions on rising and falling edge!
-            _this->switch_START->value ^ _this->switch_START->value_previous)
-        action_switch = _this->switch_START;
+        if (!action_switch && _this->switch_LOAD_ADRS->value == 1
+                && _this->switch_LOAD_ADRS->value_previous == 0)
+            action_switch = _this->switch_LOAD_ADRS;
+        if (!action_switch && _this->switch_EXAM->value == 1
+                && _this->switch_EXAM->value_previous == 0)
+            action_switch = _this->switch_EXAM;
+        if (!action_switch && _this->switch_DEPOSIT->value == 1
+                && _this->switch_DEPOSIT->value_previous == 0)
+            action_switch = _this->switch_DEPOSIT;
+        if (!action_switch && _this->switch_CONT->value == 1
+                && _this->switch_CONT->value_previous == 0)
+            action_switch = _this->switch_CONT;
+        if (!action_switch && // START actions on rising and falling edge!
+                _this->switch_START->value ^ _this->switch_START->value_previous)
+            action_switch = _this->switch_START;
     }
     // first: reset "switch changed" condition
     if (action_switch)
@@ -764,32 +793,37 @@ t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_thi
 
     if (action_switch) {
         /* auto addr inc logic */
+        addr_inc_error = 0;
         if (action_switch != _this->autoinc_addr_action_switch)
             // change of switch: DEP or EXAM sequence broken
             _this->autoinc_addr_action_switch = NULL;
         else
-            // inc panel address register
+            // inc panel address register, may give ADRS ERR
             SIGNAL_SET(cpusignal_console_address_register,
-                    realcons_console_pdp11_70_addr_inc(SIGNAL_GET(cpusignal_console_address_register)));
+                    realcons_console_pdp11_70_addr_inc(SIGNAL_GET(cpusignal_console_address_register), &addr_inc_error));
 
-        if (action_switch == _this->switch_LOADADRS) {
+        if (action_switch == _this->switch_LOAD_ADRS) {
 
             SIGNAL_SET(cpusignal_console_address_register,
                     (realcons_machine_word_t ) (_this->switch_SR->value & 0x3fffff)); // 22 bit
             SIGNAL_SET(cpusignal_memory_address_register,
                     (realcons_machine_word_t ) (_this->switch_SR->value & 0x3fffff)); // 22 bit
             // _this->DMUX = _this->R_ADRSC; // for display on DATA, DEC docs
-            SIGNAL_SET(cpusignal_DATAPATH_shifter, 0); // 11/40 videos show: DATA is cleared
-            // 11/70 ?
+            SIGNAL_SET(cpusignal_DATAPATH_shifter, 0); // LCM2018 video script10_TB8A3123 show: DATA is cleared
+
+            // LOAD ADRS clears ADRS ERR (LCM2018)
+            SIGNAL_SET(cpusignal_memory_status, SCPE_OK);
+
 
             if (_this->realcons->debug)
                 printf("LOADADR %o\n", SIGNAL_GET(cpusignal_console_address_register));
-            // flash with DATA LEDs on 11/40. 11/70 ?
-            _this->realcons->timer_running_msec[TIMER_DATA_FLASH] =
-                    _this->realcons->service_cur_time_msec + TIME_DATA_FLASH_MS;
         }
 
-        if (action_switch == _this->switch_EXAM) {
+        // error in auto inc: no further memory access, would clear the error flag
+        if (addr_inc_error)
+            SIGNAL_SET(cpusignal_memory_status, SCPE_NXM);
+
+        if (action_switch == _this->switch_EXAM && !addr_inc_error) {
 //            t_addr pa; // physical address
             _this->autoinc_addr_action_switch = _this->switch_EXAM; // inc addr on next EXAM
             // generate simh "exam cmd"
@@ -802,7 +836,7 @@ t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_thi
                             _this->switch_ADDR_SELECT->value));
         }
 
-        if (action_switch == _this->switch_DEPOSIT) {
+        if (action_switch == _this->switch_DEPOSIT && !addr_inc_error) {
 //            t_addr pa; // physical address
             unsigned dataval;
             dataval = (realcons_machine_word_t) _this->switch_SR->value & 0xffff; // trunc to switches 15..0
@@ -814,9 +848,6 @@ t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_thi
                     realcons_console_pdp11_70_addr_panel2simh(
                             SIGNAL_GET(cpusignal_console_address_register),
                             _this->switch_ADDR_SELECT->value), dataval);
-            // flash with DATA LEDs
-            _this->realcons->timer_running_msec[TIMER_DATA_FLASH] =
-                    _this->realcons->service_cur_time_msec + TIME_DATA_FLASH_MS;
         }
 
         /* function of CONT, START mixed with HALT:
@@ -847,9 +878,6 @@ t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_thi
                 sprintf(_this->realcons->simh_cmd_buffer, "run %o\n",
                         SIGNAL_GET(cpusignal_console_address_register) // always 22 bit physical ?
                                 );
-                // flash with DATA LEDs
-                _this->realcons->timer_running_msec[TIMER_DATA_FLASH] =
-                        _this->realcons->service_cur_time_msec + TIME_DATA_FLASH_MS;
             }
         } else if (action_switch == _this->switch_CONT && _this->switch_HALT->value) {
             // single step = SimH "STEP 1"
@@ -871,6 +899,19 @@ t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_thi
         realcons_lamp_test(_this->realcons, 0); // end lamptest
     if (_this->realcons->lamp_test)
         return SCPE_OK; // no lights need to be set
+
+    // ADR ERROR
+    {
+        t_stat tmp = SIGNAL_GET(cpusignal_memory_status);
+        if (tmp == SCPE_NXM) {
+            _this->led_ADRS_ERR->value = 1 ;
+            // LCM2018: bits 15..0 of console address cleared
+            SIGNAL_SET(cpusignal_console_address_register, SIGNAL_GET(cpusignal_console_address_register) & ~0177777);
+        }
+        else _this->led_ADRS_ERR->value = 0 ;
+    }
+
+
 
     {
         /*	ADDRESS SELECT: "VIRTUAL - Six positions: KERNEL, SUPER and USER I space and KERNEL, SUPER and
@@ -903,25 +944,44 @@ t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_thi
     // see realcons_console_pdp11_70_set_machine_state()
     // state transition is signaled by SimH over machine_set_state()
     // DATA shows intern 11/70 processor ALU output (SHIFTER)
-    if (_this->realcons->timer_running_msec[TIMER_DATA_FLASH])
-        // all LEDs pulse ON after DEPOSIT, LOADADR etc
-	_this->leds_DATA->value = 0xfffff;
-    else
-        switch (_this->switch_DATA_SELECT->value) {
-        case DATA_SELECT_VALUE_uADDR_FPU_CPU:
-            _this->leds_DATA->value = 0; // not implementable
-            break;
-        case DATA_SELECT_VALUE_DISPLAY_REGISTER:
-            _this->leds_DATA->value = SIGNAL_GET(cpusignal_display_register);
-            break;
-        case DATA_SELECT_VALUE_DATA_PATH:
-            // "SHIFTER" (EXAM/DEPOSIT)
-            _this->leds_DATA->value = SIGNAL_GET(cpusignal_DATAPATH_shifter);
-            break;
-        case DATA_SELECT_VALUE_BUS_REG:
+    switch (_this->switch_DATA_SELECT->value) {
+    case DATA_SELECT_VALUE_uADDR_FPU_CPU:
+        if (_this->run_state) {
+        // no simulator devilvers the correct stream of micro program addresses.
+        // display const pattern all around, gives steady dimmed display
+        unsigned uadridx = _this->realcons->service_cycle_count % MICROADDRPATTERN_LEN;
+        _this->leds_DATA->value = MicroAddrPattern[uadridx];
+    } else
+        _this->leds_DATA->value = 0 ; // CPU halted
+        break;
+    case DATA_SELECT_VALUE_DISPLAY_REGISTER:
+        _this->leds_DATA->value = SIGNAL_GET(cpusignal_display_register);
+        break;
+    case DATA_SELECT_VALUE_DATA_PATH:
+        // "SHIFTER" (EXAM/DEPOSIT)
+        _this->leds_DATA->value = SIGNAL_GET(cpusignal_DATAPATH_shifter);
+        break;
+    case DATA_SELECT_VALUE_BUS_REG:
+        if (console_mode)
+            // when halted, BUS_REG shows switches
+            _this->leds_DATA->value = _this->switch_SR->value;
+        else
             _this->leds_DATA->value = SIGNAL_GET(cpusignal_memory_data_register);
-            break;
-        }
+        break;
+    }
+
+    // parity LEDs: show on READ from cache = physical memory
+    // clear on write ... on all write or only on write in memory?
+    if (SIGNAL_GET(cpusignal_memory_write_access)) {
+        _this->led_PARITY_HIGH->value = 0 ;
+        _this->led_PARITY_LOW->value = 0 ;
+    } else if (SIGNAL_GET(cpusignal_memory_address_register) <=  017760000) {
+        // READ memory from cache: parity ON if EVEN number of bits
+        unsigned val = SIGNAL_GET(cpusignal_memory_data_register) ;
+        _this->led_PARITY_LOW->value = ! ( bitcount(val & 0xff) & 1) ;
+        _this->led_PARITY_HIGH->value = ! ( bitcount((val >> 8) & 0xff) & 1) ;
+    }
+
     // Encode User, Super, Kernel mode.
     // Panel electronic does not bit-encode the USER/SUPER/KERNEL LEDs,
     // but uses an LED addressing scheme: 0=Kernel, 1=off, 2=Super, 3=User
@@ -957,35 +1017,19 @@ t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_thi
     // D mode, I mode?
     _this->led_DATA_SPACE->value = SIGNAL_GET(cpusignal_bus_ID_mode);
 
-    // BUS: 1 if device or CPU accesses the UNIBUS
-    // PROC: the processor is accessing the UNIBUS
-    // both are set directly in set_state()
+    // MASTER: according to LCM2018, ON if HALT, OFF else
+    if (console_mode)
+        _this->led_MASTER->value = 1;
+    else
+        _this->led_MASTER->value = 0;
 
-    //_this->led_CONSOLE->value = console_mode;
-
-    // _this->led_USER->value = user_mode;
-
-    // BUS and PROCESSOR are ON in console mode
-    // see http://www.youtube.com/watch?v=iIsZVqhaneo
-    if (console_mode) {
-        //_this->led_BUS->value = 1;
-        //_this->led_PROCESSOR->value = 1;
-    }
-
-    // ADDRESS displays virtual address: true if processor runs
-    //_this->led_VIRTUAL->value = !console_mode;
-
-    // RUN:
-    // bright on HALT, off after RESET, "faint glow" in normal machine operation,
-    if (SIGNAL_GET(cpusignal_run)) {
-        if (_this->run_state == RUN_STATE_RESET || _this->run_state == RUN_STATE_WAIT)
-            // current opcode is a RESET: RUN OFF
-            _this->led_RUN->value = 0;
-        else
-            // Running: ON 1/4 of the time => flickering and "faint glow"
-            _this->led_RUN->value = !(_this->realcons->service_cycle_count & 3);
-    } else
-        // not running. Unlike 11/40, RUN LED is Off in console state (not verified)
+    // RUN: OFF on HALT, during PAUSE. ON during WAIT and RESET
+    // PAUSE not implemented
+    if (SIGNAL_GET(cpusignal_run))
+        // Running: ON
+        _this->led_RUN->value = 1;
+    else
+        // not running.
         _this->led_RUN->value = 0;
 
     return SCPE_OK;
@@ -1007,7 +1051,7 @@ int realcons_console_pdp11_70_test(realcons_console_logic_pdp11_70_t *_this, int
     realcons_printf(_this->realcons, stdout, "Switch SR          = %llo\n",
             _this->switch_SR->value);
     realcons_printf(_this->realcons, stdout, "Switch LOAD ADRS   = %llo\n",
-            _this->switch_LOADADRS->value);
+            _this->switch_LOAD_ADRS->value);
     realcons_printf(_this->realcons, stdout, "Switch EXAM        = %llo\n",
             _this->switch_EXAM->value);
     realcons_printf(_this->realcons, stdout, "Switch DEPOSIT     = %llo\n",

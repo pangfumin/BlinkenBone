@@ -24,7 +24,7 @@
    in this Software without prior written authorization from Robert M Supnik.
 
    cpu          PDP-11 CPU
-
+   10-Mar-2018  JH      lot of fixes to match the tests at LCM "Miss Piggy"
    06-Mar-16    RMS     Fixed bug in history virtual addressing
    30-Dec-15    RMS     Added NOBEVENT option for 11/03, 11/23
    29-Dec-15    RMS     Call build_dib_tab during reset (Mark Pizzolato)
@@ -669,6 +669,7 @@ DEVICE cpu_dev = {
 // 1. state for all cpu's in scp.c
 extern	t_addr realcons_memory_address_register; // memory address
 extern 	t_value realcons_memory_data_register; // memory data
+extern 	int realcons_memory_write_access;
 extern 	int realcons_console_halt; // 1: CPU halted by realcons console
   // 2. state extension for PDP11
   //    Conceptual problem:
@@ -701,16 +702,19 @@ console_controller_event_func_t	realcons_event_opcode_wait; // triggered after e
 															// bit 16 = I/D space flag, see calc_ds(). 1 = data, 0 = instruction
 
 															// R/W access, only physical address given
-#define REALCONS_CPU_PDP11_MEMACCESS_PA(realcons,pa,data_expr)	do { \
+#define REALCONS_CPU_PDP11_MEMACCESS_PA(realcons,pa,data_expr,write)	do { \
 		realcons_memory_address_register = (pa) ; \
 		realcons_memory_data_register = (data_expr) ; \
+   	    realcons_memory_write_access = (write) ; \
 	} while(0)
 
 															// R/W access, virtual and physical address given
-#define REALCONS_CPU_PDP11_MEMACCESS_VA_PA(realcons,va,pa,data_expr)	 do { \
+// ismem=0: IOpage
+#define REALCONS_CPU_PDP11_MEMACCESS_VA_PA(realcons,va,pa,data_expr,write)	 do { \
 			realcons_bus_ID_mode = ((va) & 0x10000)? 1 : 0 ; \
 			realcons_memory_address_register = (pa) ; \
 			realcons_memory_data_register = (data_expr) ; \
+        	realcons_memory_write_access = (write) ; \
 		} while(0)
 
 
@@ -1031,12 +1035,7 @@ t_stat sim_instr(void)
 						dsenable = calc_ds(cm);
 #if USE_REALCONS
 						REALCONS_EVENT(cpu_realcons, realcons_event_opcode_reset);
-						// the RESET opcode sets the UNIBUS signal INIT active for 20ms
-						// After that there's a 50ms delay
-						// PDP-11-40 system engineering drawings, Rev P(Jun 1974, Rev P),
-						// page  "FLOW DIAGRAM (TRAPS,PWRUP,RESET,RTI,RTS,RTT) (6)"
-						// Some programs use it as display delay to show R0
-						realcons_ms_sleep(cpu_realcons, 70); // keep realcons logic active
+						// The realcons event handler must handle the RESET-delay (70ms for 11/40, 10ms for 11/70, etc)
 #endif
 					}
 					break;
@@ -2499,7 +2498,7 @@ int32 ReadE(int32 va)
 	if (ADDR_IS_MEM(pa)) {                                  /* memory address? */
 		data = M[pa >> 1];
 #ifdef USE_REALCONS
-		REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, pa, data);
+		REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, pa, data, FALSE);
 #endif
 		return data;
 	}
@@ -2513,7 +2512,7 @@ int32 ReadE(int32 va)
 		ABORT(TRAP_NXM);
 	}
 #ifdef USE_REALCONS
-	REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, pa, data);
+	REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, pa, data, FALSE);
 #endif
 	return data;
 }
@@ -2530,7 +2529,7 @@ int32 ReadW(int32 va)
 	if (ADDR_IS_MEM(pa)) {                                  /* memory address? */
 		data = M[pa >> 1];
 #ifdef USE_REALCONS
-		REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, pa, data);
+		REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, pa, data, FALSE);
 #endif
 		return data;
 	}
@@ -2543,7 +2542,7 @@ int32 ReadW(int32 va)
 		ABORT(TRAP_NXM);
 	}
 #ifdef USE_REALCONS
-	REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, pa, data);
+	REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, pa, data, FALSE);
 #endif
 	return data;
 }
@@ -2556,7 +2555,7 @@ int32 ReadB(int32 va)
 	if (ADDR_IS_MEM(pa)) {
 		data = (va & 1 ? M[pa >> 1] >> 8 : M[pa >> 1]) & 0377;
 #ifdef USE_REALCONS
-		REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, pa, data);
+		REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, pa, data, FALSE);
 #endif
 		return data;
 	}
@@ -2570,7 +2569,7 @@ int32 ReadB(int32 va)
 	}
 	data = ((va & 1) ? data >> 8 : data) & 0377;
 #ifdef USE_REALCONS
-	REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, pa, data);
+	REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, pa, data, FALSE);
 #endif
 	return data;
 
@@ -2588,7 +2587,7 @@ int32 ReadMW(int32 va)
 	if (ADDR_IS_MEM(last_pa)) {                              /* memory address? */
 		data = M[last_pa >> 1];
 #ifdef USE_REALCONS
-		REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, last_pa, data);
+		REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, last_pa, data, FALSE);
 #endif
 		return data;
 	}
@@ -2601,7 +2600,7 @@ int32 ReadMW(int32 va)
 		ABORT(TRAP_NXM);
 	}
 #ifdef USE_REALCONS
-	REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, last_pa, data);
+	REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, last_pa, data, FALSE);
 #endif
 	return data;
 }
@@ -2614,7 +2613,7 @@ int32 ReadMB(int32 va)
 	if (ADDR_IS_MEM(last_pa)) {
 		data = (va & 1 ? M[last_pa >> 1] >> 8 : M[last_pa >> 1]) & 0377;
 #ifdef USE_REALCONS
-		REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, last_pa, data);
+		REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, last_pa, data, FALSE);
 #endif
 		return data;
 	}
@@ -2628,7 +2627,7 @@ int32 ReadMB(int32 va)
 	}
 	data = ((va & 1) ? data >> 8 : data) & 0377;
 #ifdef USE_REALCONS
-	REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, last_pa, data);
+	REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, last_pa, data, FALSE);
 #endif
 	return data;
 }
@@ -2653,7 +2652,7 @@ void WriteW(int32 data, int32 va)
 	pa = relocW(va);                                       /* relocate */
 	if (ADDR_IS_MEM(pa)) {                                 /* memory address? */
 #ifdef USE_REALCONS
-		REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, pa, data);
+		REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, pa, data, TRUE);
 #endif
 		M[pa >> 1] = data;
 		return;
@@ -2667,7 +2666,7 @@ void WriteW(int32 data, int32 va)
 		ABORT(TRAP_NXM);
 	}
 #ifdef USE_REALCONS
-	REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, pa, data);
+	REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, pa, data, TRUE);
 #endif
 	return;
 }
@@ -2684,7 +2683,7 @@ void WriteB(int32 data, int32 va)
 		else // M[pa >> 1] = (M[pa >> 1] & ~0377) | data;
 			data = (M[pa >> 1] & ~0377) | data;
 #ifdef USE_REALCONS
-		REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, pa, data);
+		REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, pa, data, TRUE);
 #endif
 		M[pa >> 1] = data;
 		return;
@@ -2698,7 +2697,7 @@ void WriteB(int32 data, int32 va)
 		ABORT(TRAP_NXM);
 	}
 #ifdef USE_REALCONS
-	REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, pa, data);
+	REALCONS_CPU_PDP11_MEMACCESS_VA_PA(cpu_realcons, va, pa, data, TRUE);
 #endif
 	return;
 }
@@ -2707,7 +2706,7 @@ void PWriteW(int32 data, int32 pa)
 {
 	if (ADDR_IS_MEM(pa)) {                                 /* memory address? */
 #ifdef USE_REALCONS
-		REALCONS_CPU_PDP11_MEMACCESS_PA(cpu_realcons, pa, data);
+		REALCONS_CPU_PDP11_MEMACCESS_PA(cpu_realcons, pa, data, TRUE);
 #endif
 		M[pa >> 1] = data;
 		return;
@@ -2721,7 +2720,7 @@ void PWriteW(int32 data, int32 pa)
 		ABORT(TRAP_NXM);
 	}
 #ifdef USE_REALCONS
-	REALCONS_CPU_PDP11_MEMACCESS_PA(cpu_realcons, pa, data);
+	REALCONS_CPU_PDP11_MEMACCESS_PA(cpu_realcons, pa, data, TRUE);
 #endif
 	return;
 }
@@ -2736,7 +2735,7 @@ void PWriteB(int32 data, int32 pa)
 			data = (M[pa >> 1] & ~0377) | data;
 		// M[pa >> 1] = (M[pa >> 1] & ~0377) | data;
 #ifdef USE_REALCONS
-		REALCONS_CPU_PDP11_MEMACCESS_PA(cpu_realcons, pa, data);
+		REALCONS_CPU_PDP11_MEMACCESS_PA(cpu_realcons, pa, data, TRUE);
 #endif
 		M[pa >> 1] = data;
 		return;
@@ -2750,7 +2749,7 @@ void PWriteB(int32 data, int32 pa)
 		ABORT(TRAP_NXM);
 	}
 #ifdef USE_REALCONS
-	REALCONS_CPU_PDP11_MEMACCESS_PA(cpu_realcons, pa, data);
+	REALCONS_CPU_PDP11_MEMACCESS_PA(cpu_realcons, pa, data, TRUE);
 #endif
 	return;
 }
@@ -3300,7 +3299,7 @@ if (M == NULL) {                    /* First time init */
 	pcq_r = find_reg("PCQ", NULL, dptr);
 	if (pcq_r)
 		pcq_r->qptr = 0;
-	else 
+	else
 		return SCPE_IERR;
 #ifdef USE_REALCONS
 	// initialize realcons cpu state extension here

@@ -234,6 +234,11 @@ void realcons_console_pdp11_20__event_opcode_reset(realcons_console_logic_pdp11_
     // SIGNAL_SET(cpusignal_busregister, ...)
     // _this->DMUX = SIGNAL_GET(cpusignal_R0);
     _this->run_state = RUN_STATE_RESET;
+
+    // duration of RESET on 11/20 unclear. do 70ms, as on 11/40
+    realcons_ms_sleep(_this->realcons, 70); // keep realcons logic active
+
+
 }
 
 void realcons_console_pdp11_20__event_opcode_wait(realcons_console_logic_pdp11_20_t *_this)
