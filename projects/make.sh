@@ -86,7 +86,7 @@ MAKE_TARGET_ARCH=BBB make $MAKEOPTIONS $MAKETARGETS
 
 (
 # SimH for all platforms
-cd 02.3_simh.4.x.jh/src
+cd 02.3_simh/4.x+realcons/src
 echo ; echo "*** SimH 4.x for x86"
 MAKE_TARGET_ARCH=X86 make $MAKEOPTIONS $MAKETARGETS
 echo ; echo "*** SimH 4.x for x64"

@@ -1,0 +1,197 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{A39C0AFE-BDE5-4236-B740-AC710FCA1DA2}</ProjectGuid>
+    <RootNamespace>PDP10</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectName>PDP10_realcons</ProjectName>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>NotSet</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v140_xp</PlatformToolset>
+    <CharacterSet>NotSet</CharacterSet>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>14.0.23107.0</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>..\BIN\NT\$(Platform)-$(Configuration)\</OutDir>
+    <IntDir>..\BIN\NT\Project\simh\$(ProjectName)\$(Platform)-$(Configuration)\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>..\BIN\NT\$(Platform)-$(Configuration)\</OutDir>
+    <IntDir>..\BIN\NT\Project\simh\$(ProjectName)\$(Platform)-$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <PreBuildEvent>
+      <Message>Check for required build dependencies &amp; git commit id</Message>
+      <Command>Pre-Build-Event.cmd LIBPCRE</Command>
+    </PreBuildEvent>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>../REALCONS;../../../07.0_blinkenlight_api;../../../07.0_blinkenlight_api/rpcgen_linux;../../../3rdparty\oncrpc_win32/win32/include;../../../00_common;./;../;../PDP10/;../PDP11/;../VAX/;../../windows-build/PCRE/include/;../../windows-build/pthreads;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>USE_INT64;VM_PDP10;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;SIM_NEED_GIT_COMMIT_ID;HAVE_PCREPOSIX_H;PCRE_STATIC;PTW32_STATIC_LIB;WIN32;USE_REALCONS;BLINKENLIGHT_CLIENT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessKeepComments>false</PreprocessKeepComments>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CompileAs>CompileAsC</CompileAs>
+      <ShowIncludes>false</ShowIncludes>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>..\..\..\3rdparty\oncrpc_win32\win32\librpc\lib\Debug\oncrpc.lib;wsock32.lib;winmm.lib;pcrestaticd.lib;pcreposixstaticd.lib;user32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../../windows-build/PCRE/lib/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <StackReserveSize>10485760</StackReserveSize>
+      <StackCommitSize>10485760</StackCommitSize>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention />
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <PreBuildEvent>
+      <Message>Check for required build dependencies &amp; git commit id</Message>
+      <Command>Pre-Build-Event.cmd LIBPCRE</Command>
+    </PreBuildEvent>
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <OmitFramePointers>true</OmitFramePointers>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>./;../;../PDP10/;../PDP11/;../VAX/;../../windows-build/PCRE/include/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>USE_INT64;VM_PDP10;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;SIM_NEED_GIT_COMMIT_ID;HAVE_PCREPOSIX_H;PCRE_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>wsock32.lib;winmm.lib;pcrestatic.lib;pcreposixstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../../windows-build/PCRE/lib/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <StackReserveSize>10485760</StackReserveSize>
+      <StackCommitSize>10485760</StackCommitSize>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention />
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\00_common\bitcalc.c" />
+    <ClCompile Include="..\..\..\07.0_blinkenlight_api\blinkenlight_api_client.c" />
+    <ClCompile Include="..\..\..\07.0_blinkenlight_api\blinkenlight_panels.c" />
+    <ClCompile Include="..\..\..\07.0_blinkenlight_api\rpcgen_linux\rpc_blinkenlight_api_clnt.c" />
+    <ClCompile Include="..\..\..\07.0_blinkenlight_api\rpcgen_linux\rpc_blinkenlight_api_xdr.c" />
+    <ClCompile Include="..\..\windows-build\pthreads\pthread.c" />
+    <ClCompile Include="..\PDP10\pdp10_cpu.c" />
+    <ClCompile Include="..\PDP10\pdp10_fe.c" />
+    <ClCompile Include="..\PDP10\pdp10_ksio.c" />
+    <ClCompile Include="..\PDP10\pdp10_lp20.c" />
+    <ClCompile Include="..\PDP10\pdp10_mdfp.c" />
+    <ClCompile Include="..\PDP10\pdp10_pag.c" />
+    <ClCompile Include="..\PDP10\pdp10_rp.c" />
+    <ClCompile Include="..\PDP10\pdp10_sys.c" />
+    <ClCompile Include="..\PDP10\pdp10_tim.c" />
+    <ClCompile Include="..\PDP10\pdp10_tu.c" />
+    <ClCompile Include="..\PDP10\pdp10_xtnd.c" />
+    <ClCompile Include="..\PDP11\pdp11_cr.c" />
+    <ClCompile Include="..\PDP11\pdp11_dmc.c" />
+    <ClCompile Include="..\PDP11\pdp11_dup.c" />
+    <ClCompile Include="..\PDP11\pdp11_dz.c" />
+    <ClCompile Include="..\PDP11\pdp11_kmc.c" />
+    <ClCompile Include="..\PDP11\pdp11_pt.c" />
+    <ClCompile Include="..\PDP11\pdp11_ry.c" />
+    <ClCompile Include="..\PDP11\pdp11_xu.c" />
+    <ClCompile Include="..\REALCONS\realcons.c" />
+    <ClCompile Include="..\REALCONS\realcons_pdp10.c" />
+    <ClCompile Include="..\REALCONS\realcons_pdp10_control.c" />
+    <ClCompile Include="..\REALCONS\realcons_pdp10_maintpanel.c" />
+    <ClCompile Include="..\REALCONS\realcons_pdp10_operpanel.c" />
+    <ClCompile Include="..\REALCONS\realcons_simh.c" />
+    <ClCompile Include="..\scp.c" />
+    <ClCompile Include="..\sim_console.c" />
+    <ClCompile Include="..\sim_disk.c" />
+    <ClCompile Include="..\sim_ether.c" />
+    <ClCompile Include="..\sim_fio.c" />
+    <ClCompile Include="..\sim_serial.c" />
+    <ClCompile Include="..\sim_sock.c" />
+    <ClCompile Include="..\sim_tape.c" />
+    <ClCompile Include="..\sim_timer.c" />
+    <ClCompile Include="..\sim_tmxr.c" />
+    <ClCompile Include="..\sim_video.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\00_common\bitcalc.h" />
+    <ClInclude Include="..\..\..\07.0_blinkenlight_api\blinkenlight_api_client.h" />
+    <ClInclude Include="..\..\..\07.0_blinkenlight_api\blinkenlight_panels.h" />
+    <ClInclude Include="..\..\..\07.0_blinkenlight_api\rpcgen_linux\rpc_blinkenlight_api.h" />
+    <ClInclude Include="..\..\windows-build\pthreads\pthread.h" />
+    <ClInclude Include="..\PDP10\pdp10_defs.h" />
+    <ClInclude Include="..\PDP11\pdp11_ddcmp.h" />
+    <ClInclude Include="..\PDP11\pdp11_xu.h" />
+    <ClInclude Include="..\REALCONS\realcons.h" />
+    <ClInclude Include="..\REALCONS\realcons_pdp10.h" />
+    <ClInclude Include="..\REALCONS\realcons_pdp10_control.h" />
+    <ClInclude Include="..\REALCONS\realcons_simh.h" />
+    <ClInclude Include="..\scp.h" />
+    <ClInclude Include="..\sim_console.h" />
+    <ClInclude Include="..\sim_defs.h" />
+    <ClInclude Include="..\sim_disk.h" />
+    <ClInclude Include="..\sim_ether.h" />
+    <ClInclude Include="..\sim_fio.h" />
+    <ClInclude Include="..\sim_rev.h" />
+    <ClInclude Include="..\sim_serial.h" />
+    <ClInclude Include="..\sim_sock.h" />
+    <ClInclude Include="..\sim_tape.h" />
+    <ClInclude Include="..\sim_timer.h" />
+    <ClInclude Include="..\sim_tmxr.h" />
+    <ClInclude Include="..\sim_video.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

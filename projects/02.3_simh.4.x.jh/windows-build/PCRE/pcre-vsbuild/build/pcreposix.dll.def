@@ -1,6 +1,0 @@
-EXPORTS
-DllGetVersion
-regcomp
-regerror
-regexec
-regfree

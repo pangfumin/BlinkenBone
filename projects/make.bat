@@ -21,7 +21,7 @@ pushd 07.2_blinkenlight_test\msvc
 popd
 
 
-pushd "02.3_simh.4.x.jh\src\Visual Studio Projects"
+pushd "02.3_simh\4.x+realcons\src\Visual Studio Projects"
 %MSBUILD% pdp8_realcons.vcxproj
 %MSBUILD% pdp10_realcons.vcxproj
 %MSBUILD% pdp11_realcons.vcxproj
