@@ -217,7 +217,7 @@ void realcons_console_pdp8i__event_operator_exam_deposit(realcons_console_logic_
 	if (_this->realcons->debug)
 		printf("realcons_console_pdp8i__event_operator_exam_deposit\n");
 	// same code as operating the EXAM/DEP switch: Update PC to mem-addr+1
-	tmp_pc = SIGNAL_GET(cpusignal_memory_address_register);
+	tmp_pc = SIGNAL_GET(cpusignal_memory_address_phys_register);
 	if ((tmp_pc & 0xfff) == 0xfff)
 		tmp_pc &= 0xf000; // roll around lower 12 bits
 	else tmp_pc++; // inc inside page
@@ -249,7 +249,7 @@ void realcons_console_pdp8i_interface_connect(realcons_console_logic_pdp8i_t *_t
 	// connect pdp8 cpu signals end events to simulator and realcons state variables
 	{
 		// REALCONS extension in scp.c
-		extern t_addr realcons_memory_address_register; // REALCONS extension in scp.c
+		extern t_addr realcons_memory_address_phys_register; // REALCONS extension in scp.c
 		extern char *realcons_register_name; // pseudo: name of last accessed register
 		extern t_value realcons_memory_data_register; // REALCONS extension in scp.c
 		extern  int realcons_console_halt; // 1: CPU halted by realcons console
@@ -273,7 +273,7 @@ void realcons_console_pdp8i_interface_connect(realcons_console_logic_pdp8i_t *_t
 		_this->cpusignal_run = &sim_is_running;
 
 		// from scp.c
-		_this->cpusignal_memory_address_register = &realcons_memory_address_register;
+		_this->cpusignal_memory_address_phys_register = &realcons_memory_address_phys_register;
         _this->cpusignal_register_name = &realcons_register_name; // pseudo: name of last accessed register
 		_this->cpusignal_memory_data_register = &realcons_memory_data_register;
 		_this->cpusignal_console_halt = &realcons_console_halt;
@@ -305,6 +305,7 @@ void realcons_console_pdp8i_interface_connect(realcons_console_logic_pdp8i_t *_t
 		extern console_controller_event_func_t realcons_event_operator_deposit;
 		extern console_controller_event_func_t realcons_event_operator_reg_exam;
 		extern console_controller_event_func_t realcons_event_operator_reg_deposit;
+		extern console_controller_event_func_t realcons_event_cpu_reset;
 
 		realcons_event_run_start =
 			(console_controller_event_func_t)realcons_console_pdp8i__event_run_start;
@@ -317,6 +318,7 @@ void realcons_console_pdp8i_interface_connect(realcons_console_logic_pdp8i_t *_t
 			realcons_event_operator_deposit =
 			(console_controller_event_func_t)realcons_console_pdp8i__event_operator_exam_deposit;
 		realcons_event_operator_reg_exam = realcons_event_operator_reg_deposit = NULL ;
+		realcons_event_cpu_reset = NULL ;
 	}
 #ifdef TODO
 	{
@@ -536,7 +538,7 @@ t_stat realcons_console_pdp8i_service(realcons_console_logic_pdp8i_t *_this)
 			SIGNAL_SET(cpusignal_majorstate_last, 0); // clear major state flip flops
 
 			if (_this->realcons->debug)
-				printf("LOADADR %o\n", SIGNAL_GET(cpusignal_memory_address_register));
+				printf("LOADADR %o\n", SIGNAL_GET(cpusignal_memory_address_phys_register));
 		}
 
 		if (action_switch == _this->switch_examine) {
@@ -655,7 +657,7 @@ t_stat realcons_console_pdp8i_service(realcons_console_logic_pdp8i_t *_this)
 	if (!_this->realcons->lamp_test) {
 
 		// ADRESS always shows BUS Adress register.
-		_this->led_memory_address->value = SIGNAL_GET(cpusignal_memory_address_register);
+		_this->led_memory_address->value = SIGNAL_GET(cpusignal_memory_address_phys_register);
 		//	if (_this->realcons->debug)
 		//		printf("led_ADDRESS=%o, ledDATA=%o\n", (unsigned) _this->led_ADDRESS->value,
 		//				(unsigned) _this->led_DATA->value);

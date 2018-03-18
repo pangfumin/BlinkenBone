@@ -203,7 +203,7 @@ void realcons_console_pdp11_20__event_opcode_any(realcons_console_logic_pdp11_20
         printf("realcons_console_pdp11_20__event_opcode_any\n");
     // SIGNAL_SET(cpu_is_running, 1);
     // after any opcode: ADDR shows PC, DATA shows IR = opcode
-    SIGNAL_SET(cpusignal_memory_address_register, SIGNAL_GET(cpusignal_PC));
+    SIGNAL_SET(cpusignal_memory_address_phys_register, SIGNAL_GET(cpusignal_PC));
     _this->DATA_reg = SIGNAL_GET(cpusignal_DATAPATH_shifter); // show internal data
 
     // opcode fetch: ALU_output already set
@@ -217,7 +217,7 @@ void realcons_console_pdp11_20__event_opcode_halt(realcons_console_logic_pdp11_2
     if (_this->realcons->debug)
         printf("realcons_console_pdp11_20__event_opcode_halt\n");
 //	SIGNAL_SET(cpusignal_console_halt, 1);
-    SIGNAL_SET(cpusignal_memory_address_register, SIGNAL_GET(cpusignal_PC)-2);
+    SIGNAL_SET(cpusignal_memory_address_phys_register, SIGNAL_GET(cpusignal_PC)-2);
     // what is in the unibus interface on HALT? IR == HALT Opcode?
     // SIGNAL_SET(cpusignal_busregister, ...)
     _this->DATA_reg = SIGNAL_GET(cpusignal_R0); // show R0 on halt
@@ -229,7 +229,7 @@ void realcons_console_pdp11_20__event_opcode_reset(realcons_console_logic_pdp11_
     if (_this->realcons->debug)
         printf("realcons_console_pdp11_20__event_opcode_reset\n");
 //	SIGNAL_SET(cpusignal_console_halt, 0);
-    SIGNAL_SET(cpusignal_memory_address_register, SIGNAL_GET(cpusignal_PC));
+    SIGNAL_SET(cpusignal_memory_address_phys_register, SIGNAL_GET(cpusignal_PC));
     // what is in the unibus interface on RESET? IR == RESET Opcode ?
     // SIGNAL_SET(cpusignal_busregister, ...)
     // _this->DMUX = SIGNAL_GET(cpusignal_R0);
@@ -246,7 +246,7 @@ void realcons_console_pdp11_20__event_opcode_wait(realcons_console_logic_pdp11_2
     if (_this->realcons->debug)
         printf("realcons_console_pdp11_20__event_opcode_wait\n");
 //	SIGNAL_SET(cpusignal_console_halt, 0);
-    SIGNAL_SET(cpusignal_memory_address_register, SIGNAL_GET(cpusignal_PC));
+    SIGNAL_SET(cpusignal_memory_address_phys_register, SIGNAL_GET(cpusignal_PC));
     SIGNAL_SET(cpusignal_memory_data_register, SIGNAL_GET(cpusignal_instruction_register));
     //SIGNAL_SET(cpusignal_bus_register, SIGNAL_GET(cpusignal_instruction_register));
     _this->run_state = RUN_STATE_WAIT; // RUN led off
@@ -274,7 +274,7 @@ void realcons_console_pdp11_20__event_operator_halt(realcons_console_logic_pdp11
 {
     if (_this->realcons->debug)
         printf("realcons_console_pdp11_20__event_operator_halt\n");
-    SIGNAL_SET(cpusignal_memory_address_register, SIGNAL_GET(cpusignal_PC) - 2);
+    SIGNAL_SET(cpusignal_memory_address_phys_register, SIGNAL_GET(cpusignal_PC) - 2);
 
 //	SIGNAL_SET(cpusignal_console_halt, 1);
 //    SIGNAL_SET(cpusignal_memory_address_register, SIGNAL_GET(cpusignal_PC));
@@ -287,7 +287,7 @@ void realcons_console_pdp11_20__event_step_halt(realcons_console_logic_pdp11_20_
     if (_this->realcons->debug)
         printf("realcons_console_pdp11_20__event_step_halt\n");
 //	SIGNAL_SET(cpusignal_console_halt, 1);
-    SIGNAL_SET(cpusignal_memory_address_register, SIGNAL_GET(cpusignal_PC)-2);
+    SIGNAL_SET(cpusignal_memory_address_phys_register, SIGNAL_GET(cpusignal_PC)-2);
     // SIGNAL_SET(cpusignal_DATAPATH_shifter, SIGNAL_GET(cpusignal_PSW));
     _this->run_state = RUN_STATE_HALT;
 }
@@ -338,7 +338,7 @@ void realcons_console_pdp11_20__event_operator_reg_exam_deposit(
     else if (!strcasecmp(regname, "pc"))
         addr = 017777707;
     if (addr) {
-        SIGNAL_SET(cpusignal_memory_address_register, addr);
+        SIGNAL_SET(cpusignal_memory_address_phys_register, addr);
         realcons_console_pdp11_20__event_operator_exam_deposit(_this);
     } // other register accesses are ignored by the panel
 }
@@ -362,7 +362,7 @@ void realcons_console_pdp11_20_interface_connect(realcons_console_logic_pdp11_20
     // connect pdp11 cpu signals end events to simulator and realcons state variables
     {
         // REALCONS extension in scp.c
-        extern t_addr realcons_memory_address_register; // REALCONS extension in scp.c
+        extern t_addr realcons_memory_address_phys_register; // REALCONS extension in scp.c
 
         extern t_value realcons_memory_data_register; // REALCONS extension in scp.c
         extern char *realcons_register_name; // pseudo: name of last accessed register
@@ -380,7 +380,7 @@ void realcons_console_pdp11_20_interface_connect(realcons_console_logic_pdp11_20
         realcons_console_halt = 0;
 
         // from scp.c
-        _this->cpusignal_memory_address_register = &realcons_memory_address_register;
+        _this->cpusignal_memory_address_phys_register = &realcons_memory_address_phys_register;
         _this->cpusignal_register_name = &realcons_register_name; // pseudo: name of last accessed register
         _this->cpusignal_memory_data_register = &realcons_memory_data_register; // BAR
         _this->cpusignal_console_halt = &realcons_console_halt;
@@ -415,6 +415,7 @@ void realcons_console_pdp11_20_interface_connect(realcons_console_logic_pdp11_20
         extern console_controller_event_func_t realcons_event_operator_deposit;
         extern console_controller_event_func_t realcons_event_operator_reg_exam;
         extern console_controller_event_func_t realcons_event_operator_reg_deposit;
+		extern console_controller_event_func_t realcons_event_cpu_reset;
         // pdp11_cpu.c
         extern console_controller_event_func_t realcons_event_opcode_any; // triggered after any opcode execution
         extern console_controller_event_func_t realcons_event_opcode_halt;
@@ -435,7 +436,7 @@ void realcons_console_pdp11_20_interface_connect(realcons_console_logic_pdp11_20
         realcons_event_operator_reg_exam =
                 realcons_event_operator_reg_deposit =
                         (console_controller_event_func_t) realcons_console_pdp11_20__event_operator_reg_exam_deposit;
-
+		realcons_event_cpu_reset = NULL ;
         realcons_event_opcode_any =
                 (console_controller_event_func_t) realcons_console_pdp11_20__event_opcode_any;
         realcons_event_opcode_halt =
@@ -603,19 +604,19 @@ t_stat realcons_console_pdp11_20_service(realcons_console_logic_pdp11_20_t *_thi
             _this->autoinc_addr_action_switch = NULL;
         else
             // inc panel address register
-        SIGNAL_SET(cpusignal_memory_address_register,
-            realcons_console_pdp11_20_addr_inc(SIGNAL_GET(cpusignal_memory_address_register))); // BAR
+        SIGNAL_SET(cpusignal_memory_address_phys_register,
+            realcons_console_pdp11_20_addr_inc(SIGNAL_GET(cpusignal_memory_address_phys_register))); // BAR
 
         /* "The LOAD ADDR switch transfers the SWITCH REGISTER contents to the Bus Address Register (BAR) through a
             temporary location (TEMP) within the processor. This bus address, displayed in the ADDRESS REGISTER, provides
             an address for the console functions of EXAM, DEP, and START."*/
         if (action_switch == _this->switch_LOAD_ADDR) {
-            SIGNAL_SET(cpusignal_memory_address_register, // BAR
+            SIGNAL_SET(cpusignal_memory_address_phys_register, // BAR
                     (realcons_machine_word_t ) encode_SR_addr_16_to_22(encode_SR_18_to_16((t_value)_this->switch_SR->value)));
             SIGNAL_SET(cpusignal_DATAPATH_shifter, 0); // 11/40 videos show: DATA is cleared
 
             if (_this->realcons->debug)
-                printf("LOADADR %o\n", SIGNAL_GET(cpusignal_memory_address_register));
+                printf("LOADADR %o\n", SIGNAL_GET(cpusignal_memory_address_phys_register));
             // flash with DATA LEDs on 11/40. 11/70 ?
             _this->realcons->timer_running_msec[TIMER_DATA_FLASH] =
                     _this->realcons->service_cur_time_msec + TIME_DATA_FLASH_MS;
@@ -627,7 +628,7 @@ t_stat realcons_console_pdp11_20_service(realcons_console_logic_pdp11_20_t *_thi
             // generate simh "exam cmd"
             // fix octal, should use SimH-radix
             sprintf(_this->realcons->simh_cmd_buffer, "examine %s\n",
-                realcons_console_pdp11_20_addr_panel2simh(SIGNAL_GET(cpusignal_memory_address_register)));
+                realcons_console_pdp11_20_addr_panel2simh(SIGNAL_GET(cpusignal_memory_address_phys_register)));
         }
 
         if (action_switch == _this->switch_DEPOSIT) {
@@ -639,7 +640,7 @@ t_stat realcons_console_pdp11_20_service(realcons_console_logic_pdp11_20_t *_thi
             // produce SimH cmd. fix octal, should use SimH-radix
             sprintf(_this->realcons->simh_cmd_buffer, "deposit %s %o\n",
                     realcons_console_pdp11_20_addr_panel2simh(
-                            SIGNAL_GET(cpusignal_memory_address_register)), dataval);
+                            SIGNAL_GET(cpusignal_memory_address_phys_register)), dataval);
             // flash with DATA LEDs
             _this->realcons->timer_running_msec[TIMER_DATA_FLASH] =
                     _this->realcons->service_cur_time_msec + TIME_DATA_FLASH_MS;
@@ -678,7 +679,7 @@ t_stat realcons_console_pdp11_20_service(realcons_console_logic_pdp11_20_t *_thi
                 // INITIALIZE, and start processor operation at R_ADRSC
                 // not documented, but start at virtual addr must be also be converted to physical
                 sprintf(_this->realcons->simh_cmd_buffer, "run %o\n",
-                        SIGNAL_GET(cpusignal_memory_address_register) // always 22 bit physical ?
+                        SIGNAL_GET(cpusignal_memory_address_phys_register) // always 22 bit physical ?
                                 );
                 // flash with DATA LEDs
                 _this->realcons->timer_running_msec[TIMER_DATA_FLASH] =
@@ -724,7 +725,7 @@ t_stat realcons_console_pdp11_20_service(realcons_console_logic_pdp11_20_t *_thi
      During direct memory access (DMA) operations, the processor is not involved in the data transfer functions,
      and the address displayed in the ADDRESS REGISTER is not that of the last bus operation.
      "*/
-        _this->leds_ADDRESS->value = SIGNAL_GET(cpusignal_memory_address_register);
+        _this->leds_ADDRESS->value = SIGNAL_GET(cpusignal_memory_address_phys_register);
         // all logic must influence cpusignal_memory_address_register !
         // cpusignal_memory_address_register is updated by simulator
 

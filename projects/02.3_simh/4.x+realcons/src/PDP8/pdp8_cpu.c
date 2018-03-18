@@ -325,7 +325,7 @@ DEVICE cpu_dev = {
 // State of MAJORSTATE signals and some flip-flops is added.
 // 
 // 1. state for all cpu's in scp.c
-extern	t_addr realcons_memory_address_register; // memory address
+extern	t_addr realcons_memory_address_phys_register; // memory address
 extern 	t_value realcons_memory_data_register; // memory data
 extern 	int realcons_console_halt; // 1: CPU halted by realcons console
 
@@ -393,12 +393,12 @@ int32 realcons_flipflops; // see REALCONS_PDP8I_FLIFLOP_*
  * TODO: MB does not contain read words also? Check later
  */
 static uint16 pdp8_memread(uint32 memaddr) {
-	realcons_memory_address_register = memaddr;
+	realcons_memory_address_phys_register = memaddr;
 	return M[memaddr];
 }
 static uint16 pdp8_memset(uint32 memaddr, uint16 memval) {
 	M[memaddr] = memval;
-	realcons_memory_address_register = memaddr;
+	realcons_memory_address_phys_register = memaddr;
 	realcons_memory_data_register = memval; // PDP8 doc: memory buffer = "MB"
 	return memval;
 }

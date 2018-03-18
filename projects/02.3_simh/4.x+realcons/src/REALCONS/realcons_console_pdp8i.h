@@ -80,7 +80,7 @@ typedef struct
 	 * in panel logic. They connect simulation and panel. A certain signal is can be unidirectional
 	 * (either set by simulator and read by panel logic, ore vice verse) or be bidirectional.
 	 */
-	t_addr *cpusignal_memory_address_register; // address of last bus cycle (EXAM/DEPOSIT)
+	t_addr *cpusignal_memory_address_phys_register; // address of last bus cycle (EXAM/DEPOSIT)
 	char **cpusignal_register_name; // name of last accessed exam/deposit register
 	t_value *cpusignal_memory_data_register; // data of last bus cycle
 	int *cpusignal_console_halt; // 1, if a real console halts program execution

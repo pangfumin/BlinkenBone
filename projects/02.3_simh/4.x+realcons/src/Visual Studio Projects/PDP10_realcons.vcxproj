@@ -61,7 +61,7 @@
     </PreBuildEvent>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../REALCONS;../../../07.0_blinkenlight_api;../../../07.0_blinkenlight_api/rpcgen_linux;../../../3rdparty\oncrpc_win32/win32/include;../../../00_common;./;../;../PDP10/;../PDP11/;../VAX/;../../windows-build/PCRE/include/;../../windows-build/pthreads;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../REALCONS;../../../../07.0_blinkenlight_api;../../../../07.0_blinkenlight_api/rpcgen_linux;../../../../3rdparty\oncrpc_win32/win32/include;../../../../00_common;./;../;../PDP10/;../PDP11/;../VAX/;../../windows-build/PCRE/include/;../../windows-build/pthreads;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>USE_INT64;VM_PDP10;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;SIM_NEED_GIT_COMMIT_ID;HAVE_PCREPOSIX_H;PCRE_STATIC;PTW32_STATIC_LIB;WIN32;USE_REALCONS;BLINKENLIGHT_CLIENT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessKeepComments>false</PreprocessKeepComments>
       <MinimalRebuild>true</MinimalRebuild>
@@ -74,7 +74,7 @@
       <ShowIncludes>false</ShowIncludes>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>..\..\..\3rdparty\oncrpc_win32\win32\librpc\lib\Debug\oncrpc.lib;wsock32.lib;winmm.lib;pcrestaticd.lib;pcreposixstaticd.lib;user32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>..\..\..\..\3rdparty\oncrpc_win32\win32\librpc\lib\Debug\oncrpc.lib;wsock32.lib;winmm.lib;pcrestaticd.lib;pcreposixstaticd.lib;user32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>../../windows-build/PCRE/lib/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -121,11 +121,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\00_common\bitcalc.c" />
-    <ClCompile Include="..\..\..\07.0_blinkenlight_api\blinkenlight_api_client.c" />
-    <ClCompile Include="..\..\..\07.0_blinkenlight_api\blinkenlight_panels.c" />
-    <ClCompile Include="..\..\..\07.0_blinkenlight_api\rpcgen_linux\rpc_blinkenlight_api_clnt.c" />
-    <ClCompile Include="..\..\..\07.0_blinkenlight_api\rpcgen_linux\rpc_blinkenlight_api_xdr.c" />
+    <ClCompile Include="..\..\..\..\00_common\bitcalc.c" />
+    <ClCompile Include="..\..\..\..\07.0_blinkenlight_api\blinkenlight_api_client.c" />
+    <ClCompile Include="..\..\..\..\07.0_blinkenlight_api\blinkenlight_panels.c" />
+    <ClCompile Include="..\..\..\..\07.0_blinkenlight_api\rpcgen_linux\rpc_blinkenlight_api_clnt.c" />
+    <ClCompile Include="..\..\..\..\07.0_blinkenlight_api\rpcgen_linux\rpc_blinkenlight_api_xdr.c" />
     <ClCompile Include="..\..\windows-build\pthreads\pthread.c" />
     <ClCompile Include="..\PDP10\pdp10_cpu.c" />
     <ClCompile Include="..\PDP10\pdp10_fe.c" />

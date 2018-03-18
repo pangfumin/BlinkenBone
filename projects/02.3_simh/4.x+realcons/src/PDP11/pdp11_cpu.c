@@ -667,7 +667,8 @@ DEVICE cpu_dev = {
 #ifdef USE_REALCONS
 // extended cpu state for panel logic
 // 1. state for all cpu's in scp.c
-extern	t_addr realcons_memory_address_register; // memory address
+extern	t_addr realcons_memory_address_phys_register; // memory address
+extern	t_addr realcons_memory_address_virt_register; // memory address
 extern 	t_value realcons_memory_data_register; // memory data
 extern 	int realcons_memory_write_access;
 extern 	int realcons_console_halt; // 1: CPU halted by realcons console
@@ -678,9 +679,6 @@ extern 	int realcons_console_halt; // 1: CPU halted by realcons console
   //	Initialize in cpu_reset()
 
 int		realcons_bus_ID_mode; // 1 = DATA space access, 0 = instruction space access
-					 // All PDP11 console's have an internal address register, set by LOAD ADRS.
-		// See it as part of the CPU.
-t_addr realcons_console_address_register;
 t_value realcons_DATAPATH_shifter;  // value of shifter in PDP-11 processor data paths
 t_value realcons_IR; // buffer for instruction register (opcode)
 t_value realcons_PSW; // buffer for program status word
@@ -689,39 +687,73 @@ t_value realcons_PSW; // buffer for program status word
 								   // Events are called in SimH-code as pointers to functions in panel logic
 extern console_controller_event_func_t	realcons_event_operator_halt; // scp.c, needed here
 extern console_controller_event_func_t	realcons_event_step_halt; // scp.c, needed here
+console_controller_event_func_t	realcons_event_cpu_reset;
 console_controller_event_func_t	realcons_event_opcode_any; // triggered after any opcode execution
 console_controller_event_func_t realcons_event_opcode_halt;
 console_controller_event_func_t	realcons_event_opcode_reset; // triggered after execution of RESET
 console_controller_event_func_t	realcons_event_opcode_wait; // triggered after execution of WAIT
 
-															/*** compact macros to be used in cpu_pdp11.c to regsiter memory accesses ***/
-															// evaluate virtual address
-															// pa = physical address
-															// va: extended virtual address.
-															// bit 18,17 = cm = mode: MD_SUP, MD_KER,MD_USR,MD_UND, see calc_is()
-															// bit 16 = I/D space flag, see calc_ds(). 1 = data, 0 = instruction
+                                                            /*** compact macros to be used in cpu_pdp11.c to register memory accesses ***/
+                                                            // evaluate virtual address
+                                                            // pa = physical address
+                                                            // va: extended virtual address.
+                                                            // bit 18,17 = cm = mode: MD_SUP, MD_KER,MD_USR,MD_UND, see calc_is()
+                                                            // bit 16 = I/D space flag, see calc_ds(). 1 = data, 0 = instruction
 
-															// R/W access, only physical address given
+                                                            // R/W access, only physical address given
 #define REALCONS_CPU_PDP11_MEMACCESS_PA(realcons,pa,data_expr,write)	do { \
-		realcons_memory_address_register = (pa) ; \
+		realcons_memory_address_phys_register = (pa) ; \
 		realcons_memory_data_register = (data_expr) ; \
    	    realcons_memory_write_access = (write) ; \
 	} while(0)
 
-															// R/W access, virtual and physical address given
+                                                            // R/W access, virtual and physical address given
 // ismem=0: IOpage
 #define REALCONS_CPU_PDP11_MEMACCESS_VA_PA(realcons,va,pa,data_expr,write)	 do { \
 			realcons_bus_ID_mode = ((va) & 0x10000)? 1 : 0 ; \
-			realcons_memory_address_register = (pa) ; \
+			realcons_memory_address_phys_register = (pa) ; \
+			realcons_memory_address_virt_register = (va) & 0xffff ; \
 			realcons_memory_data_register = (data_expr) ; \
         	realcons_memory_write_access = (write) ; \
 		} while(0)
 
+/* relocate virtual addresses.
+ * like relocR(), but without change of CPU state
+ * uses relocC()
+ */
+int32 realcons_reloc(int32 va) {
+    int32  sw;
+    int32 relocC(int32 va, int32 sw) ;
+
+    // input to reloC(): switches from "sim>exam" cmd as bitmask
+    sw = SWMASK('V') ; // virtual
+    switch (va & 0x60000) { // decode mode from bits 18:17
+    case 0: /*mode = 0: Kernel*/
+        sw |= SWMASK('K');
+        break;
+    case 0x020000: /*mode = 1: Super*/
+        sw |= SWMASK('S') ;
+        break;
+    case 0x060000: /*mode = 3 User */
+        sw |= SWMASK('U') ;
+        break;
+    }
+
+    if (va & 0x10000) // decode D-space from bit 16
+        sw |= SWMASK('D') ;
+    
+    return relocC(va, sw); // now these switches are reverse decoded
+}
 
 
 
 
 #endif
+
+int breaker;
+void break_here() {
+    breaker = 1; // break here
+}
 
 t_value pdp11_pc_value(void)
 {
@@ -2963,7 +2995,6 @@ void relocW_test(int32 va, int32 apridx)
 		pa      =       physical address
    On aborts, this routine returns MAXMEMSIZE
 */
-
 int32 relocC(int32 va, int32 sw)
 {
 	int32 mode, dbn, plf, apridx, apr, pa;
@@ -3304,10 +3335,10 @@ if (M == NULL) {                    /* First time init */
 #ifdef USE_REALCONS
 	// initialize realcons cpu state extension here
 	realcons_bus_ID_mode = 0;
-	realcons_console_address_register = 0;
 	realcons_DATAPATH_shifter = 0;
 	realcons_IR = 0;
 	realcons_PSW = 0;
+    REALCONS_EVENT(cpu_realcons, realcons_event_cpu_reset);
 #endif
 	set_r_display(0, MD_KER);
 return build_dib_tab ();            /* build, chk dib_tab */

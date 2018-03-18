@@ -19,8 +19,8 @@ endif
 
 # REALCONS: default for all targets is -UUSE_REALCONS, REALCONS_OPT override for PDP11
 ifeq ($(USE_REALCONS),1)
-BLINKENLIGHT_COMMON_DIR=$(SRC)/../../00_common/
-BLINKENLIGHT_API_DIR=$(SRC)/../../07.0_blinkenlight_api/
+BLINKENLIGHT_COMMON_DIR=$(SRC)/../../../00_common/
+BLINKENLIGHT_API_DIR=$(SRC)/../../../07.0_blinkenlight_api/
 REALCONS_DIR=$(SRC)/REALCONS/
 # generic sources
 REALCONS= \
@@ -111,18 +111,28 @@ ifneq (,$(filter $(MAKE_TARGET_ARCH),X86 X64))
   endif
 endif
 
-ifeq ($(MAKE_TARGET_ARCH),BEAGLEBONE)
+ifeq ($(MAKE_TARGET_ARCH),BBW)
   # fuer beaglebone und sourcery codebench lite
   ### override all compiler settings for ARM cross compilation
   OS_CCDEFS = -D_GNU_SOURCE
   LDFLAGS = -lrt -lm  -lpthread  -ldl
-  # SYSROOTS is / for cross compile environment
-  # comes from .profile, like PATH for  arm-angstrom-linux-gnueabi-gcc
-  CC = arm-angstrom-linux-gnueabi-gcc -mthumb -march=armv7-a -std=c99 -U__STRICT_ANSI__  $(CC_DEFS) $(OS_CCDEFS) \
-  	-I $(SRC)  $(CC_DBG_FLAGS) -UUSE_REALCONS
+  CC = $(BBW_CC) -std=c99 -U__STRICT_ANSI__  $(CC_DEFS) $(OS_CCDEFS) -I $(SRC)  $(CC_DBG_FLAGS) -UUSE_REALCONS
   NETWORK_OPT = -DUSE_NETWORK -isystem $(SYSROOTS)/usr/local/include -lpcap
   # DO NOT FORGET: "opkg install libpcap" on target
-  BIN=$(SRC)/../bin-beaglebone/
+  BIN=$(SRC)/../bin-bbw/
+endif
+
+ifeq ($(MAKE_TARGET_ARCH),BBB)
+  # fuer beagleboneblack under Debian and linaro cross gcc
+  ### override all compiler settings for ARM cross compilation
+  OS_CCDEFS = -D_GNU_SOURCE
+  LDFLAGS = -lrt -lm  -lpthread  -ldl
+  CC = $(BBB_CC) -std=c99 -U__STRICT_ANSI__  $(CC_DEFS) $(OS_CCDEFS) -I $(SRC)  $(CC_DBG_FLAGS) -UUSE_REALCONS
+  # DO NOT FORGET: "apt-get install libpcap-dev" on target, 
+  # copy /usr/lib/arm-linux-gnueabihf/libpcap.a to beagleboneblack-build
+  LIBPCAP=$(SRC)/../bbb-build/libpcap.a
+  NETWORK_OPT = -DUSE_NETWORK -isystem $(SYSROOTS)/usr/local/include $(LIBPCAP)
+  BIN=$(SRC)/../bin-bbb/
 endif
 
 ifeq ($(MAKE_TARGET_ARCH),RPI)
@@ -604,7 +614,7 @@ ALL = pdp1 pdp4 pdp7 pdp8 pdp9 pdp15 pdp11 pdp10 \
 	swtp6800mp-a swtp6800mp-a2 tx-0 ssem isys8010 isys8020
 
 #all : ${ALL}
-all : pdp11_realcons pdp10_realcons pdp8_realcons pdp15_realcons #vax
+all : pdp11_realcons pdp10_realcons pdp8_realcons pdp15_realcons vax
 
 clean :
 ifeq ($(WIN32),)

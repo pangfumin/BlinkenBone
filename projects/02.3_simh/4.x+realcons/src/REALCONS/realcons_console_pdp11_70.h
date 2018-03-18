@@ -66,8 +66,9 @@ typedef struct
 	 * in panel logic. They connect simulation and panel. A certain signal is can be unidirectional
 	 * (either set by simulator and read by panel logic, ore vice verse) or be bidirectional.
 	 */
-		t_addr *cpusignal_memory_address_register; // address of last bus cycle (EXAM/DEPOSIT)
-		char **cpusignal_register_name; // name of last accessed exam/deposit register
+		t_addr *cpusignal_memory_address_phys_register; // physical address of last bus cycle (EXAM/DEPOSIT)
+        t_addr *cpusignal_memory_address_virt_register; // virtual address of last bus cycle (EXAM/DEPOSIT)
+        char **cpusignal_register_name; // name of last accessed exam/deposit register
 		t_value *cpusignal_memory_data_register; // data of last bus cycle
 		int		*cpusignal_memory_write_access ; // is last memory accessa WRITE?
         t_stat *cpusignal_memory_status; // last memory access status
@@ -75,8 +76,7 @@ typedef struct
 		int *cpusignal_run; // 1, if simulated cpu is running
 
 
-	/* Signals for SimH's PDP11 cpu. */
-		t_addr *cpusignal_console_address_register; // set by LOAD ADDR, on all PDP11's
+	    /* Signals for SimH's PDP11 cpu. */
 
 		t_value *cpusignal_DATAPATH_shifter; // value of shifter in PDP-11 processor data paths
 	//	t_value *bus_register; // 11/70: BR - DATA of UNIBUS access
@@ -107,6 +107,10 @@ typedef struct
 
 	// intern state registers of console panel
 	unsigned run_state; // cpu can be: reset, halt, running.
+	t_value loaded_address_15_00_datapathSR; // set by LOAD ADDR, bits 15:00, is data path SR and PCA
+    // not persistent!
+    t_value loaded_address_datapathSWR; // set by LOAD ADRS, bits 21:00, 21:16 + SR = CONS PHY
+
 
 	// realcons_machine_word_t CPU_SHIFTER; // output of internal shifter.
 	// result of calculations, everydata writtenten to Bus or other registers
@@ -117,6 +121,7 @@ typedef struct
 	blinkenlight_control_t *autoinc_addr_action_switch; // switchEXAM or switchDEP
 	// NULL = no autoinc
 
+    t_stat last_memory_status; // recognize changes in cpusignal_memory_status
 } realcons_console_logic_pdp11_70_t;
 
 realcons_console_logic_pdp11_70_t *realcons_console_pdp11_70_constructor(

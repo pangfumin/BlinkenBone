@@ -1,13 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PDP11_realcons", "PDP11_realcons.vcxproj", "{49499E1B-5019-4B98-9DC7-2E73306D5578}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PDP10_realcons", "PDP10_realcons.vcxproj", "{A39C0AFE-BDE5-4236-B740-AC710FCA1DA2}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PDP8_realcons", "PDP8_realcons.vcxproj", "{5EB65E13-1E6A-46A4-B7FE-EC87F8702067}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PDP15_realcons", "PDP15_realcons.vcxproj", "{44C07AA4-6D56-45ED-8393-18A23E76B758}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,8 +29,15 @@ Global
 		{5EB65E13-1E6A-46A4-B7FE-EC87F8702067}.Debug|x86.Build.0 = Debug|Win32
 		{5EB65E13-1E6A-46A4-B7FE-EC87F8702067}.Release|x86.ActiveCfg = Release|Win32
 		{5EB65E13-1E6A-46A4-B7FE-EC87F8702067}.Release|x86.Build.0 = Release|Win32
+		{44C07AA4-6D56-45ED-8393-18A23E76B758}.Debug|x86.ActiveCfg = Debug|Win32
+		{44C07AA4-6D56-45ED-8393-18A23E76B758}.Debug|x86.Build.0 = Debug|Win32
+		{44C07AA4-6D56-45ED-8393-18A23E76B758}.Release|x86.ActiveCfg = Release|Win32
+		{44C07AA4-6D56-45ED-8393-18A23E76B758}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6B6F8A5F-5CD2-490B-9811-137A45C7FE26}
 	EndGlobalSection
 EndGlobal

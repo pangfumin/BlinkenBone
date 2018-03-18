@@ -212,7 +212,7 @@ void realcons_console_pdp15__event_operator_step_halt(realcons_console_logic_pdp
 void realcons_console_pdp15__event_operator_exam_deposit(realcons_console_logic_pdp15_t *_this)
 {
     // last manual (EXAM/DEPOST (Simh or console switches)
-    SIGNAL_SET(cpusignal_operand_address_register, SIGNAL_GET(cpusignal_memory_address_register));
+    SIGNAL_SET(cpusignal_operand_address_register, SIGNAL_GET(cpusignal_memory_address_phys_register));
 }
 
 void realcons_console_pdp15_interface_connect(realcons_console_logic_pdp15_t *_this,
@@ -233,7 +233,7 @@ void realcons_console_pdp15_interface_connect(realcons_console_logic_pdp15_t *_t
     // connect pdp8 cpu signals end events to simulator and realcons state variables
     {
         // REALCONS extension in scp.c
-        extern t_addr realcons_memory_address_register; // REALCONS extension in scp.c
+        extern t_addr realcons_memory_address_phys_register; // REALCONS extension in scp.c
         extern char *realcons_register_name; // pseudo: name of last accessed register
         extern t_value realcons_memory_data_register; // REALCONS extension in scp.c
         extern int realcons_console_halt; // 1: CPU halted by realcons console
@@ -262,7 +262,7 @@ void realcons_console_pdp15_interface_connect(realcons_console_logic_pdp15_t *_t
         _this->cpusignal_run = &sim_is_running;
 
         // from scp.c
-        _this->cpusignal_memory_address_register = &realcons_memory_address_register;
+        _this->cpusignal_memory_address_phys_register = &realcons_memory_address_phys_register;
         _this->cpusignal_register_name = &realcons_register_name; // pseudo: name of last accessed register
         _this->cpusignal_memory_data_register = &realcons_memory_data_register;
         _this->cpusignal_console_halt = &realcons_console_halt;
@@ -315,6 +315,7 @@ void realcons_console_pdp15_interface_connect(realcons_console_logic_pdp15_t *_t
         extern console_controller_event_func_t realcons_event_operator_deposit;
         extern console_controller_event_func_t realcons_event_operator_reg_exam;
         extern console_controller_event_func_t realcons_event_operator_reg_deposit;
+		extern console_controller_event_func_t realcons_event_cpu_reset;
 
         realcons_event_run_start =
                 (console_controller_event_func_t) realcons_console_pdp15__event_run_start;
@@ -326,6 +327,7 @@ void realcons_console_pdp15_interface_connect(realcons_console_logic_pdp15_t *_t
         realcons_event_operator_exam =
                 realcons_event_operator_deposit =
                         (console_controller_event_func_t) realcons_console_pdp15__event_operator_exam_deposit;
+		realcons_event_cpu_reset = NULL ;
         realcons_event_operator_reg_exam = realcons_event_operator_reg_deposit = NULL;
     }
 #ifdef TODO
@@ -343,7 +345,7 @@ void realcons_console_pdp15_interface_connect(realcons_console_logic_pdp15_t *_t
 t_stat realcons_console_pdp15_reset(realcons_console_logic_pdp15_t *_this)
 {
     _this->realcons->simh_cmd_buffer[0] = '\0';
-    // The 8i console has no addr register on its own, the CPU memory_address_register is used.
+    // The 8i console has no addr register on its own, the CPU memory_address_phys_register is used.
 
     /*
      * direct links to all required controls.
@@ -548,6 +550,7 @@ t_stat realcons_console_pdp15_service(realcons_console_logic_pdp15_t *_this)
         // This is drastic, but will teach users not to twiddle with the power switch.
         // when panel is disconnected, panel mode goes to POWERLESS and power switch goes OFF.
         // But shutdown sequence is not initialted, because we're disconnected then.
+
         SIGNAL_SET(cpusignal_console_halt, 1); // stop execution
         realcons_simh_add_cmd(_this->realcons, "quit"); // do not confirm the quit with ENTER
         return SCPE_OK;
@@ -859,7 +862,7 @@ t_stat realcons_console_pdp15_service(realcons_console_logic_pdp15_t *_this)
                 regval = SIGNAL_GET(cpusignal_memory_data_register); // better than nothing
                 break;
             case 00004: // MMA     Memory Address
-                regval = SIGNAL_GET(cpusignal_memory_address_register);
+                regval = SIGNAL_GET(cpusignal_memory_address_phys_register);
                 break;
             case 00002: // MMB     Memory Buffer
                 regval = SIGNAL_GET(cpusignal_memory_data_register);

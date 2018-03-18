@@ -493,10 +493,11 @@ void realcons_service(realcons_t *_this, int highspeed)
 	// set next execution time, AFTER all work is done
 	_this->service_next_time_msec = sim_os_msec()
 		+ (_this->debug ? REALCONS_SERVICE_INTERVAL_DEBUG_MSEC : _this->service_interval_msec)
-		/* random term to avoid visual interferences with panel LEDs and CPU loops */
-
-		+ (rand() % 2) /* + 0..1 msecs*/
-//			+ (rand() % 10) - 5 /* +/- 5 msecs*/
+		/*No  random term to avoid visual interferences with panel LEDs and CPU loops.
+		  Better solution is LED low pass in Blinkenlight API servers 
+         */
+  	    //		+ (rand() % 2) /* + 0..1 msecs*/
+	    //			+ (rand() % 10) - 5 /* +/- 5 msecs*/
 
 ;
 }

@@ -68,7 +68,7 @@ typedef struct
 	 * in panel logic. They connect simulation and panel. A certain signal is can be unidirectional
 	 * (either set by simulator and read by panel logic, ore vice verse) or be bidirectional.
 	 */
-		t_addr *cpusignal_memory_address_register; // address of last bus cycle (EXAM/DEPOSIT)
+		t_addr *cpusignal_memory_address_phys_register; // address of last bus cycle (EXAM/DEPOSIT)
 		char **cpusignal_register_name ; // name of last accessed exam/deposit register
 		t_value *cpusignal_memory_data_register; // data of last bus cycle
 		int *cpusignal_console_halt; // 1, if a real console halts program execution
@@ -76,7 +76,6 @@ typedef struct
 
 
 	/* Signals for SimH's PDP11 cpu. */
-		t_addr *cpusignal_console_address_register; // set by LOAD ADDR, on all PDP11's
 
 		t_value *cpusignal_DATAPATH_shifter; // value of shifter in PDP-11 processor data paths
 	//	t_value *bus_register; // 11/70: BR - DATA of UNIBUS access
@@ -101,6 +100,8 @@ typedef struct
 	unsigned run_state; // cpu can be: reset, halt, running.
 //	t_addr sig_R_ADRSC; // internal ADRRESS register (LOAD ADRS)
 	t_value DMUX; // data multiplexer in 11/40 processor
+
+    t_addr console_address_register; // set by LOAD ADDR
 
 	// auto address inc logic: next DEP or EXAM increases R_ADRSC
 	blinkenlight_control_t *autoinc_addr_action_switch; // switchEXAM or switchDEP

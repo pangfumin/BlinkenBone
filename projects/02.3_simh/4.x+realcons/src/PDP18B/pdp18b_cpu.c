@@ -590,7 +590,7 @@ DEVICE cpu_dev = {
 #ifdef USE_REALCONS
 // Extended PDP15 cpu state for panel logic,
 // 1. state for all cpu's in scp.c
-extern	t_addr realcons_memory_address_register; // memory address
+extern	t_addr realcons_memory_address_phys_register; // memory address
 extern 	t_value realcons_memory_data_register; // memory data
 extern 	int realcons_console_halt; // 1: CPU halted by realcons console
 
@@ -1979,7 +1979,7 @@ if (usmd) {                                             /* user mode? */
     }
 else pa = ma & AMASK;                                   /* no prot or reloc */
 #ifdef USE_REALCONS
-    realcons_memory_address_register = pa; // not virtual ???
+    realcons_memory_address_phys_register = pa; // not virtual ???
     if (MEM_ADDR_OK(pa))
         realcons_memory_data_register = M[pa] & DMASK;
 #endif
@@ -2007,7 +2007,7 @@ if (usmd) {                                             /* user mode? */
     }
 else pa = ma & AMASK;                                   /* no prot or reloc */
 #ifdef USE_REALCONS
-realcons_memory_address_register = pa; // not virtual ???
+realcons_memory_address_phys_register = pa; // not virtual ???
 realcons_memory_data_register = dat & DMASK;
 #endif
 

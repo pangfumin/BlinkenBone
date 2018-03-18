@@ -1870,8 +1870,9 @@ static SHTAB show_unit_tab[] = {
 
 #ifdef USE_REALCONS
 	// Additional CPU state for exam, deposit, start stop etc.
-	t_addr realcons_memory_address_register; // physical memory address
-	t_value realcons_memory_data_register; // memory data
+	t_addr realcons_memory_address_phys_register; // physical memory address
+    t_addr realcons_memory_address_virt_register; // virtual memory address
+    t_value realcons_memory_data_register; // memory data
 	int	realcons_memory_write_access ; // 1 = last access to realcons_memory_* was WRITE
     t_stat realcons_memory_status; // OK, NXM?
 
@@ -1889,6 +1890,7 @@ static SHTAB show_unit_tab[] = {
 	console_controller_event_func_t	realcons_event_operator_deposit ; // after manual "DEPOSIT addr" cycle
 	console_controller_event_func_t	realcons_event_operator_reg_exam ; // after manual "EXAM register" cycle
 	console_controller_event_func_t	realcons_event_operator_reg_deposit ; // after manual "DEPOSIT register" cycle
+	console_controller_event_func_t	realcons_event_cpu_reset ; // after manual "RESET" cycle
 
 #endif
 
@@ -1945,7 +1947,8 @@ set_prompt (0, "sim>");                                 /* start with set standa
 #ifdef USE_REALCONS
 cpu_realcons = realcons_constructor() ;
 // init scp cpu state
-realcons_memory_address_register = 0 ;
+realcons_memory_address_phys_register = 0 ;
+realcons_memory_address_virt_register = 0 ;
 realcons_memory_data_register = 0 ;
 realcons_memory_write_access = 0 ;
 realcons_memory_status = SCPE_OK;
@@ -7073,8 +7076,8 @@ if ((reason = fprint_sym (ofile, addr, sim_eval, uptr, sim_switches)) > 0) {
     reason = 1 - dptr->aincr;
 #ifdef USE_REALCONS
 			{
-				realcons_memory_address_register = addr;
-				realcons_memory_data_register = sim_eval[0] ;
+				realcons_memory_address_phys_register = addr;
+                realcons_memory_data_register = sim_eval[0] ;
 				realcons_memory_write_access = 0 ;
                 realcons_memory_status = reason;
 				REALCONS_EVENT(cpu_realcons, realcons_event_operator_exam) ;
@@ -7150,10 +7153,10 @@ for (i = 0, j = addr; i < sim_emax; i++, j = j + dptr->aincr) {
     }
 #ifdef USE_REALCONS
     realcons_memory_status = SCPE_OK;
-    if ((reason != SCPE_OK) && (i == 0)) 
+    if ((reason != SCPE_OK) && (i == 0))
         realcons_memory_status = reason;
 #endif
-if ((reason != SCPE_OK) && (i == 0)) 
+if ((reason != SCPE_OK) && (i == 0))
     return reason;
 return SCPE_OK;
 }
@@ -7212,7 +7215,8 @@ for (i = 0, j = addr; i < count; i++, j = j + dptr->aincr) {
         r = dptr->deposit (sim_eval[i], j, uptr, sim_switches);
 #ifdef USE_REALCONS
         // called for all addresses, all devices .. should be CPU only!
-        realcons_memory_address_register = j;
+        realcons_memory_address_phys_register = j;
+
         realcons_memory_data_register = sim_eval[i];
         realcons_memory_write_access = 1;
         realcons_memory_status = r;
