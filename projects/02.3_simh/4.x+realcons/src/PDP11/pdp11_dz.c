@@ -62,17 +62,14 @@
 #include "pdp10_defs.h"
 #define RANK_DZ         0                               /* no autoconfig */
 #define DZ_8B_DFLT      0
-extern int32 int_req;
 
 #elif defined (VM_VAX)                                  /* VAX version */
 #include "vax_defs.h"
 #define DZ_8B_DFLT      TT_MODE_8B
-extern int32 int_req[IPL_HLVL];
 
 #else                                                   /* PDP-11 version */
 #include "pdp11_defs.h"
 #define DZ_8B_DFLT      TT_MODE_8B
-extern int32 int_req[IPL_HLVL];
 #endif
 
 #include "sim_sock.h"
@@ -117,6 +114,7 @@ extern int32 int_req[IPL_HLVL];
 BITFIELD dz_csr_bits[] = {
   BITNCF(3),                                /* not used */
   BIT(MAINT),                               /* Maint */
+  BIT(CLR),                                 /* clear */
   BIT(MSE),                                 /* naster scan enable */
   BIT(RIE),                                 /* receive interrupt enable */
   BIT(RDONE),                               /* receive done */
@@ -169,7 +167,7 @@ const char *dz_stopbits[] = {"1", "2", "1", "1.5"};
 #define LPR_GETSPD(x)   dz_baudrates[((x) & LPR_M_SPEED) >> LPR_V_SPEED]
 #define LPR_GETCHARSIZE(x) dz_charsizes[((x) & LPR_M_CHARSIZE) >> LPR_V_CHARSIZE]
 #define LPR_GETPARITY(x) dz_parity[(((x) >> LPR_V_PARENB) & 1) | (((x) >> (LPR_V_PARODD-1)) & 2)]
-#define LPR_GETSTOPBITS(x) dz_stopbits[(((x) >> LPR_V_STOPBITS) & 1) + (((((x) & LPR_M_CHARSIZE) >> LPR_V_CHARSIZE) == 5) ? 2 : 0)]
+#define LPR_GETSTOPBITS(x) dz_stopbits[(((x) >> LPR_V_STOPBITS) & 1) + (((((x) & LPR_M_CHARSIZE) >> LPR_V_CHARSIZE) == 0) ? 2 : 0)]
 #define LPR_LPAR        0007770                         /* line pars - NI */
 #define LPR_RCVE        0010000                         /* receive enb */
 #define LPR_GETLN(x)    (((x) >> LPR_V_LINE) & DZ_LNOMASK)
@@ -214,8 +212,8 @@ BITFIELD dz_msr_bits[] = {
 #define TDR_V_TBR       8                               /* xmit break - NI */
 
 BITFIELD dz_tdr_bits[] = {
-  BITFFMT(CHAR,8,%02X),                     /* ring indicators */
-  BITFFMT(TBR, 8,%02X),                     /* carrier detects */
+  BITFFMT(CHAR,8,%02X),                     /* xmit char */
+  BITFFMT(TBR, 8,%02X),                     /* xmit break - NI */
   ENDBITS
 };
 
@@ -304,7 +302,8 @@ DIB dz_dib = {
 
 UNIT dz_unit[2] = {
         { UDATA (&dz_svc, UNIT_IDLE|UNIT_ATTABLE|DZ_8B_DFLT, 0) },
-        { UDATA (&dz_xmt_svc, UNIT_DIS, 0), SERIAL_OUT_WAIT } };
+        { UDATA (&dz_xmt_svc, UNIT_DIS, 0) }
+    };
 
 REG dz_reg[] = {
     { BRDATADF (CSR,   dz_csr,   DEV_RDX, 16, MAX_DZ_MUXES, "control/status register", dz_csr_bits) },
@@ -336,7 +335,7 @@ MTAB dz_mod[] = {
         NULL, &tmxr_show_cstat, (void *) &dz_desc, "Display current connections" },
     { MTAB_XTD|MTAB_VDV|MTAB_NMO, 0, "STATISTICS", NULL,
         NULL, &tmxr_show_cstat, (void *) &dz_desc, "Display multiplexer statistics" },
-    { MTAB_XTD|MTAB_VDV|MTAB_VALR, 020, "ADDRESS", "ADDRESS",
+    { MTAB_XTD|MTAB_VDV|MTAB_VALR, 010, "ADDRESS", "ADDRESS",
         &set_addr, &show_addr, NULL, "Bus address" },
     { MTAB_XTD|MTAB_VDV|MTAB_VALR, DZ_LINES, "VECTOR", "VECTOR",
         &set_vec, &show_vec_mux, (void *) &dz_desc, "Interrupt vector" },
@@ -398,7 +397,7 @@ switch ((PA >> 1) & 03) {                               /* case on PA<2:1> */
             tmxr_poll_rx (&dz_desc);                    /* poll input */
             dz_update_rcvi ();                          /* update rx intr */
             if (dz_rbuf[dz]) {
-                /* Rechedule the next poll preceisely so that 
+                /* Reschedule the next poll preceisely so that the 
                    the programmed input speed is observed. */
                 sim_clock_coschedule_abs (dz_unit, tmxr_poll);
                 }
@@ -533,9 +532,11 @@ switch ((PA >> 1) & 03) {                               /* case on PA<2:1> */
             line = (dz * DZ_LINES) + CSR_GETTL (dz_csr[dz]);
             lp = &dz_ldsc[line];                        /* get line desc */
             c = sim_tt_outcvt (dz_tdr[dz], TT_GET_MODE (dz_unit[0].flags));
-            if (c >= 0)                                 /* store char */
+            if (c >= 0) {                               /* store char */
                 tmxr_putc_ln (lp, c);
-            sim_activate (&dz_unit[1], dz_unit[1].wait);/* */
+                dz_update_xmti ();
+                sim_activate_after_abs (&dz_unit[1], lp->txdelta);/* */
+                }
             }
         break;
         }
@@ -672,8 +673,9 @@ for (dz = 0; dz < dz_desc.lines/DZ_LINES; dz++) {       /* loop thru muxes */
             }
         }
     if ((dz_csr[dz] & CSR_TIE) && (dz_csr[dz] & CSR_TRDY)) /* ready plus int? */
-         dz_set_txint (dz);
-    else dz_clr_txint (dz);                             /* no int req */
+        dz_set_txint (dz);
+    else
+        dz_clr_txint (dz);                              /* no int req */
     }
 return;
 }
@@ -754,6 +756,7 @@ sim_debug(DBG_TRC, &dz_dev, "dz_clear(dz=%d,flag=%d)\n", dz, flag);
 
 dz_csr[dz] = 0;                                         /* clear CSR */
 dz_rbuf[dz] = 0;                                        /* silo empty */
+dz_scnt[dz] = 0;
 dz_lpr[dz] = 0;                                         /* no params */
 if (flag)                                               /* INIT? clr all */
     dz_tcr[dz] = 0;
@@ -779,6 +782,7 @@ sim_debug(DBG_TRC, dptr, "dz_reset()\n");
 
 if (dz_ldsc == NULL)
     dz_desc.ldsc = dz_ldsc = (TMLN *)calloc (dz_desc.lines, sizeof(*dz_ldsc));
+tmxr_set_port_speed_control (&dz_desc);
 for (i = 0; i < dz_desc.lines/DZ_LINES; i++)            /* init muxes */
     dz_clear (i, TRUE);
 dz_rxi = dz_txi = 0;                                    /* clr master int */
@@ -793,11 +797,13 @@ return auto_config (dptr->name, ndev);                  /* auto config */
 
 t_stat dz_attach (UNIT *uptr, CONST char *cptr)
 {
-int32 dz, muxln;
+int32 dz, muxln, ln;
 t_stat r;
 
 if ((sim_switches & SWMASK ('M')) || dz_mctl)           /* modem control? */
     tmxr_set_modem_control_passthru (&dz_desc);
+for (ln = 0; ln < dz_desc.lines; ln++)
+    tmxr_set_line_output_unit (&dz_desc, ln, &dz_unit[1]);
 r = tmxr_attach (&dz_desc, uptr, cptr);                 /* attach mux */
 if (r != SCPE_OK) {                                     /* error? */
     tmxr_clear_modem_control_passthru (&dz_desc);

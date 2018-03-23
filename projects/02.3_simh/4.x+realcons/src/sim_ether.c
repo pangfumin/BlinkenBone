@@ -375,6 +375,8 @@
 #include <unistd.h>
 #endif
 
+#define MAX(a,b) (((a) > (b)) ? (a) : (b))
+
 /* Internal routines - forward declarations */
 static int _eth_get_system_id (char *buf, size_t buf_size);
 
@@ -417,10 +419,11 @@ t_stat eth_mac_scan_ex (ETH_MAC* mac, const char* strmac, UNIT *uptr)
   strncpy (state.sim, sim_name, sizeof(state.sim));
   getcwd (state.cwd, sizeof(state.cwd));
   if (uptr)
-    strncpy (state.uname, sim_uname (uptr), sizeof(state.uname));
+    strncpy (state.uname, sim_uname (uptr), sizeof(state.uname)-1);
   cptr = strchr (strmac, '>');
   if (cptr) {
-    strncpy (state.file, cptr + 1, sizeof(state.file));
+    state.file[sizeof(state.file)-1] = '\0';
+    strncpy (state.file, cptr + 1, sizeof(state.file)-1);
     if ((f = fopen (state.file, "r"))) {
       filebuf[sizeof(filebuf)-1] = '\0';
       fgets (filebuf, sizeof(filebuf)-1, f);
@@ -661,6 +664,11 @@ const char* eth_getname(int number, char* name, char *desc)
 
   if ((number < 0) || (count <= number))
       return NULL;
+  if (list[number].eth_api != ETH_API_PCAP) {
+    sim_printf ("Eth: Pcap capable device not found.  You may need to run as root\n");
+    return NULL;
+    }
+
   strcpy(name, list[number].name);
   strcpy(desc, list[number].desc);
   return name;
@@ -692,27 +700,6 @@ const char* eth_getname_bydesc(const char* desc, char* name, char *ndesc)
   return NULL;
 }
 
-/* strncasecmp() is not available on all platforms */
-int eth_strncasecmp(const char* string1, const char* string2, size_t len)
-{
-  size_t i;
-  unsigned char s1, s2;
-
-  for (i=0; i<len; i++) {
-    s1 = string1[i];
-    s2 = string2[i];
-    if (islower (s1)) s1 = (unsigned char)toupper (s1);
-    if (islower (s2)) s2 = (unsigned char)toupper (s2);
-
-    if (s1 < s2)
-      return -1;
-    if (s1 > s2)
-      return 1;
-    if (s1 == 0) return 0;
-  }
-  return 0;
-}
-
 char* eth_getname_byname(const char* name, char* temp, char *desc)
 {
   ETH_LIST  list[ETH_MAX_DEVICE];
@@ -724,7 +711,7 @@ char* eth_getname_byname(const char* name, char* temp, char *desc)
   n = strlen(name);
   for (i=0; i<count && !found; i++) {
     if ((n == strlen(list[i].name)) &&
-        (eth_strncasecmp(name, list[i].name, n) == 0)) {
+        (strncasecmp(name, list[i].name, n) == 0)) {
       found = 1;
       strcpy(temp, list[i].name); /* only case might be different */
       strcpy(desc, list[i].desc);
@@ -744,7 +731,7 @@ char* eth_getdesc_byname(char* name, char* temp)
   n = strlen(name);
   for (i=0; i<count && !found; i++) {
     if ((n == strlen(list[i].name)) &&
-        (eth_strncasecmp(name, list[i].name, n) == 0)) {
+        (strncasecmp(name, list[i].name, n) == 0)) {
       found = 1;
       strcpy(temp, list[i].desc);
     }
@@ -807,8 +794,9 @@ t_stat eth_show (FILE* st, UNIT* uptr, int32 val, CONST void* desc)
       for (i=0; i<number; i++)
         fprintf(st," eth%d\t%-*s (%s)\n", i, (int)min, list[i].name, list[i].desc);
     }
-  if (p_pcap_lib_version)
+  if (p_pcap_lib_version) {
     fprintf(st, "%s\n", p_pcap_lib_version());
+    }
   if (eth_open_device_count) {
     int i;
     char desc[ETH_DEV_DESC_MAX], *d;
@@ -839,7 +827,7 @@ t_stat ethq_init(ETH_QUE* que, int max)
     que->item = (struct eth_item *) calloc(max, sizeof(struct eth_item));
     if (!que->item) {
       /* failed to allocate memory */
-      sim_printf("EthQ: failed to allocate dynamic queue[%d]\r\n", max);
+      sim_printf("EthQ: failed to allocate dynamic queue[%d]\n", max);
       return SCPE_MEM;
     };
     que->max = max;
@@ -919,7 +907,7 @@ void ethq_insert_data(ETH_QUE* que, int32 type, const uint8 *data, int used, siz
   item->packet.len = len;
   item->packet.used = used;
   item->packet.crc_len = crc_len;
-  if (len <= sizeof (item->packet.msg)) {
+  if (MAX (len, crc_len) <= sizeof (item->packet.msg)) {
     memcpy(item->packet.msg, data, ((len > crc_len) ? len : crc_len));
     if (crc_data && (crc_len > len))
       memcpy(&item->packet.msg[len], crc_data, ETH_CRC_SIZE);
@@ -984,7 +972,12 @@ static int _eth_get_system_id (char *buf, size_t buf_size)
 
 const char *eth_capabilities(void)
  {
- return "Ethernet Packet transports"
+#if defined (USE_READER_THREAD)
+ return "Threaded "
+#else
+ return "Polled "
+#endif
+     "Ethernet Packet transports"
 #if defined (HAVE_PCAP_NETWORK)
      ":PCAP"
 #endif
@@ -1066,11 +1059,11 @@ extern "C" {
 
 /* Dynamic DLL load variables */
 #ifdef _WIN32
-static HINSTANCE hLib = 0;                      /* handle to DLL */
+static HINSTANCE hLib = NULL;               /* handle to DLL */
 #else
 static void *hLib = 0;                      /* handle to Library */
 #endif
-static int lib_loaded = 0;                      /* 0=not loaded, 1=loaded, 2=library load failed, 3=Func load failed */
+static int lib_loaded = 0;                  /* 0=not loaded, 1=loaded, 2=library load failed, 3=Func load failed */
 static const char* lib_name =
 #if defined(_WIN32) || defined(__CYGWIN__)
                           "wpcap.dll";
@@ -1122,9 +1115,17 @@ static void load_function(const char* function, _func* func_ptr) {
     *func_ptr = (_func)((size_t)dlsym(hLib, function));
 #endif
     if (*func_ptr == 0) {
-    sim_printf ("Eth: Failed to find function '%s' in %s\r\n", function, lib_name);
+    sim_printf ("Eth: Failed to find function '%s' in %s\n", function, lib_name);
     lib_loaded = 3;
   }
+}
+
+static void try_load_function(const char* function, _func* func_ptr) {
+#ifdef _WIN32
+    *func_ptr = (_func)((size_t)GetProcAddress(hLib, function));
+#else
+    *func_ptr = (_func)((size_t)dlsym(hLib, function));
+#endif
 }
 
 /* load wpcap.dll as required */
@@ -1133,17 +1134,34 @@ int load_pcap(void) {
     case 0:                  /* not loaded */
             /* attempt to load DLL */
 #ifdef _WIN32
-      hLib = LoadLibraryA(lib_name);
+      if (1) {
+        BOOL(WINAPI *p_SetDllDirectory)(LPCTSTR);
+        UINT(WINAPI *p_GetSystemDirectory)(LPTSTR lpBuffer, UINT uSize);
+
+        p_SetDllDirectory = (BOOL(WINAPI *)(LPCTSTR)) GetProcAddress(GetModuleHandleA("kernel32.dll"), "SetDllDirectoryA");
+        p_GetSystemDirectory = (UINT(WINAPI *)(LPTSTR, UINT)) GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetSystemDirectoryA");
+        if (p_SetDllDirectory && p_GetSystemDirectory) {
+          char npcap_path[512] = "";
+
+          if (p_GetSystemDirectory (npcap_path, sizeof(npcap_path) - 7))
+            strlcat (npcap_path, "\\Npcap", sizeof(npcap_path));
+          if (p_SetDllDirectory(npcap_path))
+            hLib = LoadLibraryA(lib_name);
+          p_SetDllDirectory (NULL);
+          }
+        if (hLib == NULL)
+          hLib = LoadLibraryA(lib_name);
+        }
 #else
       hLib = dlopen(lib_name, RTLD_NOW);
 #endif
       if (hLib == 0) {
         /* failed to load DLL */
-        sim_printf ("Eth: Failed to load %s\r\n", lib_name);
+        sim_printf ("Eth: Failed to load %s\n", lib_name);
 #ifdef _WIN32
-        sim_printf ("Eth: You must install WinPcap 4.x to use networking\r\n");
+        sim_printf ("Eth: You must install Npcap or WinPcap 4.x to use networking\n");
 #else
-        sim_printf ("Eth: You must install libpcap to use networking\r\n");
+        sim_printf ("Eth: You must install libpcap to use networking\n");
 #endif
         lib_loaded = 2;
         break;
@@ -1623,6 +1641,9 @@ static int _eth_get_system_id (char *buf, size_t buf_size)
   HKEY reghnd;
 
   memset (buf, 0, buf_size);
+#ifndef KEY_WOW64_64KEY
+#define KEY_WOW64_64KEY         (0x0100)
+#endif
   if ((status = RegOpenKeyExA (HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Cryptography", 0, KEY_QUERY_VALUE|KEY_WOW64_64KEY, &reghnd)) != ERROR_SUCCESS)
     return -1;
   reglen = buf_size;
@@ -1682,8 +1703,6 @@ _eth_callback((u_char *)opaque, &header, buf);
 #endif
 
 #if defined (USE_READER_THREAD)
-#include <pthread.h>
-
 static void *
 _eth_reader(void *arg)
 {
@@ -1920,7 +1939,7 @@ return NULL;
 t_stat eth_set_async (ETH_DEV *dev, int latency)
 {
 #if !defined(USE_READER_THREAD) || !defined(SIM_ASYNCH_IO)
-char *msg = "Eth: can't operate asynchronously, must poll\r\n";
+char *msg = "Eth: can't operate asynchronously, must poll\n";
 sim_printf ("%s", msg);
 return SCPE_NOFNC;
 #else
@@ -1984,10 +2003,8 @@ if (0 == strncmp("tap:", savname, 4)) {
   while (isspace(*devname))
       ++devname;
 #if defined(HAVE_TAP_NETWORK)
-  if (!strcmp(savname, "tap:tapN")) {
-    sim_printf ("Eth: Must specify actual tap device name (i.e. tap:tap0)\r\n");
-    return SCPE_OPENERR | SCPE_NOMESSAGE;
-    }
+  if (!strcmp(savname, "tap:tapN"))
+    return sim_messagef (SCPE_OPENERR, "Eth: Must specify actual tap device name (i.e. tap:tap0)\n");
 #endif
 #if (defined(__linux) || defined(__linux__)) && defined(HAVE_TAP_NETWORK)
   if ((tun = open("/dev/net/tun", O_RDWR)) >= 0) {
@@ -2065,17 +2082,29 @@ if (0 == strncmp("tap:", savname, 4)) {
 else { /* !tap: */
   if (0 == strncmp("vde:", savname, 4)) {
 #if defined(HAVE_VDE_NETWORK)
+    char vdeswitch_s[CBUFSIZE]; /* VDE switch name */
+    char vdeport_s[CBUFSIZE];   /* VDE switch port (optional), numeric */
+      
     struct vde_open_args voa;
     const char *devname = savname + 4;
 
     memset(&voa, 0, sizeof(voa));
-    if (!strcmp(savname, "vde:vdedevice")) {
-      sim_printf ("Eth: Must specify actual vde device name (i.e. vde:/tmp/switch)\r\n");
-      return SCPE_OPENERR | SCPE_NOMESSAGE;
-      }
+    if (!strcmp(savname, "vde:vdedevice"))
+      return sim_messagef (SCPE_OPENERR, "Eth: Must specify actual vde device name (i.e. vde:/tmp/switch)\n");
     while (isspace(*devname))
-        ++devname;
-    if (!(*handle = (void*) vde_open((char *)devname, (char *)"simh", &voa)))
+      ++devname;
+    devname = get_glyph_nc (devname, vdeswitch_s, ':'); /* Extract switch name          */
+    devname = get_glyph_nc (devname, vdeport_s, 0);     /* Extract optional port number */
+
+    if (vdeport_s[0]) {                                 /* port provided? */
+      t_stat r;
+
+      voa.port = (int)get_uint (vdeport_s, 10, 255, &r);
+      if (r != SCPE_OK)
+          return sim_messagef (SCPE_OPENERR, "Eth: Invalid vde port number: %s in %s\n", vdeport_s, savname);
+      }
+
+    if (!(*handle = (void*) vde_open((char *)vdeswitch_s, (char *)"simh", &voa)))
       strncpy(errbuf, strerror(errno), PCAP_ERRBUF_SIZE-1);
     else {
       *eth_api = ETH_API_VDE;
@@ -2091,7 +2120,7 @@ else { /* !tap: */
       const char *devname = savname + 4;
 
       while (isspace(*devname))
-          ++devname;
+        ++devname;
       if (!(*handle = (void*) sim_slirp_open(devname, opaque, &_slirp_callback, dptr, dbit)))
         strncpy(errbuf, strerror(errno), PCAP_ERRBUF_SIZE-1);
       else {
@@ -2108,13 +2137,11 @@ else { /* !tap: */
         char hostport[2*CBUFSIZE];
         const char *devname = savname + 4;
 
-        if (!strcmp(savname, "udp:sourceport:remotehost:remoteport")) {
-          sim_printf ("Eth: Must specify actual udp host and ports(i.e. udp:1224:somehost.com:2234)\r\n");
-          return SCPE_OPENERR | SCPE_NOMESSAGE;
-          }
+        if (!strcmp(savname, "udp:sourceport:remotehost:remoteport"))
+          return sim_messagef (SCPE_OPENERR, "Eth: Must specify actual udp host and ports(i.e. udp:1224:somehost.com:2234)\n");
 
         while (isspace(*devname))
-            ++devname;
+          ++devname;
         if (SCPE_OK != sim_parse_addr_ex (devname, host, sizeof(host), "localhost", port, sizeof(port), localport, sizeof(localport), NULL))
           return SCPE_OPENERR;
 
@@ -2122,23 +2149,19 @@ else { /* !tap: */
           strcpy (localport, port);
         sprintf (hostport, "%s:%s", host, port);
         if ((SCPE_OK == sim_parse_addr (hostport, NULL, 0, NULL, NULL, 0, NULL, "localhost")) &&
-            (0 == strcmp (localport, port))) {
-          sim_printf ("Eth: Must specify different udp localhost ports\r\n");
-          return SCPE_OPENERR | SCPE_NOMESSAGE;
-          }
+            (0 == strcmp (localport, port)))
+          return sim_messagef (SCPE_OPENERR, "Eth: Must specify different udp localhost ports\n");
         *fd_handle = sim_connect_sock_ex (localport, hostport, NULL, NULL, SIM_SOCK_OPT_DATAGRAM);
         if (INVALID_SOCKET == *fd_handle)
-            return SCPE_OPENERR;
+          return SCPE_OPENERR;
         *eth_api = ETH_API_UDP;
         *handle = (void *)1;  /* Flag used to indicated open */
         }
       else { /* not udp:, so attempt to open the parameter as if it were an explicit device name */
 #if defined(HAVE_PCAP_NETWORK)
         *handle = (void*) pcap_open_live(savname, bufsz, ETH_PROMISC, PCAP_READ_TIMEOUT, errbuf);
-        if (!*handle) { /* can't open device */
-          sim_printf ("Eth: pcap_open_live error - %s\r\n", errbuf);
-          return SCPE_OPENERR | SCPE_NOMESSAGE;
-          }
+        if (!*handle)   /* can't open device */
+          return sim_messagef (SCPE_OPENERR, "Eth: pcap_open_live error - %s\n", errbuf);
         *eth_api = ETH_API_PCAP;
 #if !defined(HAS_PCAP_SENDPACKET) && defined (xBSD) && !defined (__APPLE__)
         /* Tell the kernel that the header is fully-formed when it gets it.
@@ -2155,7 +2178,7 @@ else { /* !tap: */
 #ifdef USE_SETNONBLOCK
         /* set ethernet device non-blocking so pcap_dispatch() doesn't hang */
         if (pcap_setnonblock (*handle, 1, errbuf) == -1) {
-          sim_printf ("Eth: Failed to set non-blocking: %s\r\n", errbuf);
+          sim_printf ("Eth: Failed to set non-blocking: %s\n", errbuf);
           }
 #endif
 #if defined (__APPLE__)
@@ -2191,15 +2214,15 @@ if (bpf_filter && (*eth_api == ETH_API_PCAP)) {
   /* compile filter string */
   if ((status = pcap_compile((pcap_t*)(*handle), &bpf, bpf_filter, 1, bpf_netmask)) < 0) {
     sprintf(errbuf, "%s", pcap_geterr((pcap_t*)(*handle)));
-    sim_printf("Eth: pcap_compile error: %s\r\n", errbuf);
+    sim_printf("Eth: pcap_compile error: %s\n", errbuf);
     /* show erroneous BPF string */
-    sim_printf ("Eth: BPF string is: |%s|\r\n", bpf_filter);
+    sim_printf ("Eth: BPF string is: |%s|\n", bpf_filter);
     }
   else {
     /* apply compiled filter string */
     if ((status = pcap_setfilter((pcap_t*)(*handle), &bpf)) < 0) {
       sprintf(errbuf, "%s", pcap_geterr((pcap_t*)(*handle)));
-      sim_printf("Eth: pcap_setfilter error: %s\r\n", errbuf);
+      sim_printf("Eth: pcap_setfilter error: %s\n", errbuf);
       }
     else {
 #ifdef USE_SETNONBLOCK
@@ -2260,16 +2283,14 @@ strncpy (namebuf, savname, sizeof(namebuf)-1);
 savname = namebuf;
 r = _eth_open_port(namebuf, &dev->eth_api, &dev->handle, &dev->fd_handle, errbuf, NULL, (void *)dev, dptr, dbit);
 
-if (errbuf[0]) {
-  sim_printf ("Eth: open error - %s\r\n", errbuf);
-  return SCPE_OPENERR | SCPE_NOMESSAGE;
-  }
+if (errbuf[0])
+  return sim_messagef (SCPE_OPENERR, "Eth: open error - %s\n", errbuf);
 if (r != SCPE_OK)
   return r;
 
 if (!strcmp (desc, "No description available"))
     strcpy (desc, "");
-sim_printf ("Eth: opened OS device %s%s%s\r\n", savname, desc[0] ? " - " : "", desc);
+sim_printf ("Eth: opened OS device %s%s%s\n", savname, desc[0] ? " - " : "", desc);
 
 /* get the NIC's hardware MAC address */
 eth_get_nic_hw_addr(dev, savname);
@@ -2380,7 +2401,7 @@ ethq_destroy (&dev->read_queue);         /* release FIFO queue */
 #endif
 
 _eth_close_port (dev->eth_api, pcap, pcap_fd);
-sim_printf ("Eth: closed %s\r\n", dev->name);
+sim_printf ("Eth: closed %s\n", dev->name);
 
 /* clean up the mess */
 free(dev->name);
@@ -2400,8 +2421,8 @@ fprintf (st, "    eth0   en0                                  (No description av
 #if defined(HAVE_TAP_NETWORK)
 fprintf (st, "    eth1   tap:tapN                             (Integrated Tun/Tap support)\n");
 #endif
-#if defined(HAVE_SLIRP_NETWORK)
-fprintf (st, "    eth2   vde:device                           (Integrated VDE support)\n");
+#if defined(HAVE_VDE_NETWORK)
+fprintf (st, "    eth2   vde:device{:switch-port-number}      (Integrated VDE support)\n");
 #endif
 #if defined(HAVE_SLIRP_NETWORK)
 fprintf (st, "    eth3   nat:{optional-nat-parameters}        (Integrated NAT (SLiRP) support)\n");
@@ -2522,11 +2543,11 @@ status = _eth_write (dev, &send, NULL);
 if (status != SCPE_OK) {
   const char *msg;
   msg = (dev->eth_api == ETH_API_PCAP) ?
-      "Eth: Error Transmitting packet: %s\r\n"
-        "You may need to run as root, or install a libpcap version\r\n"
-        "which is at least 0.9 from your OS vendor or www.tcpdump.org\r\n" :
-      "Eth: Error Transmitting packet: %s\r\n"
-        "You may need to run as root.\r\n";
+      "Eth: Error Transmitting packet: %s\n"
+        "You may need to run as root, or install a libpcap version\n"
+        "which is at least 0.9 from your OS vendor or www.tcpdump.org\n" :
+      "Eth: Error Transmitting packet: %s\n"
+        "You may need to run as root.\n";
   sim_printf(msg, strerror(errno));
   return status;
   }
@@ -3596,7 +3617,6 @@ t_stat eth_filter_hash(ETH_DEV* dev, int addr_count, ETH_MAC* const addresses,
 {
 int i;
 char buf[116+66*ETH_FILTER_MAX];
-char errbuf[PCAP_ERRBUF_SIZE];
 char mac[20];
 char* buf2;
 t_stat status;
@@ -3741,6 +3761,7 @@ sim_debug(dev->dbit, dev->dptr, "BPF string is: |%s|\n", buf);
 
 #ifdef USE_BPF
 if (dev->eth_api == ETH_API_PCAP) {
+  char errbuf[PCAP_ERRBUF_SIZE];
   bpf_u_int32  bpf_subnet, bpf_netmask;
 
   if (pcap_lookupnet(dev->name, &bpf_subnet, &bpf_netmask, errbuf)<0)
@@ -3748,15 +3769,15 @@ if (dev->eth_api == ETH_API_PCAP) {
   /* compile filter string */
   if ((status = pcap_compile((pcap_t*)dev->handle, &bpf, buf, 1, bpf_netmask)) < 0) {
     sprintf(errbuf, "%s", pcap_geterr((pcap_t*)dev->handle));
-    sim_printf("Eth: pcap_compile error: %s\r\n", errbuf);
+    sim_printf("Eth: pcap_compile error: %s\n", errbuf);
     /* show erroneous BPF string */
-    sim_printf ("Eth: BPF string is: |%s|\r\n", buf);
+    sim_printf ("Eth: BPF string is: |%s|\n", buf);
     }
   else {
     /* apply compiled filter string */
     if ((status = pcap_setfilter((pcap_t*)dev->handle, &bpf)) < 0) {
       sprintf(errbuf, "%s", pcap_geterr((pcap_t*)dev->handle));
-      sim_printf("Eth: pcap_setfilter error: %s\r\n", errbuf);
+      sim_printf("Eth: pcap_setfilter error: %s\n", errbuf);
       }
     else {
       /* Save BPF filter string */
@@ -3803,14 +3824,16 @@ int eth_host_devices(int used, int max, ETH_LIST* list)
 {
 pcap_t* conn = NULL;
 int i, j, datalink = 0;
-char errbuf[PCAP_ERRBUF_SIZE];
 
 for (i=0; i<used; ++i) {
   /* Cull any non-ethernet interface types */
 #if defined(HAVE_PCAP_NETWORK)
+  char errbuf[PCAP_ERRBUF_SIZE];
+
   conn = pcap_open_live(list[i].name, ETH_MAX_PACKET, ETH_PROMISC, PCAP_READ_TIMEOUT, errbuf);
   if (NULL != conn)
     datalink = pcap_datalink(conn), pcap_close(conn);
+  list[i].eth_api = ETH_API_PCAP;
 #endif
   if ((NULL == conn) || (datalink != DLT_EN10MB)) {
     for (j=i; j<used-1; ++j)
@@ -3869,13 +3892,15 @@ if (used < max) {
   sprintf(list[used].name, "%s", "tap:tapN");
 #endif
   sprintf(list[used].desc, "%s", "Integrated Tun/Tap support");
+  list[used].eth_api = ETH_API_TAP;
   ++used;
   }
 #endif
 #ifdef HAVE_VDE_NETWORK
 if (used < max) {
-  sprintf(list[used].name, "%s", "vde:device");
+  sprintf(list[used].name, "%s", "vde:device{:switch-port-number}");
   sprintf(list[used].desc, "%s", "Integrated VDE support");
+  list[used].eth_api = ETH_API_VDE;
   ++used;
   }
 #endif
@@ -3883,6 +3908,7 @@ if (used < max) {
 if (used < max) {
   sprintf(list[used].name, "%s", "nat:{optional-nat-parameters}");
   sprintf(list[used].desc, "%s", "Integrated NAT (SLiRP) support");
+  list[used].eth_api = ETH_API_NAT;
   ++used;
   }
 #endif
@@ -3890,6 +3916,7 @@ if (used < max) {
 if (used < max) {
   sprintf(list[used].name, "%s", "udp:sourceport:remotehost:remoteport");
   sprintf(list[used].desc, "%s", "Integrated UDP bridge support");
+  list[used].eth_api = ETH_API_UDP;
   ++used;
   }
 
@@ -3899,7 +3926,7 @@ return used;
 int eth_devices(int max, ETH_LIST* list)
 {
 int i = 0;
-char errbuf[PCAP_ERRBUF_SIZE];
+char errbuf[PCAP_ERRBUF_SIZE] = "";
 #ifndef DONT_USE_PCAP_FINDALLDEVS
 pcap_if_t* alldevs;
 pcap_if_t* dev;
@@ -3908,7 +3935,7 @@ memset(list, 0, max*sizeof(*list));
 errbuf[0] = '\0';
 /* retrieve the device list */
 if (pcap_findalldevs(&alldevs, errbuf) == -1) {
-  sim_printf ("Eth: error in pcap_findalldevs: %s\r\n", errbuf);
+  sim_printf ("Eth: error in pcap_findalldevs: %s\n", errbuf);
   }
 else {
   /* copy device list into the passed structure */
@@ -3931,7 +3958,7 @@ i = eth_host_devices(i, max, list);
 
 /* If no devices were found and an error message was left in the buffer, display it */
 if ((i == 0) && (errbuf[0])) {
-    sim_printf ("Eth: pcap_findalldevs warning: %s\r\n", errbuf);
+    sim_printf ("Eth: pcap_findalldevs warning: %s\n", errbuf);
     }
 
 /* return device count */

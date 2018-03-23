@@ -196,7 +196,7 @@ void realcons_console_pdp10__event_operator_halt(realcons_console_logic_pdp10_t 
 
 	// stop caused by RESET button? do reset
 	if (_this->button_RESET.pendingbuttons) {
-		sprintf(_this->realcons->simh_cmd_buffer, "reset\n");
+		sprintf(_this->realcons->simh_cmd_buffer, "reset all\n");
 		_this->button_RESET.pendingbuttons = 0;
 	}
 
@@ -330,7 +330,7 @@ void realcons_console_pdp10_interface_connect(realcons_console_logic_pdp10_t *_t
          	extern char *realcons_register_name; // pseudo: name of last accessed register
 		extern t_value realcons_memory_data_register; // REALCONS extension in scp.c
 		extern  int realcons_console_halt; // 1: CPU halted by realcons console
-		extern int32 sim_is_running; // global in scp.c
+		extern volatile t_bool sim_is_running; // global in scp.c
 		// from pdp10_cpu.c
 		extern int32 pager_PC; // programm counter ... pager OK?
 	//	extern int32 SR, DR; // switch/display register, global in pdp11_cpu_mod.c

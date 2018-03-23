@@ -286,7 +286,6 @@
 #include "realcons_console_pdp15.h"
 #endif
 
-
 #define SEXT(x)         ((int32) (((x) & SIGN)? (x) | ~DMASK: (x) & DMASK))
 
 #define UNIT_V_NOEAE    (UNIT_V_UF + 0)                 /* EAE absent */
@@ -483,7 +482,7 @@ REG cpu_reg[] = {
     { FLDATAD (INT_PEND, int_pend, 0, "interrupt pending"), REG_RO },
     { FLDATAD (ION, ion, 0, "interrupt enable") },
     { ORDATAD (ION_DELAY, ion_defer, 2, "interrupt enable delay") },
-#if defined (PDP7)
+#if defined (PDP7) 
     { FLDATAD (TRAPM, usmd, 0, "trap mode") },
     { FLDATAD (TRAPP, trap_pending, 0, "trap pending") },
     { FLDATAD (EXTM, memm, 0, "extend mode") },
@@ -600,7 +599,6 @@ int32   realcons_IR; // must be global
 
 int32   realcons_eae_enabled;  
 #endif
-
 
 t_stat sim_instr (void)
 {
@@ -1029,7 +1027,7 @@ while (reason == 0) {                                   /* loop until halted */
             else if (((MA ^ (PC - 1)) & AMASK) == 0) {  /* 2) JMP *? */
                 if (iof)                                /*    iof? inf loop */
                     reason = STOP_LOOP;
-                else sim_idle (0, FALSE);               /*    ion? idle */
+                else sim_idle (0, FALSE);               /*    ion? idle */                
                 }
             }                                           /* end idle */
         PC = MA & AMASK;
@@ -1056,7 +1054,7 @@ while (reason == 0) {                                   /* loop until halted */
             break;
         case 3:                                         /* SZA | SMA */
             if (((LAC & DMASK) == 0) || ((LAC & SIGN) != 0))
-                skp = 1;
+                skp = 1; 
             break;
         case 4:                                         /* SNL */
             if (LAC >= LINK)
@@ -1206,7 +1204,7 @@ while (reason == 0) {                                   /* loop until halted */
             PC = Incr_addr (PC);
         break;                                          /* end OPR */
 
-/* EAE: opcode 64
+/* EAE: opcode 64 
 
    The EAE is microprogrammed to execute variable length signed and
    unsigned shift, multiply, divide, and normalize.  Most commands are
@@ -1422,7 +1420,7 @@ while (reason == 0) {                                   /* loop until halted */
         break;                                          /* end case */
 #endif
 
-/* IOT: opcode 70
+/* IOT: opcode 70 
 
    The 18b PDP's have different definitions of various control IOT's.
 
@@ -1535,7 +1533,7 @@ while (reason == 0) {                                   /* loop until halted */
         ion_defer = 1;                                  /* delay interrupts */
         usmd_defer = 1;                                 /* defer load user */
         switch (device) {                               /* decode IR<6:11> */
-
+ 
        case 000:                                       /* CPU and clock */
             if (pulse == 002)                           /* IOF */
                 ion = 0;
@@ -2409,7 +2407,7 @@ t_stat cpu_show_hist (FILE *st, UNIT *uptr, int32 val, CONST void *desc)
 {
 int32 l, j, k, di, lnt;
 
-const char *cptr = (const char *) desc;
+CONST char *cptr = (CONST char *) desc;
 t_value sim_eval[2];
 t_stat r;
 InstHistory *h;

@@ -48,7 +48,7 @@ t_stat realcons_console_pdp10_maintpanel_service(realcons_console_logic_pdp10_t 
 		// Power switch transition to POWER OFF: terminate SimH
 		// This is drastic, but will teach users not to twiddle with the power switch.
 		// when panel is disconnected, panel mode goes to POWERLESS and power switch goes OFF.
-		// But shutdown seqeunce is not initialted, because we're disconnected then.
+		// But shutdown sequence is not initiated, because we're disconnected then.
 		SIGNAL_SET(cpusignal_console_halt, 1); // stop execution
 		sprintf(_this->realcons->simh_cmd_buffer, "quit"); // do not confirm the quit
 		return SCPE_OK;

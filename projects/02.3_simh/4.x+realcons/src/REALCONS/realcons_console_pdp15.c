@@ -237,7 +237,7 @@ void realcons_console_pdp15_interface_connect(realcons_console_logic_pdp15_t *_t
         extern char *realcons_register_name; // pseudo: name of last accessed register
         extern t_value realcons_memory_data_register; // REALCONS extension in scp.c
         extern int realcons_console_halt; // 1: CPU halted by realcons console
-        extern int32 sim_is_running; // global in scp.c
+        extern volatile t_bool sim_is_running; // global in scp.c
 
         // REALCONS extension in pdp18b_cpu.c
         extern int32 PC_Global;
@@ -549,7 +549,7 @@ t_stat realcons_console_pdp15_service(realcons_console_logic_pdp15_t *_this)
         // Power switch transition to POWER OFF: terminate SimH
         // This is drastic, but will teach users not to twiddle with the power switch.
         // when panel is disconnected, panel mode goes to POWERLESS and power switch goes OFF.
-        // But shutdown sequence is not initialted, because we're disconnected then.
+        // But shutdown sequence is not initiated, because we're disconnected then.
 
         SIGNAL_SET(cpusignal_console_halt, 1); // stop execution
         realcons_simh_add_cmd(_this->realcons, "quit"); // do not confirm the quit with ENTER
@@ -664,7 +664,7 @@ t_stat realcons_console_pdp15_service(realcons_console_logic_pdp15_t *_this)
 
         if (momentary_switch_signal(_this, _this->switch_reset, repeat_triggered)) {
             SIGNAL_SET(cpusignal_console_halt, 1); // stop execution
-            realcons_simh_add_cmd(_this->realcons, "reset\n");
+            realcons_simh_add_cmd(_this->realcons, "reset all\n");
         }
         if (console_mode && momentary_switch_signal(_this, _this->switch_start, repeat_triggered)) {
             unsigned addrval = (unsigned)_this->switch_address->value;

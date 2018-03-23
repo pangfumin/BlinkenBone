@@ -24,6 +24,7 @@
    25-Feb-2016  JH      disconnect on host or panel change
    25-Mar-2012  JH      created
 */
+#ifdef USE_REALCONS
 
 #define REALCONS_SIMH_C_
 
@@ -306,4 +307,4 @@ t_stat realcons_simh_show_cycles(FILE *st, DEVICE *dunused, UNIT *uunused, int32
 	return SCPE_OK;
 }
 
-
+#endif // USE_REALCONS

@@ -81,7 +81,6 @@
  */
 #define CYCLE_US (MEMORY_CYCLE*(VT11_DELAY*2+1))
 
-extern int32 int_req[IPL_HLVL];
 extern int32 int_vec[IPL_HLVL][32];
 
 t_stat vt_rd(int32 *data, int32 PA, int32 access);
@@ -348,7 +347,6 @@ vt_boot(int32 unit, DEVICE *dptr)
     t_stat r;
     char stability[32];
     extern int32 saved_PC;
-    extern uint16 *M;
     
     /* XXX  should do something like vt11_set_dpc(&appropriate_ROM_image) */
 
@@ -547,15 +545,16 @@ int32 SR;                               /* switch register */
 #endif
 
 void
-cpu_set_switches(unsigned long val)
+cpu_set_switches(unsigned long v1, unsigned long v2)
 {
-    SR = val;
+    SR = v1 ^ v2;
 }
 
-unsigned long
-cpu_get_switches(void)
+void
+cpu_get_switches(unsigned long *p1, unsigned long *p2)
 {
-    return SR;
+    *p1 = SR;
+    *p2 = 0;
 }
 #else  /* USE_DISPLAY not defined */
 char pdp11_vt_unused;   /* sometimes empty object modules cause problems */

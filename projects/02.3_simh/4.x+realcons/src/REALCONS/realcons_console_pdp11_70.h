@@ -73,7 +73,7 @@ typedef struct
 		int		*cpusignal_memory_write_access ; // is last memory accessa WRITE?
         t_stat *cpusignal_memory_status; // last memory access status
 		int *cpusignal_console_halt; // 1, if a real console halts program execution
-		int *cpusignal_run; // 1, if simulated cpu is running
+		volatile t_bool *cpusignal_run; // 1, if simulated cpu is running
 
 
 	    /* Signals for SimH's PDP11 cpu. */

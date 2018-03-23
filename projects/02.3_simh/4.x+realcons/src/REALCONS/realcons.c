@@ -75,6 +75,8 @@
   	 and also the default name for "console_name"
    - "console_name" can be overwritten, togheter with hostname.
  */
+#ifdef USE_REALCONS
+
 #define REALCONS_C_
 
 #include <stdlib.h>
@@ -494,7 +496,7 @@ void realcons_service(realcons_t *_this, int highspeed)
 	_this->service_next_time_msec = sim_os_msec()
 		+ (_this->debug ? REALCONS_SERVICE_INTERVAL_DEBUG_MSEC : _this->service_interval_msec)
 		/*No  random term to avoid visual interferences with panel LEDs and CPU loops.
-		  Better solution is LED low pass in Blinkenlight API servers 
+		  Better solution is LED low pass in Blinkenlight API servers
          */
   	    //		+ (rand() % 2) /* + 0..1 msecs*/
 	    //			+ (rand() % 10) - 5 /* +/- 5 msecs*/
@@ -703,3 +705,6 @@ void realcons_simh_event_deposit(realcons_t *_this, struct REG *reg)
 		(realcons_console_logic_pdp10_t *)(_this->console_controller), reg);
 #endif
 }
+
+#endif // USE_REALCONS
+

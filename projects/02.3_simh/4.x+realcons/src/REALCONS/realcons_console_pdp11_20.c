@@ -1,6 +1,6 @@
 /* realcons_pdp11_20.c : Logic for the specific 11/20 panel
 
- Copyright (c) 2012-2016, Joerg Hoppe
+ Copyright (c) 2012-2018, Joerg Hoppe
  j_hoppe@t-online.de, www.retrocmp.com
 
  Permission is hereby granted, free of charge, to any person obtaining a
@@ -19,6 +19,8 @@
  JOERG HOPPE BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+   21-Mar-2018	JH	Reset (HALT+START) load PC, merged with current SimH
    23-Apr-2016  JH  cloned from 11/70
 
 
@@ -42,6 +44,8 @@
  but quite a different panel)
 
  */
+#ifdef USE_REALCONS
+
 #include <assert.h>
 
 #include "sim_defs.h"
@@ -343,6 +347,19 @@ void realcons_console_pdp11_20__event_operator_reg_exam_deposit(
     } // other register accesses are ignored by the panel
 }
 
+
+// Called after CPU has been reinitialized
+void realcons_console_pdp11_20__event_cpu_reset(
+        realcons_console_logic_pdp11_20_t *_this) {
+    if (_this->realcons->debug)
+        printf("realcons_console_pdp11_20__event_cpu_reset\n");
+
+    // TODO: load PC with result from LOAD ADDR, for "HALT+START" reset ?
+    // This does NOT work:
+//    SIGNAL_SET(cpusignal_PC, SIGNAL_GET(cpusignal_memory_address_phys_register)) ;
+}
+
+
 void realcons_console_pdp11_20_interface_connect(realcons_console_logic_pdp11_20_t *_this,
         realcons_console_controller_interface_t *intf, char *panel_name)
 {
@@ -367,11 +384,11 @@ void realcons_console_pdp11_20_interface_connect(realcons_console_logic_pdp11_20
         extern t_value realcons_memory_data_register; // REALCONS extension in scp.c
         extern char *realcons_register_name; // pseudo: name of last accessed register
         extern int realcons_console_halt; // 1: CPU halted by realcons console
-        extern int32 sim_is_running; // global in scp.c
+        extern volatile t_bool sim_is_running; // global in scp.c
 
         extern int32 R[8]; // working registers, global in pdp11_cpu.c
+        extern int32 saved_PC;
         extern int32 SR; // switch register, global in pdp11_cpu_mod.c
-        extern int32 sim_is_running; // global in scp.c
         //extern t_addr realcons_console_address_register; // set by LOAD ADDR
         extern t_value realcons_DATAPATH_shifter; // output of ALU
         extern t_value realcons_IR; // buffer for instruction register (opcode)
@@ -392,7 +409,6 @@ void realcons_console_pdp11_20_interface_connect(realcons_console_logic_pdp11_20
 
         _this->cpusignal_DATAPATH_shifter = &realcons_DATAPATH_shifter; // not used
         //_this->cpusignal_console_address_register = &realcons_console_address_register; // not used
-        _this->cpusignal_PC = &(R[7]); // or "saved_PC" ???
 
         // set by LOAD ADDR, on all PDP11's
         // signal from realcons console to CPU: 1=HALTed
@@ -400,7 +416,7 @@ void realcons_console_pdp11_20_interface_connect(realcons_console_logic_pdp11_20
         _this->cpusignal_instruction_register = &realcons_IR;
         _this->cpusignal_PSW = &realcons_PSW;
         _this->cpusignal_R0 = &(R[0]); // R: global of pdp11_cpu.c
-        _this->cpusignal_PC = &(R[7]); // R: global of pdp11_cpu.c
+        _this->cpusignal_PC = &saved_PC; // R[7] not valid in console mode
         _this->cpusignal_switch_register = &SR; // see pdp11_cpumod.SR_rd()
     }
 
@@ -436,7 +452,8 @@ void realcons_console_pdp11_20_interface_connect(realcons_console_logic_pdp11_20
         realcons_event_operator_reg_exam =
                 realcons_event_operator_reg_deposit =
                         (console_controller_event_func_t) realcons_console_pdp11_20__event_operator_reg_exam_deposit;
-		realcons_event_cpu_reset = NULL ;
+		realcons_event_cpu_reset =
+			   (console_controller_event_func_t) realcons_console_pdp11_20__event_cpu_reset ;
         realcons_event_opcode_any =
                 (console_controller_event_func_t) realcons_console_pdp11_20__event_opcode_any;
         realcons_event_opcode_halt =
@@ -447,6 +464,9 @@ void realcons_console_pdp11_20_interface_connect(realcons_console_logic_pdp11_20
                 (console_controller_event_func_t) realcons_console_pdp11_20__event_opcode_wait;
     }
 }
+
+
+
 
 // setup first state
 t_stat realcons_console_pdp11_20_reset(realcons_console_logic_pdp11_20_t *_this)
@@ -667,7 +687,7 @@ t_stat realcons_console_pdp11_20_service(realcons_console_logic_pdp11_20_t *_thi
         if (action_switch == _this->switch_START) {
             // START has actions on rising AND falling edge!
             if (_this->switch_START->value && _this->switch_HALT->value) { // rising edge and HALT: INITIALIZE = SimH "RESET"
-                sprintf(_this->realcons->simh_cmd_buffer, "reset\n");
+                sprintf(_this->realcons->simh_cmd_buffer, "reset all\n");
             }
             if (_this->switch_START->value && !_this->switch_HALT->value) {
                 // rising edge and not HALT: will start on falling edge
@@ -862,3 +882,6 @@ int realcons_console_pdp11_20_test(realcons_console_logic_pdp11_20_t *_this, int
         _this->switch_DEPOSIT->value);
     return 0; // OK
 }
+
+
+#endif // USE_REALCONS

@@ -53,11 +53,7 @@ extern "C" {
 
 #ifndef SIMH_SERHANDLE_DEFINED
 #define SIMH_SERHANDLE_DEFINED 0
-#if defined (_WIN32)                            /* Windows definitions */
-typedef void *SERHANDLE;
-#else                                           /* all other platforms */
-typedef int SERHANDLE;
-#endif
+typedef struct SERPORT *SERHANDLE;
 #endif
 
 #include "sim_sock.h"
@@ -157,9 +153,11 @@ struct tmln {
     int32               txcnt;                          /* xmt count */
     int32               txpcnt;                         /* xmt packet count */
     int32               txdrp;                          /* xmt drop count */
+    int32               txstall;                        /* xmt stall count */
     int32               txbsz;                          /* xmt buffer size */
     int32               txbfd;                          /* xmt buffered flag */
     t_bool              modem_control;                  /* line supports modem control behaviors */
+    t_bool              port_speed_control;             /* line programmatically sets port speed */
     int32               modembits;                      /* modem bits which are currently set */
     FILE                *txlog;                         /* xmt log file */
     FILEREF             *txlogref;                      /* xmt log file reference */
@@ -175,6 +173,9 @@ struct tmln {
 #define TMXR_RX_BPS_UNIT_SCALE 1000000.0
     uint32              rxdelta;                        /* rcv inter character min time (usecs) */
     double              rxnexttime;                     /* min time for next receive character */
+    uint32              txbps;                          /* xmt bps speed (0 - unlimited) */
+    uint32              txdelta;                        /* xmt inter character min time (usecs) */
+    double              txnexttime;                     /* min time for next transmit character */
     uint8               *txpb;                          /* xmt packet buffer */
     uint32              txpbsize;                       /* xmt packet buffer size */
     uint32              txppsize;                       /* xmt packet packet size */
@@ -220,6 +221,7 @@ struct tmxr {
     SOCKET              ring_sock;                      /* incoming connection socket awaiting DTR */
     t_bool              notelnet;                       /* default telnet capability for incoming connections */
     t_bool              modem_control;                  /* multiplexer supports modem control behaviors */
+    t_bool              port_speed_control;             /* multiplexer programmatically sets port speed */
     t_bool              packet;                         /* Lines are packet oriented */
     t_bool              datagram;                       /* Lines use datagram packet transport */
     };
@@ -246,6 +248,10 @@ t_stat tmxr_attach_help(FILE *st, DEVICE *dptr, UNIT *uptr, int32 flag, const ch
 char *tmxr_line_attach_string(TMLN *lp);
 t_stat tmxr_set_modem_control_passthru (TMXR *mp);
 t_stat tmxr_clear_modem_control_passthru (TMXR *mp);
+t_stat tmxr_set_port_speed_control (TMXR *mp);
+t_stat tmxr_clear_port_speed_control (TMXR *mp);
+t_stat tmxr_set_line_port_speed_control (TMXR *mp, int line);
+t_stat tmxr_clear_line_port_speed_control (TMXR *mp, int line);
 t_stat tmxr_set_get_modem_bits (TMLN *lp, int32 bits_to_set, int32 bits_to_clear, int32 *incoming_bits);
 t_stat tmxr_set_line_loopback (TMLN *lp, t_bool enable_loopback);
 t_bool tmxr_get_line_loopback (TMLN *lp);
@@ -279,15 +285,18 @@ t_stat tmxr_show_cstat (FILE *st, UNIT *uptr, int32 val, CONST void *desc);
 t_stat tmxr_show_lines (FILE *st, UNIT *uptr, int32 val, CONST void *desc);
 t_stat tmxr_show_open_devices (FILE* st, DEVICE *dptr, UNIT* uptr, int32 val, CONST char* desc);
 t_stat tmxr_activate (UNIT *uptr, int32 interval);
+t_stat tmxr_activate_abs (UNIT *uptr, int32 interval);
 t_stat tmxr_activate_after (UNIT *uptr, uint32 usecs_walltime);
 t_stat tmxr_activate_after_abs (UNIT *uptr, uint32 usecs_walltime);
 t_stat tmxr_clock_coschedule (UNIT *uptr, int32 interval);
 t_stat tmxr_clock_coschedule_abs (UNIT *uptr, int32 interval);
-t_stat tmxr_clock_coschedule_tmr (UNIT *uptr, int32 tmr, int32 interval);
-t_stat tmxr_clock_coschedule_tmr_abs (UNIT *uptr, int32 tmr, int32 interval);
+t_stat tmxr_clock_coschedule_tmr (UNIT *uptr, int32 tmr, int32 ticks);
+t_stat tmxr_clock_coschedule_tmr_abs (UNIT *uptr, int32 tmr, int32 ticks);
 t_stat tmxr_change_async (void);
 t_stat tmxr_locate_line_send (const char *dev_line, SEND **snd);
 t_stat tmxr_locate_line_expect (const char *dev_line, EXPECT **exp);
+const char *tmxr_send_line_name (const SEND *snd);
+const char *tmxr_expect_line_name (const EXPECT *exp);
 t_stat tmxr_startup (void);
 t_stat tmxr_shutdown (void);
 t_stat tmxr_start_poll (void);
@@ -301,13 +310,18 @@ void _tmxr_debug (uint32 dbits, TMLN *lp, const char *msg, char *buf, int bufsiz
 #define tmxr_debug_connect(mp, msg) do {if (sim_deb && (mp)->dptr && (TMXR_DBG_CON & (mp)->dptr->dctrl)) sim_debug (TMXR_DBG_CON, mp->dptr, "%s\n", (msg)); } while (0)
 #define tmxr_debug_connect_line(lp, msg) do {if (sim_deb && (lp)->mp && (lp)->mp->dptr && (TMXR_DBG_CON & (lp)->mp->dptr->dctrl)) sim_debug (TMXR_DBG_CON, (lp)->mp->dptr, "Ln%d:%s\n", (int)((lp)-(lp)->mp->ldsc), (msg)); } while (0)
 
-#if defined(SIM_ASYNCH_IO) && defined(SIM_ASYNCH_MUX)
+#if defined(SIM_ASYNCH_MUX) && !defined(SIM_ASYNCH_IO)
+#undef SIM_ASYNCH_MUX
+#endif /* defined(SIM_ASYNCH_MUX) && !defined(SIM_ASYNCH_IO) */
+
+#if defined(SIM_ASYNCH_MUX)
 #define tmxr_attach(mp, uptr, cptr) tmxr_attach_ex(mp, uptr, cptr, TRUE)
 #else
 #define tmxr_attach(mp, uptr, cptr) tmxr_attach_ex(mp, uptr, cptr, FALSE)
 #endif
 #if (!defined(NOT_MUX_USING_CODE))
 #define sim_activate tmxr_activate
+#define sim_activate_abs tmxr_activate_abs
 #define sim_activate_after tmxr_activate_after
 #define sim_activate_after_abs tmxr_activate_after_abs
 #define sim_clock_coschedule tmxr_clock_coschedule 

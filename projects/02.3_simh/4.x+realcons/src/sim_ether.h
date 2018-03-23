@@ -102,8 +102,14 @@ extern "C" {
 #define PCAP_READ_TIMEOUT  1
 #endif
 
+#include <time.h>
+#if defined(__struct_timespec_defined) && !defined(_TIMESPEC_DEFINED)
+#define _TIMESPEC_DEFINED
+#endif
+
 /* set related values to have correct relationships */
 #if defined (USE_READER_THREAD)
+#include <pthread.h>
 #if defined (USE_SETNONBLOCK)
 #undef USE_SETNONBLOCK
 #endif /* USE_SETNONBLOCK */
@@ -229,6 +235,7 @@ struct eth_queue {
 struct eth_list {
   char    name[ETH_DEV_NAME_MAX];
   char    desc[ETH_DEV_DESC_MAX];
+  int     eth_api;
 };
 
 typedef int ETH_BOOL;

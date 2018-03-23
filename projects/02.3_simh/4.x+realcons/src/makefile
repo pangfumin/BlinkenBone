@@ -128,7 +128,7 @@ ifeq ($(MAKE_TARGET_ARCH),BBB)
   OS_CCDEFS = -D_GNU_SOURCE
   LDFLAGS = -lrt -lm  -lpthread  -ldl
   CC = $(BBB_CC) -std=c99 -U__STRICT_ANSI__  $(CC_DEFS) $(OS_CCDEFS) -I $(SRC)  $(CC_DBG_FLAGS) -UUSE_REALCONS
-  # DO NOT FORGET: "apt-get install libpcap-dev" on target,
+  # DO NOT FORGET: "apt-get install libpcap-dev" on target, 
   # copy /usr/lib/arm-linux-gnueabihf/libpcap.a to beagleboneblack-build
   LIBPCAP=$(SRC)/../bbb-build/libpcap.a
   NETWORK_OPT = -DUSE_NETWORK -isystem $(SYSROOTS)/usr/local/include $(LIBPCAP)
@@ -607,14 +607,14 @@ PDQ3_OPT = -I ${PDQ3D} -DUSE_SIM_IMD
 # Build everything (not the unsupported/incomplete simulators)
 #
 # ALL = pdp11 pdp10 pdp8 #vax
-ALL = pdp1 pdp4 pdp7 pdp8 pdp9 pdp15 pdp11 pdp10 \
-	vax microvax3900 microvax1 rtvax1000 microvax2 vax730 vax750 vax780 vax8600 \
-	nova eclipse hp2100 i1401 i1620 s3 altair altairz80 gri \
-	i7094 ibm1130 id16 id32 sds lgp h316 \
-	swtp6800mp-a swtp6800mp-a2 tx-0 ssem isys8010 isys8020
+# ALL = pdp1 pdp4 pdp7 pdp8 pdp9 pdp15 pdp11 pdp10 \
+# 	vax microvax3900 microvax1 rtvax1000 microvax2 vax730 vax750 vax780 vax8600 \
+# 	nova eclipse hp2100 i1401 i1620 s3 altair altairz80 gri \
+# 	i7094 ibm1130 id16 id32 sds lgp h316 \
+# 	swtp6800mp-a swtp6800mp-a2 tx-0 ssem isys8010 isys8020
 
-#all : ${ALL}
-all : pdp11_realcons pdp10_realcons pdp8_realcons pdp15_realcons vax
+# all : ${ALL}
+all : pdp11_realcons pdp8_realcons pdp10_realcons pdp15_realcons vax
 
 clean :
 ifeq ($(WIN32),)

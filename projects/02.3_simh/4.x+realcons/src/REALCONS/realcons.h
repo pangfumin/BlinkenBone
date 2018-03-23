@@ -38,7 +38,9 @@
 #include "realcons_simh.h"
 
 #ifdef WIN32
-#define strcasecmp _stricmp	// grmbl
+  #ifndef strcasecmp
+    #define strcasecmp _stricmp	// grmbl
+  #endif
 #else
 #include <limits.h> // INT_MAX
 #endif

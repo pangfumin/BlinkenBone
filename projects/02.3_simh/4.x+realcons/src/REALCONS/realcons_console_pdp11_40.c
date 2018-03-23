@@ -1,6 +1,6 @@
 /* realcons_pdp11_40.c: Logic for the specific 11/40 panel: KY11-D
 
-   Copyright (c) 2012-2016, Joerg Hoppe
+   Copyright (c) 2012-2018, Joerg Hoppe
    j_hoppe@t-online.de, www.retrocmp.com
 
    Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,7 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+   21-Mar-2018	JH		Reset (HALT+START) load PC, merged with current SimH
    18-Mar-2016	JH		access to SimHs I/O page and CPU registers (18->22bit addr)
    20-Feb-2016  JH      added PANEL_MODE_POWERLESS
       Dec-2015  JH      migration from SimH 3.82 to 4.x
@@ -47,6 +48,8 @@
    but quite a different panel)
 
  */
+#ifdef USE_REALCONS
+
 #include <assert.h>
 
 #include "sim_defs.h"
@@ -307,6 +310,17 @@ void realcons_console_pdp11_40__event_operator_reg_exam_deposit(realcons_console
 
 }
 
+// Called after CPU has been reinitialized
+void realcons_console_pdp11_40__event_cpu_reset(
+        realcons_console_logic_pdp11_40_t *_this) {
+    if (_this->realcons->debug)
+        printf("realcons_console_pdp11_40__event_cpu_reset\n");
+
+    // load PC, show PC in ADDR
+    SIGNAL_SET(cpusignal_PC, _this->console_address_register) ;
+	SIGNAL_SET(cpusignal_memory_address_phys_register, _this->console_address_register) ;
+}
+
 
 
 void realcons_console_pdp11_40_interface_connect(realcons_console_logic_pdp11_40_t *_this,
@@ -332,12 +346,12 @@ void realcons_console_pdp11_40_interface_connect(realcons_console_logic_pdp11_40
 		extern char *realcons_register_name; // pseudo: name of last accessed register
 		extern t_value realcons_memory_data_register; // REALCONS extension in scp.c
 		extern  int realcons_console_halt; // 1: CPU halted by realcons console
-		extern int32 sim_is_running; // global in scp.c
+		extern volatile t_bool sim_is_running; // global in scp.c
 
 		extern int32 R[8]; // working registers, global in pdp11_cpu.c
+        extern int32 saved_PC;
 		extern int32 SR, DR; // switch/display register, global in pdp11_cpu_mod.c
 		extern int32 cm; // cpu mode, global in pdp11_cpu.c. MD:KRN_MD, MD_SUP,MD_USR,MD_UND
-		extern int32 sim_is_running; // global in scp.c
 		extern int 	realcons_bus_ID_mode; // 1 = DATA space access, 0 = instruction space access
 		extern t_value realcons_DATAPATH_shifter; // output of ALU
 		extern t_value realcons_IR; // buffer for instruction register (opcode)
@@ -357,7 +371,6 @@ void realcons_console_pdp11_40_interface_connect(realcons_console_logic_pdp11_40
 		_this->cpusignal_run = &(sim_is_running);
 
 		_this->cpusignal_DATAPATH_shifter = &realcons_DATAPATH_shifter; // not used
-		_this->cpusignal_PC = &(R[7]); // or "saved_PC" ???
 		// 11/70 has a bus register BR: is this the bus data register???
 		//_this->signals_cpu_pdp11.bus_register = &(cpu_state->bus_data_register);
 
@@ -369,7 +382,7 @@ void realcons_console_pdp11_40_interface_connect(realcons_console_logic_pdp11_40
 		_this->cpusignal_bus_ID_mode = &realcons_bus_ID_mode;
 		_this->cpusignal_cpu_mode = &cm; // MD_SUP,MD_
 		_this->cpusignal_R0 = &(R[0]); // R: global of pdp11_cpu.c
-		_this->cpusignal_PC = &(R[7]); // R: global of pdp11_cpu.c
+		_this->cpusignal_PC = &saved_PC ; // R[7] not valid in console mode
 		_this->cpusignal_switch_register = &SR; // see pdp11_cpumod.SR_rd()
 	}
 
@@ -404,7 +417,8 @@ void realcons_console_pdp11_40_interface_connect(realcons_console_logic_pdp11_40
 		realcons_event_operator_reg_exam =
 			realcons_event_operator_reg_deposit =
 			(console_controller_event_func_t)realcons_console_pdp11_40__event_operator_reg_exam_deposit;
-		realcons_event_cpu_reset = NULL ;
+		realcons_event_cpu_reset =
+			(console_controller_event_func_t) realcons_console_pdp11_40__event_cpu_reset ;
 		realcons_event_opcode_any =
 			(console_controller_event_func_t)realcons_console_pdp11_40__event_opcode_any;
 		realcons_event_opcode_halt =
@@ -594,7 +608,7 @@ t_stat realcons_console_pdp11_40_service(realcons_console_logic_pdp11_40_t *_thi
 		if (action_switch == _this->switch_START) {
 			// START has actions on rising AND falling edge!
 			if (_this->switch_START->value && _this->switch_HALT->value) { // rising edge and HALT: INITIALIZE = SimH "RESET"
-				sprintf(_this->realcons->simh_cmd_buffer, "reset\n");
+				sprintf(_this->realcons->simh_cmd_buffer, "reset all\n");
 			}
 			if (_this->switch_START->value && !_this->switch_HALT->value) {
 				// rising edge and not HALT: will start on falling edge
@@ -726,3 +740,5 @@ int realcons_console_pdp11_40_test(realcons_console_logic_pdp11_40_t *_this, int
 		_this->switch_DEPOSIT->value);
 	return 0; // OK
 }
+
+#endif // USE_REALCONS

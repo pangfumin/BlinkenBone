@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>02.3_simh.4.x.jh</name>
+	<name>02.3_simh-4.x+realcons</name>
 	<comment></comment>
 	<projects>
 		<project>00_common</project>
