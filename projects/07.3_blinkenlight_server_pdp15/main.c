@@ -20,6 +20,8 @@
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+ 20-Sep-2016  JH    Switch polling through history-based low pass
+                    Lamp flicker reduction through 50Hz low pass thread
  04-Aug-2016  JH    Switch polling with reduced frequency, to supress contact bounce
  01-Aug-2016  JH    DEPOSIT/EXAMINE_THIS/NEXT separate (like keys, not internal combo signals)
  25-Jun-2016  JH    DATA/ADDR switches, REGISTER, MEMBUFFER: mirror, Bit17 = LSB
@@ -35,8 +37,14 @@
 
 
  Timing & CPU load:
- There is one  threads:
- a) the LED & switch MUX loop, in gpio.c, long intervl
+ There is two threads:
+ a) the LED & switch MUX loop, in gpio.c, runs at 1kHz
+ b) the averaging theead, runs at 50Hz
+
+ Timing calculation:
+ Primary Speed 1kHz.
+ 3 lamprows 0> 333Hz per row
+ 16 brightness phases -> at 1/16 brightness flicker with 333/16 = 20 Hz
 
  */
 
@@ -67,6 +75,7 @@
 #include "getopt2.h"
 
 #include "main.h"
+#include "iopattern.h"
 #include "gpio.h"
 
 
@@ -81,7 +90,7 @@ char program_options[1024]; // argv[1.argc-1]
 int opt_test = 0;
 int opt_background = 0;
 unsigned opt_mux_frequency = 0;
-unsigned opt_switch_mux_frequency = 0 ;
+//unsigned opt_switch_mux_frequency = 0 ;
 
 // command line args
 static getopt_t getopt_parser;
@@ -204,23 +213,43 @@ static char *on_blinkenlight_api_get_info()
     return buffer;
 }
 
-/*
- * Start the parallel thread which operates the GPIO mux.
- */
-void *mux(void *ptr); // the real-time GPIO multiplexing process to start up
+void *iopattern_update_outputs(void *ptr); // the real-time GPIO multiplexing process to start up
+pthread_t iopattern_thread;
+int iopattern_thread_terminate = 0;
 
-pthread_t mux_thread;
-int mux_thread_terminate = 0;
+void *gpio_mux(void *ptr); // the real-time GPIO multiplexing process to start up
+pthread_t gpio_mux_thread;
+int gpio_mux_thread_terminate = 0;
 
-static void gpio_mux_thread_start()
+static void threads_start()
 {
+    unsigned phase, muxcode;
     int res;
-    res = pthread_create(&mux_thread, NULL, mux, &mux_thread_terminate);
+
+    blinkenbus_init(); // panel config must be known
+
+       // intialize all output cache phases with image of blinkenbus register space
+       for (phase = 0; phase < IOPATTERN_OUTPUT_PHASES; phase++)
+           for (muxcode = 0 ; muxcode <= MAX_MUX_CODE ; muxcode++)
+           blinkenbus_cache_from_blinkenboards_outputs(blinkenbus_output_caches[phase][muxcode]);
+
+
+       // Start the parallel thread which operates the GPIO mux.
+           res = pthread_create(&gpio_mux_thread, NULL, gpio_mux, &gpio_mux_thread_terminate);
     if (res) {
         fprintf(stderr, "Error creating gpio_mux thread, return code %d\n", res);
         exit(EXIT_FAILURE);
     }
     printf("Created \"gpio_mux\" thread\n");
+
+    // Start the low-speed thread which averages the lamp values
+   res = pthread_create(&iopattern_thread, NULL, iopattern_update_outputs, &iopattern_thread_terminate);
+        if (res) {
+            fprintf(stderr, "Error creating gpio_mux thread, return code %d\n", res);
+            exit(EXIT_FAILURE);
+        }
+        printf("Created \"iopattern\" thread\n");
+
 
     sleep(2); // allow 2 sec for multiplex to start
 }
@@ -234,7 +263,7 @@ void blinkenlight_api_server(void)
 {
     register SVCXPRT *transp;
 
-// entry to server stub
+    // entry to server stub
 
     void blinkenlightd_1(struct svc_req *rqstp, register SVCXPRT *transp);
 
@@ -367,11 +396,11 @@ static void parse_commandline(int argc, char **argv)
                     "!! For values != 1000 (1 kHz) the lamp protection watchdog will not work correctly !!",
             "10000", "multiplex with 10 kHz, every row is shown 3333x per second", NULL, NULL);
 
-    getopt_def(&getopt_parser, "sf", "switchmuxfrequency", "switchmuxfrequency", NULL, "15",
+/*    getopt_def(&getopt_parser, "sf", "switchmuxfrequency", "switchmuxfrequency", NULL, "15",
             "Row frequency for switch polling. Effective polling frequency is 1/3 of that.\n"
                     "Use low values to suppress contact bounce on some switches.",
-            "30", "Poll switches with 10 Hz", NULL, NULL);
-
+            "30", "Poll switches with 100 Hz", NULL, NULL);
+*/
     res = getopt_first(&getopt_parser, argc, argv);
     while (res > 0) {
         if (getopt_isoption(&getopt_parser, "help")) {
@@ -385,10 +414,11 @@ static void parse_commandline(int argc, char **argv)
         } else if (getopt_isoption(&getopt_parser, "muxfrequency")) {
             if (getopt_arg_i(&getopt_parser, "frequency", &opt_mux_frequency) < 0)
                 commandline_option_error();
+/*
         } else if (getopt_isoption(&getopt_parser, "switchmuxfrequency")) {
             if (getopt_arg_i(&getopt_parser, "switchmuxfrequency", &opt_switch_mux_frequency) < 0)
                 commandline_option_error();
-
+*/
         }
         res = getopt_next(&getopt_parser);
 
@@ -429,6 +459,7 @@ static blinkenlight_control_t *define_switch_slice(blinkenlight_panel_t *p, char
         c->is_input = 1;
         c->type = input_switch;
         c->encoding = binary;
+        // c->fmax: only active for certain switches
         c->radix = 8; // display octal
     }
     // shift and mask data are saved in the "register wiring" struct.
@@ -461,7 +492,7 @@ static blinkenlight_control_t *define_lamp_slice(blinkenlight_panel_t *p, char *
         c->is_input = 0;
         c->type = output_lamp;
         c->encoding = binary;
-        c->fmax = 4; // lamps are slow light bulbs, low-pass with 4 Hz
+        c->fmax = 5; // lamps are slow light bulbs, low-pass with 5 Hz
         c->radix = 8; // display octal
     }
     bbrw = blinkenlight_add_register_wiring(c);
@@ -537,7 +568,6 @@ static void register_controls()
 
     // some switches have no debouncing flip-flops, set internal lowpass
     switch_stop = define_switch_slice(p, "STOP", 0, 1, MUX1, 1, 1); // In1.1 "STOP"
-    //switch_stop->fmax = SWITCH_LOWPASS_FREQUENCY ; // debounce
     switch_reset = define_switch_slice(p, "RESET", 0, 1, MUX1, 2, 0); // In2.0 "RESET"
     switch_read_in = define_switch_slice(p, "READ_IN", 0, 1, MUX1, 1, 2); // In1.2 "READ IN"
     switch_reg_group = define_switch_slice(p, "REG_GROUP", 0, 1, MUX6, 1, 0); // In 1.0 "REG GROUP"
@@ -558,13 +588,13 @@ static void register_controls()
     switch_cont = define_switch_slice(p, "CONT", 0, 1, MUX1, 1, 5); // In1.5 "CONT"
     // EXAM/DEPOSIT THIS/NEXT are constructed in gpio.c;
     switch_deposit_this = define_switch_slice(p, "DEPOSIT_THIS", 0, 1, MUX1, 0, 0); // register&bit dummy
-    //switch_deposit_this->fmax = SWITCH_LOWPASS_FREQUENCY ; // debounce
+    switch_deposit_this->fmax = SWITCH_LOWPASS_FREQUENCY ; // debounce
     switch_examine_this = define_switch_slice(p, "EXAMINE_THIS", 0, 1, MUX1, 0, 0); // "
-    //switch_examine_this->fmax = SWITCH_LOWPASS_FREQUENCY ; // debounce
+    switch_examine_this->fmax = SWITCH_LOWPASS_FREQUENCY ; // debounce
     switch_deposit_next = define_switch_slice(p, "DEPOSIT_NEXT", 0, 1, MUX1, 0, 0); // "
-    //switch_deposit_next->fmax = SWITCH_LOWPASS_FREQUENCY ; // debounce
+    switch_deposit_next->fmax = SWITCH_LOWPASS_FREQUENCY ; // debounce
     switch_examine_next = define_switch_slice(p, "EXAMINE_NEXT", 0, 1, MUX1, 0, 0); // "
-    //switch_examine_next->fmax = SWITCH_LOWPASS_FREQUENCY ; // debounce
+    switch_examine_next->fmax = SWITCH_LOWPASS_FREQUENCY ; // debounce
 
     switch_data = define_switch_slice(p, "DATA", 0, 8, MUX2, 2, 0); // In2.0:7 "DSW00-07"
     switch_data = define_switch_slice(p, "DATA", 8, 2, MUX2, 3, 0); // In3.0:1 "DSW08-09"
@@ -640,7 +670,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    gpio_mux_thread_start();
+    threads_start();
     // does never end!
 
     blinkenlight_api_server();

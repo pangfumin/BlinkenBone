@@ -15,14 +15,16 @@
 
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
  JOERG HOPPE BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
- 1-Apr-2016    JH      clean interface to blinkenbus over cache pages
+ 10-Sep-2016    JH      added "raw" in blinkenbus_cache_from_blinkenboards_inputs()
+                        and blinkenbuse_outputcontrols_to_cache()
+ 1-Apr-2016    	JH      clean interface to blinkenbus over cache pages
  23-Feb-2016    JH      added PANEL_MODE_POWERLESS
- logic for input controls with constant value
+                        logic for input controls with constant value
  17-Feb-2012    JH      created
 
  Multiplexing:
@@ -258,8 +260,9 @@ void blinkenbus_outputcontrol_to_cache(unsigned char *blinkenbus_cache, blinkenl
  * Limitation: control MUST NOT span mutiple mux rows, else multiple caches
  *   would be required.
  *
+ * raw: if 1, result in c->value_raw, else c->value
  */
-void blinkenbus_control_from_cache(unsigned char *blinkenbus_cache, blinkenlight_control_t *c)
+void blinkenbus_inputcontrol_from_cache(unsigned char *blinkenbus_cache, blinkenlight_control_t *c, int raw)
 {
     unsigned i_register_wiring;
     blinkenlight_control_blinkenbus_register_wiring_t *bbrw;
@@ -287,8 +290,12 @@ void blinkenbus_control_from_cache(unsigned char *blinkenbus_cache, blinkenlight
         if (c->mirrored_bit_order)
             value = mirror_bits(value, c->value_bitlen);
     }
+    if (raw)  {
+    c->value_raw = value ;
+    } else {
     c->value_previous = c->value;
     c->value = value;
+    }
 }
 
 /*
@@ -302,8 +309,9 @@ void blinkenbus_control_from_cache(unsigned char *blinkenbus_cache, blinkenlight
  *
  * Limitation: control MUST NOT span mutiple mux rows, else multiple caches
  *  would be required.
+ * if raw: use c->value_raw instead of c->value
  */
-void blinkenbus_outputcontrols_to_cache(unsigned char *blinkenbus_cache, blinkenlight_panel_t *p)
+void blinkenbus_outputcontrols_to_cache(unsigned char *blinkenbus_cache, blinkenlight_panel_t *p, int raw)
 {
     unsigned i_control;
     blinkenlight_control_t *c;
@@ -319,7 +327,10 @@ void blinkenbus_outputcontrols_to_cache(unsigned char *blinkenbus_cache, blinken
             else if (p->mode == RPC_PARAM_VALUE_PANEL_MODE_POWERLESS && c->type == output_lamp)
                 value = 0; // all OFF
             else
-                value = c->value;
+                if (raw)
+                    value = c->value_raw;
+                else
+                    value = c->value;
 
             blinkenbus_outputcontrol_to_cache(blinkenbus_cache, c, value);
             // "write as mask": all ones, if self test
@@ -333,7 +344,7 @@ void blinkenbus_outputcontrols_to_cache(unsigned char *blinkenbus_cache, blinken
  *  Limitation: control MUST NOT span mutiple mux rows, else multiple caches
  *  would be required.
  * */
-void blinkenbus_inputcontrols_from_cache(unsigned char *blinkenbus_cache, blinkenlight_panel_t *p)
+void blinkenbus_inputcontrols_from_cache(unsigned char *blinkenbus_cache, blinkenlight_panel_t *p, int raw)
 {
     unsigned i_control;
     blinkenlight_control_t *c;
@@ -341,7 +352,7 @@ void blinkenbus_inputcontrols_from_cache(unsigned char *blinkenbus_cache, blinke
     for (i_control = 0; i_control < p->controls_count; i_control++) {
         c = &(p->controls[i_control]);
         if (c->is_input)
-            blinkenbus_control_from_cache(blinkenbus_cache, c);
+            blinkenbus_inputcontrol_from_cache(blinkenbus_cache, c, raw);
     }
 }
 
@@ -701,7 +712,7 @@ void blinkenbus_init()
         blinkenbus_map_t cache;
         p = &(blinkenlight_panel_list->panels[i_panel]);
         blinkenbus_cache_from_blinkenboards_outputs(cache);
-        blinkenbus_outputcontrols_to_cache(cache, p);
+        blinkenbus_outputcontrols_to_cache(cache, p, /*raw*/FALSE);
         // Thread must not be running yet !!
         blinkenbus_cache_to_blinkenboards_outputs(cache, /*force_all=*/1);
     }

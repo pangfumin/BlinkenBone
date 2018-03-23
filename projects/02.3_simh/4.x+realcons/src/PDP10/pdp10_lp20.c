@@ -171,8 +171,6 @@
 
 /* LPCSUM/LPPDAT (765516) */
 
-extern int32 int_req;
-
 static int32 lpcsa = 0;                                 /* control/status A */
 static int32 lpcsb = CSB_DVOF;                          /* control/status B */
 static int32 lpba = 0;                                  /* bus address */
@@ -998,7 +996,7 @@ return reason;
  * So u3 contains the number of seconds desired, and u4 the number to go.
  */
 static void set_flush_timer (UNIT *uptr) {
-uptr = (UNIT *)uptr->up7;
+uptr = lp20_unit+1;
 uptr->u4 = uptr->u3;
 uptr->u5 = (int32)time(NULL);
 sim_cancel(uptr);
@@ -1011,7 +1009,7 @@ if (--uptr->u4 > 0) {
     sim_activate_after (uptr, uptr->wait);
     return SCPE_OK;
 }
-uptr = (UNIT *)uptr->up7;
+uptr = lp20_unit+1;
 fflush (uptr->fileref);
 return SCPE_OK;
 }

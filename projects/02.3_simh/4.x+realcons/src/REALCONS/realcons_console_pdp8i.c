@@ -253,9 +253,9 @@ void realcons_console_pdp8i_interface_connect(realcons_console_logic_pdp8i_t *_t
 		extern char *realcons_register_name; // pseudo: name of last accessed register
 		extern t_value realcons_memory_data_register; // REALCONS extension in scp.c
 		extern  int realcons_console_halt; // 1: CPU halted by realcons console
-		extern int32 sim_is_running; // global in scp.c
+		extern volatile t_bool sim_is_running; // global in scp.c
 
-		extern int32 OSR; /* switch register, global in cpu_pdp8.c */
+		extern int32 SR; /* switch register, global in cpu_pdp8.c */
 		extern int32 saved_LAC;									/* saved L'AC */
 		extern int32 saved_MQ; 									/* saved MQ */
 		extern int32 saved_PC; 									/* saved IF'PC */
@@ -278,7 +278,7 @@ void realcons_console_pdp8i_interface_connect(realcons_console_logic_pdp8i_t *_t
 		_this->cpusignal_memory_data_register = &realcons_memory_data_register;
 		_this->cpusignal_console_halt = &realcons_console_halt;
 		// from pdp8_cpu.c
-		_this->cpusignal_switch_register = &OSR; // see pdp8_cpu.c
+		_this->cpusignal_switch_register = &SR; // see pdp8_cpu.c
 		_this->cpusignal_if_pc = &saved_PC; // IF'PC, 15bit PC
 		_this->cpusignal_df = &saved_DF;
 		_this->cpusignal_link_accumulator = &saved_LAC;
@@ -464,7 +464,7 @@ t_stat realcons_console_pdp8i_service(realcons_console_logic_pdp8i_t *_this)
 		// Power switch transition to POWER OFF: terminate SimH
 		// This is drastic, but will teach users not to twiddle with the power switch.
 		// when panel is disconnected, panel mode goes to POWERLESS and power switch goes OFF.
-		// But shutdown seqeunce is not initialted, because we're disconnected then.
+		// But shutdown sequence is not initiated, because we're disconnected then.
 		SIGNAL_SET(cpusignal_console_halt, 1); // stop execution
 		sprintf(_this->realcons->simh_cmd_buffer, "quit"); // do not confirm the quit with ENTER
 		return SCPE_OK;

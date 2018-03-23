@@ -72,9 +72,6 @@
 #define CLKCSR_RW       (CSR_IE)
 #define CLK_DELAY       16667
 
-extern int32 int_req[IPL_HLVL];
-extern uint32 cpu_type;
-
 int32 tti_csr = 0;                                      /* control/status */
 uint32 tti_buftime;                                     /* time input character arrived */
 int32 tto_csr = 0;                                      /* control/status */
@@ -320,7 +317,7 @@ tmxr_set_console_units (&tti_unit, &tto_unit);
 tti_unit.buf = 0;
 tti_csr = 0;
 CLR_INT (TTI);
-sim_activate (&tti_unit, KBD_WAIT (tti_unit.wait, tmr_poll));
+sim_activate (&tti_unit, tmr_poll);
 return SCPE_OK;
 }
 
@@ -471,7 +468,6 @@ return clk_dib.vec;
 
 t_stat clk_reset (DEVICE *dptr)
 {
-sim_register_clock_unit (&clk_unit);                    /* declare clock unit */
 if (CPUT (HAS_LTCR))                                    /* reg there? */
     clk_fie = clk_fnxm = 0;
 else {
@@ -481,8 +477,8 @@ else {
 clk_tps = clk_default;                                  /* set default tps */
 clk_csr = CSR_DONE;                                     /* set done */
 CLR_INT (CLK);
-sim_rtcn_init (clk_unit.wait, TMR_CLK);                 /* init line clock */
-sim_activate (&clk_unit, clk_unit.wait);                /* activate unit */
+tmr_poll = sim_rtcn_init_unit (&clk_unit, clk_unit.wait, TMR_CLK);/* init line clock */
+sim_activate_after (&clk_unit, 1000000/clk_tps);        /* activate unit */
 tmr_poll = clk_unit.wait;                               /* set timer poll */
 tmxr_poll = clk_unit.wait;                              /* set mux poll */
 return SCPE_OK;

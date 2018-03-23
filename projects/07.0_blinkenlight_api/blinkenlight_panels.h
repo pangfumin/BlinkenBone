@@ -20,6 +20,7 @@
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+ 10-Sep-2016  JH      added value_raw, as stage before input filtering
  25-May-2016  JH      added mux_code to register_wiring (control slice)
  22-Mar-2016  JH      allow non-BlinkenBoard hardware registers
  23-Feb-2016  JH      coding of const dummy input controls defined
@@ -169,14 +170,16 @@ typedef struct blinkenlight_control_struct
 	unsigned char is_input; // 0 = out, 1 = in
 	blinkenlight_control_type_t type;
 	uint64_t value; // 64bit: for instance for the LED row of a PDP-10 register (36 bit)
-	uint64_t value_previous; // "old" value before change
-	uint64_t value_default; // startup value
+	uint64_t value_previous; // "old" value before change, for free use by client/server applications
+        uint64_t value_default; // startup value
 	unsigned radix; // number representation: 8 (octal) or 16 (hex)?
 	unsigned value_bitlen; // relevant lsb's in value
 	unsigned value_bytelen; // len of value in bytes ... for RPC transmissions
 	//@	unsigned mode ; // 0 = normal, 1 = selftest (lamp test)
 #ifdef BLINKENLIGHT_SERVER
 	// the value for a control comes over IO boards attached to the BLINKENBUS.
+	uint64_t value_raw ; // if history debouncing is used: as read from hardware
+
 	// 1) define ordered list of wires, lowest value first
 	unsigned blinkenbus_register_wiring_count;// count of blinkenbus registers carrying the control value
 	// if "0", the input control is a dummy with constant value, "bitlen" must be set in config file

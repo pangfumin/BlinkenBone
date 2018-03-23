@@ -84,7 +84,7 @@ typedef struct
 	char **cpusignal_register_name; // name of last accessed exam/deposit register
 	t_value *cpusignal_memory_data_register; // data of last bus cycle
 	int *cpusignal_console_halt; // 1, if a real console halts program execution
-	int *cpusignal_run; // 1, if simulated cpu is running
+	volatile t_bool *cpusignal_run; // 1, if simulated cpu is running
 
 
 	/* Signals for SimH's PDP8 cpu. */

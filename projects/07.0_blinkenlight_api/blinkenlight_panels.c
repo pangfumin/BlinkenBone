@@ -20,7 +20,7 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
+    10-Sep-2016  JH      added value_raw, as stage before input filtering
     22-Mar-2016  JH      allow non-BlinkenBoard hardware registers. _fixup() moved here.
     02-Feb-2012  JH      created
 */
@@ -176,6 +176,7 @@ blinkenlight_control_t *blinkenlight_add_control(blinkenlight_panel_list_t *_thi
 	c->blinkenbus_register_wiring_count = 0;
 	c->fmax = 0 ;
 	c->history = historybuffer_create(c, MAX_BLINKENLIGHT_HISTORY_ENTRIES) ;
+	c->value_raw = 0 ;
 #endif
 	// is not free'd! but only single data struct allocate at program start
 	return c;

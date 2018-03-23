@@ -229,7 +229,7 @@ void historybuffer_set_val(historybuffer_t *_this, uint64_t now_us, uint64_t val
  * averaged_value_bits is an array of uint8_t, with bit indexes.
  * Fractional scale: 1.0 <=> 255, 0 <=> 0
  * Two modes: "value mode" and "bit mode"
- *Bit mode average each bit separately.
+ * "Bit mode" average each bit separately.
  * So if the input pattern in the average time interval is 0x00, 0x01, 0x02, 0x03, 0x05 ...
  *    bit 0: averaged_value_bits[0] := 153 <=> 3/5
  *    bit 1: averaged_value_bits[1] := 102 <=> 2/5

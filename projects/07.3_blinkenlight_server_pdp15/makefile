@@ -19,11 +19,18 @@ LDFLAGS = -pthread
 	# all other cases: X86
 	OBJDIR=x86
 
-ifeq ($(MAKE_TARGET_ARCH),BEAGLEBONE)
+ifeq ($(MAKE_TARGET_ARCH),BBW)
 	#### !!! when cross compiling !!!!
 	# fuer beaglebone und angstrom stand alone toolchain
-	CC=arm-angstrom-linux-gnueabi-gcc -mthumb -march=armv7-a -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) $(OS_CCDEFS) -I.
-	OBJDIR=bin-beaglebone
+	CC=$(BBW_CC) -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) $(OS_CCDEFS) -I.
+	OBJDIR=bin-bbw
+	SSHTARGET=root@beaglebone
+	LDFLAGS += -lrt
+else ifeq ($(MAKE_TARGET_ARCH),BBB)
+	#### !!! when cross compiling !!!!
+	# fuer beaglebone und angstrom stand alone toolchain
+	CC=$(BBB_CC) -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) $(OS_CCDEFS) -I.
+	OBJDIR=bin-bbb
 	SSHTARGET=root@beaglebone
 	LDFLAGS += -lrt
 endif
@@ -76,6 +83,7 @@ $(BLINKENLIGHT_API_SOURCES.c) $(BLINKENLIGHT_API_SOURCES.h):
 
 SOURCES.h = \
 	main.h	\
+	iopattern.h	\
 	gpio.h	\
 	$(BLINKENLIGHT_SERVER_DIR)/print.h	\
 	$(BLINKENLIGHT_SERVER_DIR)/blinkenbus.h	\
@@ -83,6 +91,7 @@ SOURCES.h = \
 
 SOURCES.c = \
 	main.c	\
+	iopattern.c	\
 	gpio.c	\
 	$(BLINKENLIGHT_SERVER_DIR)/print.c	\
 	$(BLINKENLIGHT_SERVER_DIR)/blinkenbus.c	\

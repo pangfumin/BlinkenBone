@@ -126,7 +126,7 @@ t_stat realcons_pdp10_operpanel_service(realcons_console_logic_pdp10_t *_this)
 			// if machine is running: perform stop, then in stop event do reset
 			SIGNAL_SET(cpusignal_console_halt, 1);
 		} else {
-			sprintf(_this->realcons->simh_cmd_buffer, "reset\n");
+			sprintf(_this->realcons->simh_cmd_buffer, "reset all\n");
 			_this->button_RESET.pendingbuttons = 0;
 		}
 	}

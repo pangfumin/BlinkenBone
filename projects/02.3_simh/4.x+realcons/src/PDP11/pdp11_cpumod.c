@@ -1,6 +1,6 @@
 /* pdp11_cpumod.c: PDP-11 CPU model-specific features
 
-   Copyright (c) 2004-2013, Robert M Supnik
+   Copyright (c) 2004-2016, Robert M Supnik
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the "Software"),
@@ -25,6 +25,8 @@
 
    system       PDP-11 model-specific registers
 
+   04-Mar-16    RMS     Fixed maximum memory sizes to exclude IO page
+   14-Mar-16    RMS     Modified to keep cpu_memsize in sync with MEMSIZE
    06-Jun-13    RMS     Fixed change model to set memory size last
    20-May-08    RMS     Added JCSR default for KDJ11B, KDJ11E
    22-Apr-08    RMS     Fixed write behavior of 11/70 MBRK, LOSIZE, HISIZE
@@ -90,12 +92,8 @@ int32 toy_state = 0;
 uint8 toy_data[TOY_LNT] = { 0 };
 static int32 clk_tps_map[4] = { 60, 60, 50, 800 };
 
-extern uint16 *M;
 extern int32 R[8];
-extern DEVICE cpu_dev;
-extern UNIT cpu_unit;
 extern int32 STKLIM, PIRQ;
-extern uint32 cpu_model, cpu_type, cpu_opt;
 extern int32 clk_fie, clk_fnxm, clk_tps, clk_default;
 
 t_stat CPU24_rd (int32 *data, int32 addr, int32 access);
@@ -801,7 +799,7 @@ return SCPE_NXM;
 t_stat CTLJB_rd (int32 *data, int32 pa, int32 access)
 {
 switch ((pa >> 1) & 03) {                               /* decode pa<2:1> */
-
+ 
    case 0:                                              /* CSR */
     *data = JCSR & CSRJB_RD;
     return SCPE_OK;
@@ -902,7 +900,7 @@ switch ((pa >> 1) & 03) {                               /* decode pa<2:1> */
 
     case 3:                                             /* ASR */
         JASR = (JASR & ~ASRJE_TOY) | (toy_read () << ASRJE_V_TOY);
-        *data = JASR & ASRJE_RW;
+        *data = JASR & ASRJE_RW;            
         return SCPE_OK;
         }
 
@@ -1103,7 +1101,7 @@ cpu_model = val;
 cpu_type = 1u << cpu_model;
 cpu_opt = cpu_tab[cpu_model].std;
 #ifdef USE_REALCONS
-// default: logic object and Blinkenlight PAnel like SimH cpu type
+// default: logic object and Blinkenlight panel like SimH cpu type
 strcpy(cpu_realcons->console_logic_name, cpu_tab[cpu_model].name) ;
 strcpy(cpu_realcons->application_panel_name, cpu_realcons->console_logic_name) ;
 #endif
@@ -1126,7 +1124,7 @@ for (i = 0; opt_name[2 * i] != NULL; i++) {
     if ((all_opt >> i) & 1)
         fprintf (st, ", %s",
                 ((cpu_opt >> i) & 1)? opt_name[2 * i]: opt_name[(2 * i) + 1]);
-    }
+    }   
 return SCPE_OK;
 }
 
@@ -1161,9 +1159,11 @@ uint32 i, clim;
 uint16 *nM;
 
 if ((val <= 0) ||
-    (val > (int32) cpu_tab[cpu_model].maxm) ||
+    (val > ((int32) cpu_tab[cpu_model].maxm)) ||
     ((val & 07777) != 0))
     return SCPE_ARG;
+if (val > ((int32) (cpu_tab[cpu_model].maxm - IOPAGESIZE)))
+    val = (int32) (cpu_tab[cpu_model].maxm - IOPAGESIZE);
 for (i = val; i < MEMSIZE; i = i + 2)
     mc = mc | M[i >> 1];
 if ((mc != 0) && !get_yn ("Really truncate memory [N]?", FALSE))

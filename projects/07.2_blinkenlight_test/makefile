@@ -17,11 +17,14 @@ endif
 OS_CCDEFS =
 
 
-ifeq ($(MAKE_TARGET_ARCH),BEAGLEBONE)
+ifeq ($(MAKE_TARGET_ARCH),BBW)
 	#### !!! when cross compiling !!!!
 	# fuer beaglebone und angstrom stand alone toolchain
-	CC=arm-angstrom-linux-gnueabi-gcc -mthumb -march=armv7-a -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) $(OS_CCDEFS) -I.
-	OBJDIR=bin-beaglebone
+	CC=$(BBW_CC) -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) $(OS_CCDEFS) -I.
+	OBJDIR=bin-bbw
+else ifeq ($(MAKE_TARGET_ARCH),BBB)
+	CC=$(BBB_CC) -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) $(OS_CCDEFS) -I.
+	OBJDIR=bin-bbb
 else ifeq ($(MAKE_TARGET_ARCH),RPI)
 	CC=arm-linux-gnueabihf-gcc -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) $(OS_CCDEFS) -I.
 	OBJDIR=bin-rpi

@@ -20,7 +20,8 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
+ 10-Sep-2016    JH      added "raw" in blinkenbus_cache_from_blinkenboards_inputs()
+                        and blinkenbuse_outputcontrols_to_cache()
    17-Feb-2012  JH      created
 */
 
@@ -60,9 +61,9 @@ void blinkenbus_board_control_write(unsigned board_addr, unsigned char regval) ;
 
 void blinkenbus_outputcontrol_to_cache(unsigned char *blinkenbus_cache, blinkenlight_control_t *c,
         uint64_t value);
-void blinkenbus_control_from_cache(unsigned char *blinkenbus_cache, blinkenlight_control_t *c) ;
-void blinkenbus_outputcontrols_to_cache(unsigned char *blinkenbus_cache, blinkenlight_panel_t *p) ;
-void blinkenbus_inputcontrols_from_cache(unsigned char *blinkenbus_cache, blinkenlight_panel_t *p) ;
+void blinkenbus_inputcontrol_from_cache(unsigned char *blinkenbus_cache, blinkenlight_control_t *c, int raw) ;
+void blinkenbus_outputcontrols_to_cache(unsigned char *blinkenbus_cache, blinkenlight_panel_t *p, int raw) ;
+void blinkenbus_inputcontrols_from_cache(unsigned char *blinkenbus_cache, blinkenlight_panel_t *p, int raw) ;
 
 void blinkenbus_cache_from_blinkenboards_outputs(unsigned char *blinkenbus_cache) ;
 void blinkenbus_cache_to_blinkenboards_outputs(unsigned char *blinkenbus_cache, int force_all) ;

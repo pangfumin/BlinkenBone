@@ -15,11 +15,16 @@ else
 CC_DBG_FLAGS = -ggdb3 -O0
 endif
 
-ifeq ($(MAKE_TARGET_ARCH),BEAGLEBONE)
+ifeq ($(MAKE_TARGET_ARCH),BBW)
 	#### !!! when cross compiling !!!!
 	# fuer beaglebone und angstrom stand alone toolchain
-	CC=arm-angstrom-linux-gnueabi-gcc -mthumb -march=armv7-a -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) -I.
-	OBJDIR=bin-beaglebone
+	CC=$(BBW_CC) -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) -I.
+	OBJDIR=bin-bbw
+	SSHTARGET=root@beaglebone
+	LDFLAGS=-lrt -pthread
+else ifeq ($(MAKE_TARGET_ARCH),BBB)
+	CC=$(BBB_CC) -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) -I.
+	OBJDIR=bin-bbb
 	SSHTARGET=root@beaglebone
 	LDFLAGS=-lrt -pthread
 else ifeq ($(MAKE_TARGET_ARCH),RPI)

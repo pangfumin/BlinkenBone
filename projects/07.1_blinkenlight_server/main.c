@@ -415,7 +415,7 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
         blinkenbus_map_dump(blinkenbus_input_cache,
                 "on_blinkenlight_api_panel_get_controlvalues()\n");
         // blinkenbus_input_cache updated by mux thread
-        blinkenbus_inputcontrols_from_cache(blinkenbus_input_cache, p);
+        blinkenbus_inputcontrols_from_cache(blinkenbus_input_cache, p, /*raw*/FALSE);
     }
 #endif
 }

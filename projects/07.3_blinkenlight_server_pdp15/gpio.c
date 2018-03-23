@@ -20,6 +20,8 @@
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+ 20-Sep-2016  JH    Switch polling through history-based low pass
+                    Lamp flicker reduction through 50Hz low pass
  04-Aug-2016  JH    Switch polling with reduced frequency, to supress contact bounce
  25-May-2016  JH	created
 
@@ -52,9 +54,9 @@
 
 #include "main.h"   // pdp15_panel
 #include "print.h"
+#include "iopattern.h"
 #include "gpio.h"
 
-static blinkenbus_map_t blinkenbus_output_cache;
 static blinkenbus_map_t blinkenbus_input_cache;
 
 static void microsleep(unsigned microsecs)
@@ -79,46 +81,6 @@ static void write_switch_mux_code(unsigned mux_code)
     blinkenbus_register_write(0, 0, regval);
 }
 
-// set the BlinkenBoard register bits for a lamp mux row
-//
-// muxcode == 0: all lamps OFF by setting mux select to 0
-//
-// Limitation: A control value is completely assembled from the same cache
-// and can not span several MUX rows.
-static void outputcontrols_to_mux_row(unsigned mux_code)
-{
-    unsigned i_control;
-    blinkenlight_control_t *c;
-    unsigned c_muxcode;
-
-    if (mux_code != 0) {
-
-        // lamp test: show light, but controls hold their state
-        for (i_control = 0; i_control < pdp15_panel->controls_count; i_control++) {
-            c = &(pdp15_panel->controls[i_control]);
-            // patch: all wirings of control must have same mux code
-            c_muxcode = c->blinkenbus_register_wiring[0].mux_code;
-
-            if (mux_code == c_muxcode && !c->is_input) {
-                uint64_t value;
-                if (pdp15_panel->mode == RPC_PARAM_VALUE_PANEL_MODE_ALLTEST
-                        || (pdp15_panel->mode == RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST
-                                && c->type == output_lamp))
-                    value = 0xffffffffffffffff; // selftest:
-                else if (pdp15_panel->mode == RPC_PARAM_VALUE_PANEL_MODE_POWERLESS
-                        && c->type == output_lamp)
-                    value = 0; // all OFF
-                else
-                    value = c->value;
-
-                blinkenbus_outputcontrol_to_cache(blinkenbus_output_cache, c, value);
-                // "write as mask": all ones, if self test
-            }
-        }
-    }
-
-    blinkenbus_cache_to_blinkenboards_outputs(blinkenbus_output_cache, /* force_all*/1);
-}
 
 // read the BlinkenBoard register bits for a switch mux row
 //
@@ -136,9 +98,11 @@ static void inputcontrols_from_mux_row(unsigned mux_code)
         return;
     now_us = historybuffer_now_us();
 
-    // LOCK
+    // todo: LOCK?
+    // fill c->value_raw
     blinkenbus_cache_from_blinkenboards_inputs(blinkenbus_input_cache);
-    // UNLOCK
+
+    // todo: UNLOCK?
 
     for (i_control = 0; i_control < pdp15_panel->controls_count; i_control++) {
         c = &(pdp15_panel->controls[i_control]);
@@ -146,11 +110,11 @@ static void inputcontrols_from_mux_row(unsigned mux_code)
         c_muxcode = c->blinkenbus_register_wiring[0].mux_code;
 
         if (mux_code == c_muxcode && c->is_input) {
-            blinkenbus_control_from_cache(blinkenbus_input_cache, c);
-            // if (c->fmax > 0)
-            //     historybuffer_set_val(c->history, now_us, c->value) ;
+            // all inputs: must not touch c->value, only set c->value_raw !
+            blinkenbus_inputcontrol_from_cache(blinkenbus_input_cache, c, /*raw*/TRUE);
         }
     }
+
     if (mux_code == MUX1) {
         /* exam/deposit this/next must be constructed separateley
          * physical keyboard signals:
@@ -181,49 +145,38 @@ static void inputcontrols_from_mux_row(unsigned mux_code)
         extern blinkenlight_control_t *switch_examine_next;
 
         if (keyboard_deposit_this == 0) {
-            switch_deposit_this->value = 0;
-            switch_deposit_next->value = 0;
+            switch_deposit_this->value_raw = 0;
+            switch_deposit_next->value_raw = 0;
         } else if (keyboard_dep_exam_next == 0) {
-            switch_deposit_this->value = 1;
-            switch_deposit_next->value = 0;
+            switch_deposit_this->value_raw = 1;
+            switch_deposit_next->value_raw = 0;
         } else {
-            switch_deposit_this->value = 0;
-            switch_deposit_next->value = 1;
+            switch_deposit_this->value_raw = 0;
+            switch_deposit_next->value_raw = 1;
         }
         if (keyboard_examine_this == 0) {
-            switch_examine_this->value = 0;
-            switch_examine_next->value = 0;
+            switch_examine_this->value_raw = 0;
+            switch_examine_next->value_raw = 0;
         } else if (keyboard_dep_exam_next == 0) {
-            switch_examine_this->value = 1;
-            switch_examine_next->value = 0;
+            switch_examine_this->value_raw = 1;
+            switch_examine_next->value_raw = 0;
         } else {
-            switch_examine_this->value = 0;
-            switch_examine_next->value = 1;
+            switch_examine_this->value_raw = 0;
+            switch_examine_next->value_raw = 1;
         }
+    }
 
-#if DBG
-        /* detect contact bounce on EXAM/DEPOSIT  */
-        for (int i = 0; i <= 7; i++) {
-            for (int j = 0; j < 8; j++) {
-                int mask = 1 << j; // detect indivdual pins
-                int bitnow = !!(blinkenbus_input_cache[i] & mask);
-                int bitprev = !!(input_cache_prev[i] & mask);
-                if (bitnow != bitprev)
-                    printf("%u) input regbit[%d.%d]: %d -> %d\n", dbg_eventcnt++, i, j, bitprev,
-                            bitnow);
-            }
-            input_cache_prev[i] = blinkenbus_input_cache[i];
-        }
+    // feed bouncing switches into lowpass, assign final values for others
+    for (i_control = 0; i_control < pdp15_panel->controls_count; i_control++) {
+        c = &(pdp15_panel->controls[i_control]);
+        c_muxcode = c->blinkenbus_register_wiring[0].mux_code;
 
-        /* display changed values, use "tag" as "known"*/
-        for (i_control = 0; i_control < pdp15_panel->controls_count; i_control++) {
-            c = &(pdp15_panel->controls[i_control]);
-            if (c->value != c->tag) {
-                printf("%u) %s: %llu -> %llu\n", dbg_eventcnt++, c->name, c->tag, c->value);
-            }
-            c->tag = c->value;
+        if (mux_code == c_muxcode && c->is_input) {
+            if (c->fmax > 0)
+                historybuffer_set_val(c->history, now_us, c->value_raw);
+            else
+                c->value = c->value_raw; // no filtering
         }
-#endif
     }
 }
 
@@ -235,16 +188,17 @@ static void inputcontrols_from_mux_row(unsigned mux_code)
  *
  * The
  */
-void mux(int * terminate)
+void gpio_mux(int * terminate)
 {
-#define PHASES  3 // 3 lamp phases, some idle phases
+#define MUX_PHASES  3 // 3 lamp phases, some idle phases
+    unsigned rounds; // globbal ticker
     unsigned mux_sleep_us;
-    unsigned phase = 0;
-    unsigned mux_code;
+//    unsigned phase = 0;
+//    unsigned mux_code;
     unsigned regaddr;
 
     unsigned switch_prescaler_val;
-    unsigned switch_prescaler = 0;
+//    unsigned switch_prescaler = 0;
 
 // default
     if (opt_mux_frequency)
@@ -253,14 +207,18 @@ void mux(int * terminate)
         mux_sleep_us = 1000; // 1 kHz
     print(LOG_NOTICE, "Lamp multiplexing period = %u us.\n", mux_sleep_us);
 
-    switch_prescaler_val = 0;
-    if (opt_switch_mux_frequency)
-        switch_prescaler_val = opt_mux_frequency / opt_switch_mux_frequency;
-    if (switch_prescaler_val <= 0)
-        // else  poll switch with 10 Hz
-        switch_prescaler_val = opt_mux_frequency / 10;
-    switch_prescaler = 0;
-    print(LOG_NOTICE, "Switch multiplexing period = %d Hz = %u us.\n", opt_switch_mux_frequency,
+    /*
+     switch_prescaler_val = 0;
+     if (opt_switch_mux_frequency)
+     switch_prescaler_val = opt_mux_frequency / opt_switch_mux_frequency;
+     if (switch_prescaler_val <= 0)
+     // else  poll switch with 10 Hz
+     switch_prescaler_val =
+     print(LOG_NOTICE, "Switch multiplexing period = %d Hz = %u us.\n", opt_switch_mux_frequency,
+     switch_prescaler_val * mux_sleep_us);
+     */
+    switch_prescaler_val = opt_mux_frequency / 30; //  poll switches with 30 Hz
+    print(LOG_NOTICE, "Switch multiplexing period = 30 Hz = %u us.\n",
             switch_prescaler_val * mux_sleep_us);
 
     blinkenbus_init();
@@ -286,16 +244,46 @@ void mux(int * terminate)
         // 22 = EINVAL
     }
 
+#ifdef TEST
+    {
+        extern blinkenlight_control_t *lamp_register; // I29-I46 "R00-R17"
+        unsigned phase;
+        unsigned c_muxcode ;
+        unsigned value = 0777777;//0123456;
+        blinkenlight_control_t *c = lamp_register; // I29-I46 "R00-R17"
+        c_muxcode =  c->blinkenbus_register_wiring[0].mux_code; // something between 0..7
+
+        for (phase = 0; phase < IOPATTERN_OUTPUT_PHASES; phase++) {
+//            for (c_muxcode = 0; c_muxcode <= MAX_MUX_CODE; c_muxcode++) {
+                blinkenbus_outputcontrol_to_cache(blinkenbus_output_caches[phase][c_muxcode], c,
+                        value & (0xfffff >> (phase)));
+            }
+    }
+#endif
+
+    rounds = 0;
     while (!*terminate) {
-        phase = (phase + 1) % PHASES;
+        unsigned lamp_brightness_phase;
+        unsigned lamp_mux_phase;
+        unsigned switch_mux_phase;
+        unsigned mux_code;
+
+        rounds = (rounds + 1) & 0x7ffffff; // inc global clock
+        // on roll around, output mux/poll order is disturbed ... so what?
 
         // 1. set board #0 control register periodically to "outputs enabled"
-        if (phase == 0) {
+        if (rounds % 1000) {
             blinkenbus_board_control_write(0, 0);
         }
 
         // 2. drive lamp row. Option: distribute "ON" phases evenly
-        switch (phase) {
+        // total output phases:
+        // 3 for output multiplexing,
+        // 16 for brightness phases => one brightness phase every 50 rounds
+
+        lamp_brightness_phase = (rounds / MUX_PHASES) % IOPATTERN_OUTPUT_PHASES;
+        lamp_mux_phase = rounds % MUX_PHASES;
+        switch (lamp_mux_phase) {
         case 0:
             mux_code = 3;
             break;
@@ -308,22 +296,25 @@ void mux(int * terminate)
         default:
             mux_code = 0; // all off
         }
-        // printf("%u ", mux_code) ;
-        // assemble value for BlinkenBoard output registers
-        // from control&wiring struct
-        // muxcode = 0: all OFF
+
         write_indicator_mux_code(mux_code);
 
-        outputcontrols_to_mux_row(mux_code);
+        // TODO: LAMPTEST logic in iopattern.c::iopattern_update_outputs()
+        blinkenbus_cache_to_blinkenboards_outputs(
+                blinkenbus_output_caches[lamp_brightness_phase][mux_code], /* force_all*/1);
 
-        /* Poll the switches with reduced freqeuncy */
-        if (switch_prescaler > PHASES) {
-            switch_prescaler--;
-            microsleep(mux_sleep_us);
+        // outputcontrols_to_mux_row(mux_code);
+
+        if (rounds % switch_prescaler_val != 0) {
+            microsleep(mux_sleep_us); // do not set lamp rows too fast after another
         } else {
+            // poll switches with reduced frequency
+            switch_mux_phase = (rounds / switch_prescaler_val) % 3;
+//            print(LOG_NOTICE, " %d\n", switch_mux_phase) ;
+
             // poll switches for 3 phases = prescaler 2,1,0
             // 3. drive switch row
-            switch (switch_prescaler % PHASES) {
+            switch (switch_mux_phase) {
             case 0:
                 mux_code = 1;
                 break;
@@ -336,13 +327,6 @@ void mux(int * terminate)
             default:
                 mux_code = 0; // no scan
             }
-            // printf("Polling switches with mux code %u\n", mux_code) ;
-            // leave switch polling after last phases
-            if (switch_prescaler > 0)
-                switch_prescaler--;
-            else
-                switch_prescaler = switch_prescaler_val; // reload
-
 
             // 3.1. assemble switch values from BlinkenBoard input registers
             // from control&wiring struct

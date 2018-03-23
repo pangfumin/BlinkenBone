@@ -275,8 +275,9 @@ void *iopattern_update_outputs(void *arg)
 
                 // fetch  shift
                 // get averaged values
-                if (c->fmax == 0) {
+                if (c->fmax == 0 || c->encoding != binary) {
                     // no averaging: brightness only 0 or 1, all phases identical
+                    // Must be used for encoding BITPOSITION (PDP-11/70 USER/SUPER/KERNEL)
                     for (phase = 0; phase < IOPATTERN_OUTPUT_PHASES; phase++) {
                         uint64_t value = panel_mode_control_value(c, c->value);
                         blinkenbus_outputcontrol_to_cache(blinkenbus_output_caches[phase], c,

@@ -1,6 +1,6 @@
 /* pdp10_cpu.c: PDP-10 CPU simulator
 
-   Copyright (c) 1993-2016, Robert M. Supnik
+   Copyright (c) 1993-2017, Robert M. Supnik
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the "Software"),
@@ -25,8 +25,9 @@
 
    cpu          KS10 central processor
 
+   07-Sep-17    RMS     Fixed sim_eval declaration in history routine (COVERITY)
+   14-Jan-17    RMS     Fixed bugs in 1-proceed
    09-Feb-16    RMS     Fixed nested indirects and executes (Tim Litt)
-
    25-Mar-12    RMS     Added missing parameters to prototypes (Mark Pizzolato)
    17-Jul-07    RMS     Fixed non-portable usage in SHOW HISTORY
    28-Apr-07    RMS     Removed clock initialization
@@ -214,7 +215,6 @@ int32 stop_op0 = 0;                                     /* stop on 0 */
 int32 rlog = 0;                                         /* extend fixup log */
 int32 ind_max = 0;                                      /* nested ind limit */
 int32 xct_max = 0;                                      /* nested XCT limit */
-int32 t20_idlelock = 0;                                 /* TOPS-20 idle lock */
 a10 pcq[PCQ_SIZE] = { 0 };                              /* PC queue */
 int32 pcq_p = 0;                                        /* PC queue ptr */
 REG *pcq_r = NULL;                                      /* PC queue reg ptr */
@@ -251,9 +251,6 @@ console_controller_event_func_t realcons_event_opcode_wait; // triggered after e
 console_controller_event_func_t	realcons_event_program_write_memory_indicator;
 console_controller_event_func_t	realcons_event_program_write_address_addrcond;
 #endif
-
-
-
 
 /* Forward and external declarations */
 
@@ -310,14 +307,6 @@ void set_ac_display (d10 *acbase);
 
 extern t_stat build_dib_tab (void);
 extern t_stat show_iospace (FILE *st, UNIT *uptr, int32 val, CONST void *desc);
-extern d10 Read (a10 ea, int32 prv);                    /* read, read check */
-extern d10 ReadM (a10 ea, int32 prv);                   /* read, write check */
-extern d10 ReadE (a10 ea);                              /* read, exec */
-extern d10 ReadP (a10 ea);                              /* read, physical */
-extern void Write (a10 ea, d10 val, int32 prv);         /* write */
-extern void WriteE (a10 ea, d10 val);                   /* write, exec */
-extern void WriteP (a10 ea, d10 val);                   /* write, physical */
-extern t_bool AccViol (a10 ea, int32 prv, int32 mode);  /* access check */
 extern void set_dyn_ptrs (void);
 extern a10 conmap (a10 ea, int32 mode, int32 sw);
 extern void fe_intr ();
@@ -483,7 +472,7 @@ DEVICE cpu_dev = {
     };
 
 /* Data arrays */
-
+    
 const int32 pi_l2bit[8] = {
  0, 0100, 0040, 0020, 0010, 0004, 0002, 0001
  };
@@ -522,6 +511,7 @@ static t_bool (*io700d[16])() = {
     NULL, NULL, NULL, &wrcmi, &wrpi, &rdpi, &czpi, &copi
     };
 #else
+
 static t_bool (*io700d[16])(a10, int32) = {
     &aprid, NULL, NULL, NULL, &wrapr, &rdapr, &czapr, &coapr,
     NULL, NULL, NULL, NULL, &wrpi, &rdpi, &czpi, &copi
@@ -551,7 +541,7 @@ static t_bool (*io702i[16])(a10, int32) = {
 #define JRST_U          1                               /* ok anywhere */
 #define JRST_E          2                               /* ok exec mode */
 #define JRST_UIO        3                               /* ok user I/O mode */
-
+    
 static t_stat jrst_tab[16] = {
     JRST_U, JRST_U, JRST_U, 0, JRST_E, JRST_U, JRST_E, JRST_E,
     JRST_UIO, 0, JRST_UIO, 0, JRST_E, JRST_U, 0, 0
@@ -720,7 +710,6 @@ rlog = 0;                                               /* not in extend */
 pi_eval ();                                             /* eval pi system */
 if (!Q_ITS)                                             /* ~ITS, clr 1-proc */
     its_1pr = 0;
-t20_idlelock = 0;                                       /* clr T20 idle lock */
 
 /* Abort handling
 
@@ -813,11 +802,11 @@ if (sim_interval <= 0) {                                /* check clock queue */
    they are explicitly emulated here.  Note that the KS microcode does not
    perform an EA calc on interrupt instructions, which this emulation does.
    This is an implementation restriction of the KS.  The KS does not restrict
-   the CONSOLE EXECUTE function which is merged into this path in SimH.
+   the CONSOLE EXECUTE function which is merged into this path in SimH.  
 
-   On a keep-alive failure, the console (fe) forces the CPU 'XCT' the
+   On a keep-alive failure, the console (fe) forces the CPU 'XCT' the 
    instruction at exec 71.  This is close enough to an interrupt that it is
-   treated as one here.  TOPS-10 and TOPS-20 use JSR or XPCW, which are
+   treated as one here.  TOPS-10 and TOPS-20 use JSR or XPCW, which are 
    really the only sensible instructions, as diagnosing a KAF requires the
    PC/FLAGS of the fault.
    On a reload-request from the OS, the fe loads the bootstrap code and sets
@@ -893,7 +882,7 @@ if (qintr) {
         sim_interval--;
     continue;
     }                                                   /* end if interrupt */
-
+            
 /* Traps fetch and execute an instruction from the current mode process table.
    On the KS10, the fetch of the next instruction has started, and a page fail
    trap on the instruction fetch takes precedence over the trap.  During a trap,
@@ -924,7 +913,7 @@ else {
 /* Ready (at last) to get an instruction */
 
     inst = Read (pager_PC = PC, MM_CUR);                /* get instruction */
-    INCPC;
+    INCPC;  
     sim_interval = sim_interval - 1;
     }
 
@@ -1167,7 +1156,7 @@ case 0256:  if (xct_cnt++ != 0) {                       /* XCT: not first? */
                 if (t != 0)                             /* intr or err? */
                     ABORT (t);
                  if ((xct_max != 0) && (xct_cnt >= xct_max))
-                ABORT (STOP_XCT);
+                    ABORT (STOP_XCT);
                 }
             inst = Read (ea, MM_OPND);                  /* get opnd */
             if (ac && !TSTF (F_USR) && !Q_ITS)          /* PXCT? */
@@ -1236,7 +1225,7 @@ case 0341:  AOJ; if (TL (AC(ac))) JUMP (ea); break;     /* AOJL */
 case 0342:  AOJ; if (TE (AC(ac))) JUMP (ea); break;     /* AOJE */
 case 0343:  AOJ; if (TLE (AC(ac))) JUMP (ea); break;    /* AOJLE */
 case 0344:  AOJ; JUMP(ea);                              /* AOJA */
-            if (Q_ITS && Q_IDLE &&                      /* ITS idle? */
+            if (Q_ITS &&                                /* ITS idle? */
                 TSTF (F_USR) && (pager_PC == 017) &&    /* user mode, loc 17? */
                 (ac == 0) && (ea == 017))               /* AOJA 0,17? */
                 sim_idle (0, FALSE);
@@ -1260,20 +1249,14 @@ case 0364:  SOJ; JUMP(ea); break;                       /* SOJA */
 case 0365:  SOJ; if (TGE (AC(ac))) JUMP (ea); break;    /* SOJGE */
 case 0366:  SOJ; if (TN (AC(ac))) JUMP (ea); break;     /* SOJN */
 case 0367:  SOJ; if (TG (AC(ac))) JUMP (ea);            /* SOJG */
-            if ((ea == pager_PC) && Q_IDLE) {           /* to self, idle enab? */
-                extern int32 tmr_poll;
+            if (ea == pager_PC) {                       /* to self? */
                 if ((ac == 6) && (ea == 1) &&           /* SOJG 6,1? */
                     TSTF (F_USR) && Q_T10)              /* T10, user mode? */
-                    sim_idle (0, FALSE);
-                else if (!t20_idlelock &&               /* interlock off? */
-                    (ac == 2) && (ea == 3) &&           /* SOJG 2,3? */
-                    !TSTF (F_USR) && Q_T20 &&           /* T20, mon mode? */
-                    (sim_interval > (tmr_poll >> 1))) { /* >= half clock? */
-                    t20_idlelock = 1;                   /* set interlock */
-                    if (sim_os_ms_sleep (1))            /* sleep 1ms */
-                        sim_interval = 0;               /* if ok, sched event */
-                    }
-                }
+                    sim_idle (0, FALSE);                /* idle */
+                else if ((ac == 2) && (ea == 3) &&      /* SOJG 2,3? */
+                    !TSTF (F_USR) && Q_T20)             /* T20, mon mode? */
+                    sim_idle (0, FALSE);                /* idle */
+                }                    
             break;
 case 0370:  SOS; break;                                 /* SOS */
 case 0371:  SOS; if (TL (mb)) INCPC; break;             /* SOSL */
@@ -1495,7 +1478,7 @@ case 0677:  TS_; T__N; T_O; break;                      /* TSON */
 /* I/O instructions (0700 - 0777)
 
    Only the defined I/O instructions have explicit case labels;
-   the rest default to unimplemented (monitor UUO).  Note that
+   the rest default to unimplemented (monitor UUO).  Note that   
    710-715 and 720-725 have different definitions under ITS and
    use normal effective addresses instead of the special address
    calculation required by TOPS-10 and TOPS-20.
@@ -1531,7 +1514,6 @@ case 0725:  IOA; io725 (AC(ac), ea); break;             /* BCIOB, IOWRBQ */
 
 default:
 MUUO:
-    its_2pr = 0;                                        /* clear trap */
     if (T20PAG) {                                       /* TOPS20 paging? */
         int32 tf = (op << (INST_V_OP - 18)) | (ac << (INST_V_AC - 18));
         WriteP (upta + UPT_MUUO, XWD (                  /* store flags,,op+ac */
@@ -1624,7 +1606,7 @@ case 0254:                                              /* JRST */
 
     case 014:                                           /* JRST 14 = SFM */
         Write (ea, XWD (flags, 0), MM_OPND);
-        break;
+        break;  
 
     case 015:                                           /* JRST 15 = XJRST */
         if (!T20PAG)                                    /* only in TOPS20 paging */
@@ -1641,7 +1623,7 @@ if (its_2pr) {                                          /* 1-proc trap? */
         WriteP (upta + UPT_1PO, FLPC);                  /* wr old flgs, PC */
         mb = ReadP (upta + UPT_1PN);                    /* rd new flgs, PC */
         JUMP (mb);                                      /* set PC */
-        set_newflags (mb, TRUE);                        /* set new flags */
+        set_newflags (mb, FALSE);                       /* set new flags */
         }
     }                                                   /* end if 2-proc */
 #ifdef USE_REALCONS
@@ -1693,7 +1675,7 @@ if (!TSTS (a | b)) {                                    /* cases 1,2 */
     return r;                                           /* case 1 */
     }
 if (!TSTS (r))                                          /* cases 3,5 */
-    SETF (F_C0 | F_C1);
+    SETF (F_C0 | F_C1); 
 return r;
 }
 
@@ -1772,7 +1754,7 @@ else if (!TSTS (r))                                     /* cases 3,5 */
 AC(ac) = r;
 AC(p1) = TSTS (r)? SETS (AC(p1)): CLRS (AC(p1));
 return;
-}
+} 
 
 /* Double subtract - see comments for single subtract */
 
@@ -1797,7 +1779,7 @@ else if (!TSTS (r))                                     /* cases 3,5 */
 AC(ac) = r;
 AC(p1) = (TSTS (r)? SETS (AC(p1)): CLRS (AC(p1))) & DMASK;
 return;
-}
+} 
 
 
 /* Logical shift combined */
@@ -2071,7 +2053,7 @@ Write (ba, wd & DMASK, MM_BSTK);
 return;
 }
 
-/* Adjust byte pointer - checked against KS10 ucode
+/* Adjust byte pointer - checked against KS10 ucode 
    The KS10 divide checks if the bytes per word = 0, which is a simpler
    formulation of the processor reference manual check.
 */
@@ -2102,7 +2084,7 @@ if (s) {
     p = (36 - ((int32) byadj) * s) - ((36 - p) % s);    /* new p */
     bp = (PUT_P (bp, p) & LMASK) | ((bp + wdadj) & RMASK);
     }
-AC(ac) = bp;
+AC(ac) = bp;            
 return;
 }
 
@@ -2272,7 +2254,7 @@ return;
    maskable but which interrupt on a single, selectable level
 
    Instructions for the arithmetic processor:
-        APRID                   read system id
+        APRID                   read system id  
         WRAPR (CONO APR)        write system flags
         RDAPR (CONI APR)        read system flags
         (CONSO APR)             test system flags
@@ -2340,8 +2322,11 @@ if (ea & APR_SENB)                                      /* set enables? */
     apr_enb = apr_enb | bits;
 if (ea & APR_CENB)                                      /* clear enables? */
     apr_enb = apr_enb & ~bits;
-if (ea & APR_CFLG)                                      /* clear flags? */
+if (ea & APR_CFLG) {                                    /* clear flags? */
+    if ((bits & APRF_TIM) && (apr_flg & APRF_TIM))
+        sim_rtcn_tick_ack (30, 0);
     apr_flg = apr_flg & ~bits;
+    }
 if (ea & APR_SFLG)                                      /* set flags? */
     apr_flg = apr_flg | bits;
 if (apr_flg & APRF_ITC) {                               /* interrupt console? */
@@ -2673,9 +2658,8 @@ return SCPE_OK;
 t_stat cpu_show_hist (FILE *st, UNIT *uptr, int32 val, CONST void *desc)
 {
 int32 k, di, lnt;
-const char *cptr = (const char *) desc;
+CONST char *cptr = (CONST char *) desc;
 t_stat r;
-t_value sim_eval;
 InstHistory *h;
 
 if (hst_lnt == 0)                                       /* enabled? */
@@ -2697,8 +2681,8 @@ for (k = 0; k < lnt; k++) {                             /* print specified */
         fprint_val (st, h->ac, 8, 36, PV_RZRO);
         fputs ("  ", st);
         fprintf (st, "%06o  ", h->ea);
-        sim_eval = h->ir;
-        if ((fprint_sym (st, h->pc & AMASK, &sim_eval, &cpu_unit, SWMASK ('M'))) > 0) {
+        sim_eval[0] = h->ir;
+        if ((fprint_sym (st, h->pc & AMASK, sim_eval, &cpu_unit, SWMASK ('M'))) > 0) {
             fputs ("(undefined) ", st);
             fprint_val (st, h->ir, 8, 36, PV_RZRO);
             }

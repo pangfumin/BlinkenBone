@@ -50,6 +50,8 @@
 #define MUX6    6
 #define MUX7    7
 
+#define MAX_MUX_CODE    7
+
 
 
 #ifndef _GPIO_C_

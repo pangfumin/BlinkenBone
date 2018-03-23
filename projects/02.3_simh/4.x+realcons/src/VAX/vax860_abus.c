@@ -121,7 +121,7 @@ extern t_stat (*nexusR[NEXUS_NUM])(int32 *dat, int32 ad, int32 md);
 extern t_stat (*nexusW[NEXUS_NUM])(int32 dat, int32 ad, int32 md);
 extern int32 iccs_rd (void);
 extern int32 nicr_rd (void);
-extern int32 icr_rd (t_bool interp);
+extern int32 icr_rd (void);
 extern int32 todr_rd (void);
 extern int32 rxcs_rd (void);
 extern int32 rxdb_rd (void);
@@ -422,7 +422,7 @@ switch (rg) {
         break;
 
     case MT_ICR:                                        /* ICR */
-        val = icr_rd (FALSE);
+        val = icr_rd ();
         break;
 
     case MT_TODR:                                       /* TODR */
@@ -463,6 +463,7 @@ switch (rg) {
 
     case MT_MDCTL:                                      /* MDCTL */
         val = mdctl & MDCTL_RW;
+        break;
 
     case MT_EHSR:                                       /* EHSR */
         val = ehsr & EHSR_VMSE;
@@ -693,7 +694,7 @@ if (r != SCPE_OK) {                                     /* error? */
         }
     return r;
     }
-strncpy (cpu_boot_cmd, ptr, CBUFSIZE);                  /* save for reboot */
+strncpy (cpu_boot_cmd, ptr, CBUFSIZE-1);                /* save for reboot */
 return run_cmd (flag, "CPU");
 }
 
@@ -728,6 +729,7 @@ else
     ba = dibp->ba;
 unitno = (int32) (uptr - dptr->units);
 r5v = 0;
+/* coverity[NULL_RETURNS] */ 
 if ((strncmp (regptr, "/R5:", 4) == 0) ||
     (strncmp (regptr, "/R5=", 4) == 0) ||
     (strncmp (regptr, "/r5:", 4) == 0) ||
@@ -861,7 +863,6 @@ fprintf (st, "   RQn        to boot from rqn\n");
 fprintf (st, "   RQBn       to boot from rqbn\n");
 fprintf (st, "   RQCn       to boot from rqcn\n");
 fprintf (st, "   RQDn       to boot from rqdn\n");
-fprintf (st, "   TQn        to boot from tqn\n");
 fprintf (st, "   CS         to boot from console RL\n\n");
 return SCPE_OK;
 }

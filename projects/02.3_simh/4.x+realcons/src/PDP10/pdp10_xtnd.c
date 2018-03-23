@@ -1,6 +1,6 @@
 /* pdp10_xtnd.c: PDP-10 extended instruction simulator
 
-   Copyright (c) 1993-2008, Robert M Supnik
+   Copyright (c) 1993-2016, Robert M Supnik
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the "Software"),
@@ -23,6 +23,7 @@
    used in advertising or otherwise to promote the sale, use or other dealings
    in this Software without prior written authorization from Robert M Supnik.
 
+   05-Nov-16    RMS     Fixed last digit error in CVTBDT (Pascal Parent)
    12-May-01    RMS     Fixed compiler warning in xlate
 
    Instructions handled in this module:
@@ -139,7 +140,6 @@
 #define ED_SKPA         0700                            /* skip always */
 
 extern int32 rlog;
-extern jmp_buf save_env;
 
 extern d10 Read (int32 ea, int32 prv);
 extern void Write (int32 ea, d10 val, int32 prv);
@@ -301,12 +301,12 @@ switch (xop) {                                          /* case on opcode */
                 rs[0] = rs[0] - pwrs10[i][0] - (rs[1] < pwrs10[i][1]);
                 rs[1] = (rs[1] - pwrs10[i][1]) & MMASK;
                 }
-            if (xop == XT_CVTBDO)
+            if (xop == XT_CVTBDO)                       /* offset? */
                 digit = (digit + xoff) & DMASK;
-            else {
-                f1 = Read (e1 + (int32) digit, MM_OPND);
-                if ((i == 1) && (AC(p3) & XT_LFLG))
-                    f1 = f1 >> 18;
+            else {                                      /* translate */
+                f1 = Read (e1 + (int32) digit, MM_OPND);/* get xlation */
+                if ((i == 1) && (AC(p3) & XT_MFLG))     /* last digit, minus? */
+                    f1 = f1 >> 18;                      /* use left */
                 digit = f1 & RMASK;
                 }
             incstorebp (digit, p4, pflgs);              /* store digit */

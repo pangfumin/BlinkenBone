@@ -20,6 +20,7 @@
  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+ 21-Mar-2018    JH	    merged with current SimH
  10-Mar-2018    JH      lot of fixes to match the tests at LCM "Miss Piggy"
  03-Feb-2018    JH      fixed SUPER-USER-KERNEL encoding
  04-Jul-2017    MH      fixed 16-BIT mode and console register access
@@ -52,6 +53,9 @@
  but quite a different panel)
 
  */
+#ifdef USE_REALCONS
+
+
 #include <assert.h>
 
 #include "sim_defs.h"
@@ -478,7 +482,7 @@ void realcons_console_pdp11_70__event_operator_reg_exam_deposit(
 }
 
 
-// Called aufter CPU has been reinitialized
+// Called after CPU has been reinitialized
 void realcons_console_pdp11_70__event_cpu_reset(
         realcons_console_logic_pdp11_70_t *_this) {
     if (_this->realcons->debug)
@@ -518,14 +522,13 @@ void realcons_console_pdp11_70_interface_connect(realcons_console_logic_pdp11_70
         extern t_stat realcons_memory_status; // error of last memory access
         extern char *realcons_register_name; // pseudo: name of last accessed register
         extern int realcons_console_halt; // 1: CPU halted by realcons console
-        extern int32 sim_is_running; // global in scp.c
+        extern volatile t_bool sim_is_running; // global in scp.c
 
         extern int32 R[8]; // working registers, global in pdp11_cpu.c
         extern int32 saved_PC;
         extern int32 SR, DR; // switch/display register, global in pdp11_cpu_mod.c
         extern int32 cm; // cpu mode, global in pdp11_cpu.c. MD:KRN_MD, MD_SUP,MD_USR,MD_UND
         extern int32 MMR0, MMR3; // MMU control registers
-        extern int32 sim_is_running; // global in scp.c
         extern int realcons_bus_ID_mode; // 1 = DATA space access, 0 = instruction space access
         extern t_value realcons_DATAPATH_shifter; // output of ALU
         extern t_value realcons_IR; // buffer for instruction register (opcode)
@@ -555,7 +558,7 @@ void realcons_console_pdp11_70_interface_connect(realcons_console_logic_pdp11_70
         _this->cpusignal_MMR0 = &MMR0; // MMU register 17 777 572
         _this->cpusignal_MMR3 = &MMR3; // MMU register 17 772 516
         _this->cpusignal_R0 = &(R[0]); // R: global of pdp11_cpu.c. "Working Register Set"!
-        _this->cpusignal_PC = &saved_PC; // Programcounter, global of pdp11_cpu.c. Settable. Relation to R[7]?
+        _this->cpusignal_PC = &saved_PC; // R[7] not valid in console mode
         _this->cpusignal_switch_register = &SR; // see pdp11_cpumod.SR_rd()
         _this->cpusignal_display_register = &DR;
     }
@@ -943,7 +946,7 @@ t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_thi
             // START has actions on rising AND falling edge!
             if (_this->switch_START->value && _this->switch_HALT->value) { // rising edge and HALT: INITIALIZE = SimH "RESET"
                 SIGNAL_SET(cpusignal_memory_status, SCPE_OK); // clr ADRS ERR
-                sprintf(_this->realcons->simh_cmd_buffer, "reset\n") ;
+                sprintf(_this->realcons->simh_cmd_buffer, "reset all\n") ;
                 // set PC to LOAD ADRS, is don in event_cput_reset (msut also work on "sim>reset"
             }
             if (_this->switch_START->value && !_this->switch_HALT->value) {
@@ -1175,3 +1178,6 @@ int realcons_console_pdp11_70_test(realcons_console_logic_pdp11_70_t *_this, int
             _this->switch_DATA_SELECT->value);
     return 0; // OK
 }
+
+
+#endif // USE_REALCONS
