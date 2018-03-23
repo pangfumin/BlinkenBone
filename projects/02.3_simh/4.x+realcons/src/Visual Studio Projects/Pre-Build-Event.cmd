@@ -1,3 +1,5 @@
+rem ! Git changes line endings to LF only. This script needs CRLF !
+rem (JH march 2018)
 rem
 rem  This script performs several maintenance functions prior to building
 rem  simh projects.  Some of these funtions are optional and depend on the
