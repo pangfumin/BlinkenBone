@@ -128,7 +128,7 @@ ifeq ($(MAKE_TARGET_ARCH),BBB)
   OS_CCDEFS = -D_GNU_SOURCE
   LDFLAGS = -lrt -lm  -lpthread  -ldl
   CC = $(BBB_CC) -std=c99 -U__STRICT_ANSI__  $(CC_DEFS) $(OS_CCDEFS) -I $(SRC)  $(CC_DBG_FLAGS) -UUSE_REALCONS
-  # DO NOT FORGET: "apt-get install libpcap-dev" on target, 
+  # DO NOT FORGET: "apt-get install libpcap-dev" on target,
   # copy /usr/lib/arm-linux-gnueabihf/libpcap.a to beagleboneblack-build
   LIBPCAP=$(SRC)/../bbb-build/libpcap.a
   NETWORK_OPT = -DUSE_NETWORK -isystem $(SYSROOTS)/usr/local/include $(LIBPCAP)
