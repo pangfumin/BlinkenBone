@@ -1,6 +1,6 @@
 /* realcons.c: Main frame work, glue logic.
 
-   Copyright (c) 2012-2016, Joerg Hoppe
+   Copyright (c) 2012-2018, Joerg Hoppe
    j_hoppe@t-online.de, www.retrocmp.com
 
    Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,7 @@
    IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+   24-Mar-2018  JH      scp.c: speed up readline_p() if realcons is disconnected
    18-Jun-2016  JH      added PDP-15, with param "bootimage" file path
    23-Apr-2016  JH      added PDP-11/20
    19-Feb-2016  JH      bugfix in call to event_connect/disconnect
@@ -429,6 +430,9 @@ t_stat realcons_disconnect(realcons_t *_this)
 void realcons_service(realcons_t *_this, int highspeed)
 {
 	int i;
+    if (!_this->connected)
+        return;
+
 	// if called by high speed loop: check only
 	if (highspeed && _this->service_highspeed_prescaler > 0) {
 		_this->service_highspeed_prescaler--;
