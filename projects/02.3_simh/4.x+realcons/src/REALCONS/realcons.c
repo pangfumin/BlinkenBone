@@ -429,6 +429,9 @@ t_stat realcons_disconnect(realcons_t *_this)
 void realcons_service(realcons_t *_this, int highspeed)
 {
 	int i;
+    if (!_this->connected)
+        return;
+
 	// if called by high speed loop: check only
 	if (highspeed && _this->service_highspeed_prescaler > 0) {
 		_this->service_highspeed_prescaler--;
