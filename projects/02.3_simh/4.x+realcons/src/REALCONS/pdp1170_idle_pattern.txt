@@ -1,14 +1,10 @@
-IDLE PPATTERNS
+IDLE PATTERNS
 -
 
 1) For RSX11 and 2.11BSD:
-The "idle pattern" is displayed with  DATA SELECT KNOBB  in DATA PATH position.
-This displays the signal ALU_result".
+The "idle pattern" is displayed with  DATA SELECT KNOB in DATA PATH position.
+This displays the R0 content with a WAIT statement.
 
- ALU_result is generated in pdp11_cpu.c
-at the end of the simulaton loop
-
-		"realcons_ALU_result = dst;"
 
 
 2) For IAS (Lee Gleason)
