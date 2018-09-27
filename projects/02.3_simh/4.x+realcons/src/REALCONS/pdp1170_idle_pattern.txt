@@ -6,7 +6,6 @@ The "idle pattern" is displayed with  DATA SELECT KNOB in DATA PATH position.
 This displays the R0 content with a WAIT statement.
 
 
-
 2) For IAS (Lee Gleason)
 
 This is the code:
