@@ -207,7 +207,7 @@ t_stat realcons_simh_show_hostname(FILE *st, DEVICE *dunused, UNIT *uunused, int
 {
 	if (cptr && (*cptr != 0))
 		return SCPE_2MARG;
-	if (!cpu_realcons->application_server_hostname)
+	if (!cpu_realcons->application_server_hostname[0])
 		fprintf(st, "no host");
 	else
 		fprintf(st, "host=\"%s\"", cpu_realcons->application_server_hostname);
@@ -219,7 +219,7 @@ t_stat realcons_simh_show_panelname(FILE *st, DEVICE *dunused, UNIT *uunused, in
 {
 	if (cptr && (*cptr != 0))
 		return SCPE_2MARG;
-	if (!cpu_realcons->application_panel_name)
+	if (!cpu_realcons->application_panel_name[0])
 		fprintf(st, "host panel not set");
 	else
 		fprintf(st, "host panel=\"%s\"", cpu_realcons->application_panel_name);
