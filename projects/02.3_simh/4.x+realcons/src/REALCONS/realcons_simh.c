@@ -80,10 +80,10 @@ t_stat sim_set_realcons(int32 flag, CONST char *cptr)
 		return SCPE_2FARG;
 	while (*cptr != 0) { /* do all mods */
 		cptr = get_glyph_nc(cptr, gbuf, ','); /* get modifier */
-		if (cvptr = strchr(gbuf, '='))
+		if ((cvptr = strchr(gbuf, '=')))
 			*cvptr++ = 0; /* = value? */
 		get_glyph(gbuf, gbuf, 0); /* modifier to UC */
-		if (ctptr = find_ctab(set_realcons_tab, gbuf)) { /* match? */
+		if ((ctptr = find_ctab(set_realcons_tab, gbuf))) { /* match? */
 			r = ctptr->action(ctptr->arg, cvptr); /* do the rest */
 			if (r != SCPE_OK)
 				return r;
@@ -192,7 +192,7 @@ t_stat sim_show_realcons(FILE *st, DEVICE *dptr, UNIT *uptr, int32 flag, CONST c
 	}
 	while (*cptr != 0) {
 		cptr = get_glyph(cptr, gbuf, ','); /* get modifier */
-		if (shptr = find_shtab(show_realcons_tab, gbuf)) {
+		if ((shptr = find_shtab(show_realcons_tab, gbuf))) {
 			fprintf(st, ", ");
 			shptr->action(st, dptr, uptr, shptr->arg, cptr);
 		} else
