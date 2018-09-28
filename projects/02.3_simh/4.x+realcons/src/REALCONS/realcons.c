@@ -137,7 +137,7 @@ void realcons_init(realcons_t *_this)
 	int i;
 
 	// clear all data, including the interface
-	memset(_this, 0, sizeof(_this));
+	memset(_this, 0, sizeof(*_this));
 
 	strcpy(_this->application_server_hostname, "localhost");
 	_this->console_logic_name[0] = '\0';
