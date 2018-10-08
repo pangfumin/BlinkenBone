@@ -93,6 +93,7 @@ typedef struct
 	int32	*cpusignal_df; // DF = data field
 	int32 	*cpusignal_link_accumulator ;
 	int32 	*cpusignal_multiplier_quotient ;
+    int32   *cpusignal_step_counter;
 
 
 	int32	*cpusignal_instruction_decode; // bit mask for decoded isntruction, see REALCONS_PDP8I_INSTRUCTION_DECODE_*
