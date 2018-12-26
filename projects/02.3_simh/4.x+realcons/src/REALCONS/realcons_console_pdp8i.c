@@ -260,6 +260,7 @@ void realcons_console_pdp8i_interface_connect(realcons_console_logic_pdp8i_t *_t
 		extern int32 saved_MQ; 									/* saved MQ */
 		extern int32 saved_PC; 									/* saved IF'PC */
 		extern int32 saved_DF; 									/* saved Data Field */
+		extern int32 SC; 										/* Step counter */
 
 		extern int32 realcons_instruction_decode; // bit mask for decoded instruction, see REALCONS_PDP8I_INSTRUCTION_DECODE_*
 		extern int32 realcons_majorstate_curinstr; // all states of current instruction
@@ -283,6 +284,7 @@ void realcons_console_pdp8i_interface_connect(realcons_console_logic_pdp8i_t *_t
 		_this->cpusignal_df = &saved_DF;
 		_this->cpusignal_link_accumulator = &saved_LAC;
 		_this->cpusignal_multiplier_quotient = &saved_MQ;
+		_this->cpusignal_step_counter = &SC;
 
 		_this->cpusignal_instruction_decode = &realcons_instruction_decode;
 		// bit mask for decoded instruction, see REALCONS_PDP8I_INSTRUCTION_DECODE_*
@@ -680,7 +682,7 @@ t_stat realcons_console_pdp8i_service(realcons_console_logic_pdp8i_t *_this)
 		//	division and holds the quotient at the conclusion.
 		_this->led_multiplier_quotient->value = SIGNAL_GET(cpusignal_multiplier_quotient);
 
-
+		_this->led_step_counter->value = SIGNAL_GET(cpusignal_step_counter);
 
 		// Major state indicators
 		{
