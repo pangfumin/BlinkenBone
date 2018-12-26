@@ -592,9 +592,11 @@ void realcons_console_pdp11_70_interface_connect(realcons_console_logic_pdp11_70
         realcons_event_operator_exam =
                 realcons_event_operator_deposit =
                         (console_controller_event_func_t) realcons_console_pdp11_70__event_operator_exam_deposit;
+        realcons_event_operator_reg_exam =
         realcons_event_cpu_reset =
 			(console_controller_event_func_t) realcons_console_pdp11_70__event_cpu_reset;
 
+        realcons_event_operator_reg_exam =
                 realcons_event_operator_reg_deposit =
                         (console_controller_event_func_t) realcons_console_pdp11_70__event_operator_reg_exam_deposit;
 
@@ -928,7 +930,7 @@ t_stat realcons_console_pdp11_70_service(realcons_console_logic_pdp11_70_t *_thi
 //            pa = console_addr_register_physical(_this);
             sprintf(_this->realcons->simh_cmd_buffer, "deposit %s %o\n",
                     realcons_console_pdp11_70_addr_panel2simh(
-                            _this->loaded_address_15_00_datapathSR,
+                            loaded_address_22bit(_this),
                             _this->switch_ADDR_SELECT->value), dataval);
         }
 
