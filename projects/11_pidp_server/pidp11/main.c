@@ -21,6 +21,7 @@
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+ 27-Dec-2018  SC/MH OV: added MH fix occasional blinking LEDs (LAMPTEST in the gpiopattern thread)
  03-Feb-2018  JH    fixed SUPER-USER-KERNEL encoding
  07-Sep-2017  MH    Added further command line option (-L)
  05-Jul-2017  MH    Added more options to the command line (-h -a -d -s)
@@ -57,13 +58,15 @@
 #include <ctype.h>
 #include <errno.h>
 #include <pthread.h>
+#include <inttypes.h> 
+#include <unistd.h>
 
 #include "blinkenlight_panels.h"
 #include "blinkenlight_api_server_procs.h"
 
 ///// for Blinkenlight API server
 #include "rpc_blinkenlight_api.h"
-#include <rpc/pmap_clnt.h> // different name under "oncrpc for windows"?
+#include <rpc/pmap_clnt.h> 
 #ifndef SIG_PF
 #define SIG_PF void(*)(int)
 #endif
@@ -81,6 +84,8 @@ char program_options[1024]; // argv[1.argc-1]
 int opt_test = 0;
 int opt_background = 0;
 int panel_lock = 0; // Default to panel unlocked
+int pwrDebounce=0;
+
 
 extern long gpiopattern_update_period_us;
 
@@ -104,7 +109,6 @@ blinkenlight_control_t *control_raw_ledstatus[6]; //6 not 8 for PiDP11
 blinkenlight_control_t *switch_SR, *switch_LOADADRS, *switch_EXAM, *switch_DEPOSIT, *switch_CONT,
         *switch_HALT, *switch_S_BUS_CYCLE, *switch_START, *switch_DATA_SELECT, *switch_ADDR_SELECT,
         *switch_LAMPTEST, *switch_PANEL_LOCK, *switch_POWER;
-//	*switch_DATA_SELECT_R, *switch_ADDR_SELECT_R;	// real rotary encoder
 
 // output controls on the panel
 blinkenlight_control_t *leds_ADDRESS, *leds_DATA, *led_PARITY_HIGH, *led_PARITY_LOW, *led_PAR_ERR,
@@ -112,36 +116,6 @@ blinkenlight_control_t *leds_ADDRESS, *leds_DATA, *led_PARITY_HIGH, *led_PARITY_
         *led_ADDRESSING_16, *led_ADDRESSING_18, *led_ADDRESSING_22, *leds_DATA_SELECT,
         *leds_ADDR_SELECT;
 
-// bits in artificially constructed control value for DATA SELECT KNOB feedback LEDs
-/*
-#define VALMASK_LED_BUS_REG 0x01
-#define VALMASK_LED_DATA_PATHS 0x02
-#define VALMASK_LED_UADDRS 0x04
-#define VALMASK_LED_DISP_REG 0x08
- */
-
-// bits in artificially constructed control value for ADDR SELECT KNOB feedback LEDs
-/*    #define VALMASK_LED_USER_D 0x01
- #define VALMASK_LED_SUPER_D 0x02
- #define VALMASK_LED_KERNEL_D 0x04
- #define VALMASK_LED_CONS_PHY 0x08
- #define VALMASK_LED_USER_I 0x10
- #define VALMASK_LED_SUPER_I 0x20
- #define VALMASK_LED_KERNEL_I 0x40
- #define VALMASK_LED_PROG_PHY 0x80
- */
-/*
-#define VALMASK_LED_PROG_PHY 0x01
-#define VALMASK_LED_CONS_PHY 0x02
-#define VALMASK_LED_KERNEL_D 0x04
-#define VALMASK_LED_SUPER_D 0x08
-#define VALMASK_LED_USER_D 0x10
-#define VALMASK_LED_USER_I 0x20
-#define VALMASK_LED_SUPER_I 0x40
-#define VALMASK_LED_KERNEL_I 0x80
- */
-
-// ---------------------------------------------------------------------
 
 /*
  *	RPC server callbacks:
@@ -158,8 +132,35 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
         if (c->is_input) {
 
             if (c == switch_POWER)
-                c->value = 1; // send "power"" switch as ON
-
+			{
+                c->value = ((gpio_switchstatus[1] & 1<<10)==0?0:1); // send "power switch" signal
+				//printf("%" PRIu64 " ",c->value);
+				if ((c->value)==0)
+				{
+					if (pwrDebounce==0)	// do it only once, when power button is triggered
+					{
+						char buffer[255];
+						pwrDebounce=1;	// do it only once, when power button is triggered
+						
+						if (switch_HALT->value==0)
+						{
+							sprintf(buffer,"/opt/pidp11/bin/rebootsimh.sh");
+							FILE *bootfil = popen(buffer, "r");
+							printf("\r\n--> Rebooting...\r\n");
+							pclose(bootfil);
+						}
+						else
+						{
+							sprintf(buffer,"/opt/pidp11/bin/down.sh");
+							FILE *bootfil = popen(buffer, "r");
+							printf("--> System shutdown - allow 15 seconds before power off\r\n");
+							pclose(bootfil);
+						}
+					}
+				}
+				else
+					pwrDebounce=0;	// power button released
+			}
             else if (c == switch_PANEL_LOCK)
                 c->value = panel_lock; // send "panel lock" switch as defined by -L
 
@@ -167,7 +168,9 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
                 // mount switch value from register bit fields
                 unsigned i_register_wiring;
                 blinkenlight_control_blinkenbus_register_wiring_t *bbrw;
-                c->value = 0;
+//                c->value = 0;
+				uint64_t temp_value = 0; // Do not use c->value because the gpiopattern thread does 20181227
+
                 for (i_register_wiring = 0; i_register_wiring < c->blinkenbus_register_wiring_count;
                         i_register_wiring++) {
                     uint32_t regvalbits; // value of current register
@@ -180,69 +183,23 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
                     regvalbits &= bbrw->blinkenbus_bitmask; // bits of value, unshiftet
                     regvalbits >>= bbrw->blinkenbus_lsb;
                     // OR in the bits of current register
-                    c->value |= (uint64_t) regvalbits << bbrw->control_value_bit_offset;
+//                    c->value |= (uint64_t) regvalbits << bbrw->control_value_bit_offset;
+					temp_value |= (uint64_t) regvalbits << bbrw->control_value_bit_offset;	// 20181227
                 }
                 if (c->mirrored_bit_order)
-                    c->value = mirror_bits(c->value, c->value_bitlen);
+//                    c->value = mirror_bits(c->value, c->value_bitlen);
+					c->value = mirror_bits(temp_value, c->value_bitlen); // individual fixup/logic 20181227
+				else // 20181227
+					c->value = temp_value; //20181227
+
                 // individual fixup/logic
 
                 if (c == switch_ADDR_SELECT) {
                     c->value = knobAddrMap[knobValue[0]];
                     leds_ADDR_SELECT->value = 1<<knobValue[0];
-/*
-                    c->value = 7 - knobValue[0];
-                    switch (c->value) {
-
-                    // INSERT CORRECT HW VALUES IN CASE SELECTORS
-                    case 0:
-                        leds_ADDR_SELECT->value = VALMASK_LED_PROG_PHY; // feedback
-                        break;
-                    case 1:
-                        leds_ADDR_SELECT->value = VALMASK_LED_CONS_PHY; // feedback
-                        break;
-                    case 2:
-                        leds_ADDR_SELECT->value = VALMASK_LED_KERNEL_D; // feedback
-                        break;
-                    case 3:
-                        leds_ADDR_SELECT->value = VALMASK_LED_SUPER_D; // feedback
-                        break;
-                    case 4:
-                        leds_ADDR_SELECT->value = VALMASK_LED_USER_D; // feedback
-                        break;
-                    case 5:
-                        leds_ADDR_SELECT->value = VALMASK_LED_USER_I; // feedback
-                        break;
-                    case 6:
-                        leds_ADDR_SELECT->value = VALMASK_LED_SUPER_I; // feedback
-                        break;
-                    case 7:
-                        leds_ADDR_SELECT->value = VALMASK_LED_KERNEL_I; // feedback
-                        break;
-
-                    };
-*/
                 } else if (c == switch_DATA_SELECT) {
                     c->value = knobDataMap[knobValue[1]];
                     leds_DATA_SELECT->value = 1<<knobValue[1];
-/*
-                    c->value = 3 - knobValue[1];
-                    switch (c->value) {
-                    // INSERT CORRECT HW VALUES IN CASE SELECTORS
-                    case 0:
-                        leds_DATA_SELECT->value = VALMASK_LED_BUS_REG; // feedback
-                        break;
-                    case 1:
-                        leds_DATA_SELECT->value = VALMASK_LED_DATA_PATHS; // feedback
-                        break;
-                    case 2:
-                        leds_DATA_SELECT->value = VALMASK_LED_UADDRS;
-                        break;
-                    case 3:
-                        leds_DATA_SELECT->value = VALMASK_LED_DISP_REG;
-                        break;
-
-                    };
-*/
                 }
             }
         }
@@ -283,16 +240,8 @@ static void on_blinkenlight_api_panel_set_controlvalues(blinkenlight_panel_t *p,
     // THIS WORKS ONLY BECAUSE ONLY ONE PANEL is provided by this server!
     // NO PANEL SWITCH ALLOWED!
 
-// ov workaround 1 - do not let simh mess with knob leds
-//int tmpADDR = leds_ADDR_SELECT->value;
-//int tmpDATA = leds_DATA_SELECT->value;
-
     gpiopattern_blinkenlight_panel = p;
     // this also start the thread on first transmission, if gpiopattern_blinkenlight_panel gets != NULL
-
-// ov workaround 2 - do not let simh mess with knob leds
-//leds_ADDR_SELECT->value = 0; //tmpADDR;
-//leds_DATA_SELECT->value = 0; //tmpDATA;
 
     // gpiopattern_update_leds() ; // just forward to pattern generator
 }
@@ -354,7 +303,7 @@ static void gpio_mux_thread_start()
         fprintf(stderr, "Error creating gpio_mux thread, return code %d\n", res);
         exit(EXIT_FAILURE);
     }
-    printf("Created \"gpio_mux\" thread\n");
+//    printf("Created \"gpio_mux\" thread\n");
 
     sleep(2); // allow 2 sec for multiplex to start
 }
@@ -370,7 +319,7 @@ static void gpiopattern_start_thread()
         fprintf(stderr, "Error creating gpiopattern thread, return code %d\n", res);
         exit(EXIT_FAILURE);
     }
-    printf("Created \"gpiopattern_update_leds\" thread\n");
+    //printf("Created \"gpiopattern_update_leds\" thread\n");
 }
 
 /******************************************************
@@ -451,7 +400,7 @@ void info(void)
     print(LOG_INFO, "\n");
     print(LOG_NOTICE, "*** pidp11_blinkenlightd %s - server for PiDP11 ***\n", VERSION);
     print(LOG_NOTICE, "    Compiled " __DATE__ " " __TIME__ "\n");
-    print(LOG_NOTICE, "    Copyright (C) 2015-2016 Joerg Hoppe, Oscar Vermeulen.\n");
+    print(LOG_NOTICE, "    Copyright (C) 2015-2019 Joerg Hoppe, Oscar Vermeulen.\n");
     print(LOG_NOTICE, "    www.retrocmp.com, obsolescence.wix.com/obsolescence\n");
     print(LOG_NOTICE, "\n");
 }
@@ -689,14 +638,6 @@ static void register_controls()
     led_ADDRESSING_18 = define_led_slice(p, "ADDRESSING_18", 0, 1, 2, 1); // 2, 0x02
     led_ADDRESSING_22 = define_led_slice(p, "ADDRESSING_22", 0, 1, 2, 0); // 2, 0x01
 
-    // knobs: raw data like 3/2 bit switch. encoding see
-    // on_blinkenlight_api_panel_get_controlvalues()
-//jorg's patch 20160323: switch slice not led slice
-
-// this is for real encoder addressing (0 1 2 3 0 sequences visible)
-//    switch_ADDR_SELECT = define_switch_slice(p, "ADDR_SELECT", 0, 3, 2, 8); // conflict 2 or 3 bits xxxxxxxxxxxxx
-//    switch_DATA_SELECT = define_switch_slice(p, "DATA_SELECT", 0, 2, 2, 10);
-// this is to fake knob value on SR panel
     switch_ADDR_SELECT = define_switch_slice(p, "ADDR_SELECT", 0, 3, 0, 0);
     switch_DATA_SELECT = define_switch_slice(p, "DATA_SELECT", 0, 2, 0, 3);
 
@@ -714,13 +655,12 @@ static void register_controls()
     // bit encoding in API value: BUG? BELOW ORDER INCORRECT ACC TO JAVA CODE
     //0..3 = data_paths, bus_reg, muaddr, disp_reg
     // see VALMASK_LED_*
-    // Should be okay now (MH 04-Jul-2017)
     leds_DATA_SELECT = define_led_slice(p, "DATA_SELECT_FEEDBACK", 0, 2, 4, 10); // bus_reg, data_paths
     leds_DATA_SELECT = define_led_slice(p, "DATA_SELECT_FEEDBACK", 2, 2, 5, 10); // disp_reg, muaddr
 
     // TODO: what signals come out? Extend SimH 11/70 with POWER signal, like PDP8I ?
     switch_PANEL_LOCK = define_switch_slice(p, "PANEL_LOCK", 0, 1, 0, 0); // dummy, always 0
-    switch_POWER = define_switch_slice(p, "POWER", 0, 1, 0, 0); // dummy, ignored, always 0
+    switch_POWER = define_switch_slice(p, "POWER", 0, 1, 1, 0); // 20181228 Mike Hill's Flash Fix
 
     blinkenlight_panels_config_fixup(blinkenlight_panel_list);
 }
@@ -740,7 +680,7 @@ int main(int argc, char *argv[])
     sprintf(program_info, "pidp11_blinkenlightd - Blinkenlight API server daemon for PiDP11 %s",
     VERSION);
 
-    info();
+//    info();
 
     print(LOG_INFO, "Start\n");
 

@@ -99,6 +99,7 @@ OBJECTS = $(SOURCES.c:%.c=%.o)
 all:    pidp1170_blinkenlightd
 
 clean:
+	echo "CLEAN"
 	rm -f core pidp1170_blinkenlightd $(OBJECTS) $(OBJDIR)/pidp1170_blinkenlightd
 	make --directory=$(BLINKENLIGHT_API_DIR)/rpcgen_linux clean
 

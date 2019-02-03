@@ -121,9 +121,9 @@ void *blink(int *terminate)
 	// Find gpio address (different for Pi 2) ----------
 	gpio.addr_p = bcm_host_get_peripheral_address() + +0x200000;
 	if (gpio.addr_p == 0x20200000)
-		printf("RPi Plus detected\n");
+		printf("*** RPi Plus detected\n");
 	else
-		printf("RPi 2 detected\n");
+		printf("*** RPi 2/3/Z detected\n");
 
 	// printf("Priority max SCHED_FIFO = %u\n",sched_get_priority_max(SCHED_FIFO) );
 
@@ -189,7 +189,7 @@ void *blink(int *terminate)
 	short_wait(); // probably unnecessary
 	// --------------------------------------------------
 
-	printf("\nPiDP-11 FP on\n");
+	// printf("\nPiDP-11 FP on\n");
 
 
 	while (*terminate == 0) {
@@ -233,7 +233,7 @@ void *blink(int *terminate)
 
 				// Toggle ledrow off
 				GPIO_CLR = 1 << ledrows[i]; // superstition
-				INP_GPIO(ledrows[i]);
+//				INP_GPIO(ledrows[i]);
 				usleep(10); // waste of cpu cycles but may help against udn2981 ghosting, not flashes though
 			}
 
@@ -341,7 +341,7 @@ void check_rotary_encoders(int switchscan)
 			lastCode[i]=code[i];
 			switchscan = switchscan + (1<<((i*2)+8));
 //			printf("%d end of UP %d %d\n",i, switchscan, (1<<((i*2)+8)));
-			knobValue[i]++;
+			knobValue[i]--;	//bugfix 20181225
 
 		}
 		else if ((code[i]==3) && (lastCode[i]==2))
@@ -349,7 +349,7 @@ void check_rotary_encoders(int switchscan)
 			lastCode[i]=code[i];
 			switchscan = switchscan + (2<<((i*2)+8));
 //			printf("%d end of DOWN %d %d\n",i,switchscan, (2<<((i*2)+8)));
-			knobValue[i]--;
+			knobValue[i]++;	// bugfix 20181225
 		}
 	}
 

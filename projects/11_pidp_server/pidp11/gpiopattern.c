@@ -253,7 +253,7 @@ char brightness_phase_lookup[32][31] =
 
 
 // DBG
-void break_here()
+static void break_here()
 {
 }
 
