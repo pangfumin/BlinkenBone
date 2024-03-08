@@ -92,16 +92,7 @@
 #include "rpc_blinkenlight_api.h"
 #include "gpiopattern.h"
 
-#define BYTE_TO_BINARY_PATTERN "%c%c | %c%c%c | %c%c%c"
-#define BYTE_TO_BINARY(byte)  \
-  ((byte) & 0x80 ? '1' : '0'), \
-  ((byte) & 0x40 ? '1' : '0'), \
-  ((byte) & 0x20 ? '1' : '0'), \
-  ((byte) & 0x10 ? '1' : '0'), \
-  ((byte) & 0x08 ? '1' : '0'), \
-  ((byte) & 0x04 ? '1' : '0'), \
-  ((byte) & 0x02 ? '1' : '0'), \
-  ((byte) & 0x01 ? '1' : '0') 
+
 
 // pointer into double buffer
 int gpiopattern_ledstatus_phases_readidx = 0; // read page, used by GPIO mux
@@ -135,7 +126,7 @@ volatile uint32_t gpio_switchstatus[3] =
  */
 
 #define LED_REGISTER_COUNTS 9
-volatile uint32_t gpiopattern_ledstatus_phases[2][GPIOPATTERN_LED_BRIGHTNESS_PHASES][LED_REGISTER_COUNTS];
+volatile uint8_t gpiopattern_ledstatus_phases[2][GPIOPATTERN_LED_BRIGHTNESS_PHASES][LED_REGISTER_COUNTS];
 
 #if 0
 /*
@@ -274,7 +265,7 @@ static void break_here()
  * control value maybe a pattern for a brightness phase of the value
  */
 static void value2gpio_ledstatus_value(blinkenlight_panel_t *p, blinkenlight_control_t *c,
-		uint32_t value, volatile uint32_t *gpio_ledstatus)
+		uint32_t value, volatile uint8_t *gpio_ledstatus)
 {
     unsigned i_register_wiring;
     extern blinkenlight_control_t * leds_MMR0_MODE ;
@@ -457,8 +448,8 @@ static void value2gpio_ledstatus_value(blinkenlight_panel_t *p, blinkenlight_con
     for (i_register_wiring = 0; i_register_wiring < c->blinkenbus_register_wiring_count;
             i_register_wiring++) {
         blinkenlight_control_blinkenbus_register_wiring_t *bbrw;
-        unsigned regval; // value of current register
-        unsigned bitfield; // bits moutnend into current register
+        uint8_t regval; // value of current register
+        uint8_t bitfield; // bits moutnend into current register
         // for all registers assigned whole or in part to control
         bbrw = &(c->blinkenbus_register_wiring[i_register_wiring]);
 
@@ -473,7 +464,7 @@ static void value2gpio_ledstatus_value(blinkenlight_panel_t *p, blinkenlight_con
         bitfield &= BitmaskFromLen32[bbrw->blinkenbus_bitmask_len]; // masked to register
         bitfield <<= bbrw->blinkenbus_lsb;
 
-        unsigned value = regval | bitfield;
+        uint8_t value = regval | bitfield;
 
         printf("   i_register_wiring: %d/%d %d %d %d %d %o\n", 
             i_register_wiring, c->blinkenbus_register_wiring_count,
@@ -565,7 +556,7 @@ void *gpiopattern_update_leds(int *terminate)
                 printf("%s : %d \t  %d  0x%08x \n" , c->name, i, c->value_bytelen, c->value);
 
                 // mount phase value
-				volatile uint32_t *gpio_ledstatus = // alias
+				volatile uint8_t *gpio_ledstatus = // alias
                     gpiopattern_ledstatus_phases[gpiopattern_ledstatus_phases_writeidx][phase];
 
 				value2gpio_ledstatus_value(p, c, value, gpio_ledstatus); // fill in to gpio

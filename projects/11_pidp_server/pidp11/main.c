@@ -122,7 +122,8 @@ blinkenlight_control_t *switch_SR, *switch_LOADADRS, *switch_EXAM, *switch_DEPOS
 blinkenlight_control_t *leds_ADDRESS, *leds_DATA, *led_PARITY_HIGH, *led_PARITY_LOW, *led_PAR_ERR,
         *led_ADRS_ERR, *led_RUN, *led_PAUSE, *led_MASTER, *leds_MMR0_MODE, *led_DATA_SPACE,
         *led_ADDRESSING_16, *led_ADDRESSING_18, *led_ADDRESSING_22, *leds_DATA_SELECT,
-        *leds_ADDR_SELECT;
+        // *leds_ADDR_SELECT;
+        *leds_DEBUG_OUTPUT;
 
 
 /*
@@ -202,13 +203,13 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
 
                 // individual fixup/logic
 
-                if (c == switch_ADDR_SELECT) {
-                    c->value = knobAddrMap[knobValue[0]];
-                    leds_ADDR_SELECT->value = 1<<knobValue[0];
-                } else if (c == switch_DATA_SELECT) {
-                    c->value = knobDataMap[knobValue[1]];
-                    leds_DATA_SELECT->value = 1<<knobValue[1];
-                }
+                // if (c == switch_ADDR_SELECT) {
+                //     c->value = knobAddrMap[knobValue[0]];
+                //     leds_ADDR_SELECT->value = 1<<knobValue[0];
+                // } else if (c == switch_DATA_SELECT) {
+                //     c->value = knobDataMap[knobValue[1]];
+                //     leds_DATA_SELECT->value = 1<<knobValue[1];
+                // }
             }
         }
     }
@@ -657,8 +658,8 @@ static void register_controls()
     // 0..7 = user_d, super_d, kernel_d, cons_phy, user_i, super_i, kernel_i, prog_phy
     // see VALMASK_LED_*
     // Should be okay now (MH 04-Jul-2017)
-    leds_ADDR_SELECT = define_led_slice(p, "ADDR_SELECT_FEEDBACK", 0, 4, 4, 6);
-    leds_ADDR_SELECT = define_led_slice(p, "ADDR_SELECT_FEEDBACK", 4, 4, 5, 5);
+    // leds_ADDR_SELECT = define_led_slice(p, "ADDR_SELECT_FEEDBACK", 0, 4, 4, 6);
+    // leds_ADDR_SELECT = define_led_slice(p, "ADDR_SELECT_FEEDBACK", 4, 4, 5, 5);
 
     // bit encoding in API value: BUG? BELOW ORDER INCORRECT ACC TO JAVA CODE
     //0..3 = data_paths, bus_reg, muaddr, disp_reg
@@ -821,8 +822,8 @@ static void register_controls_my()
     leds_ADDRESS = define_led_slice(p, "ADDRESS", 8, 8, 3, 0); // 0,0xfff, bits 12..21
     leds_ADDRESS = define_led_slice(p, "ADDRESS", 16, 6, 4, 0); // 0,0xfff, bits 12..21
 
-    led_PARITY_HIGH = define_led_slice(p, "PARITY_HIGH", 0, 1, 6, 6); // 4, 0x20
-    led_PARITY_LOW = define_led_slice(p, "PARITY_LOW", 0, 1, 6, 7); // 4, 0x10
+    led_PARITY_HIGH = define_led_slice(p, "PARITY_HIGH", 0, 1, 4, 6); // 4, 0x20
+    led_PARITY_LOW = define_led_slice(p, "PARITY_LOW", 0, 1, 4, 7); // 4, 0x10
     led_PAR_ERR = define_led_slice(p, "PAR_ERR", 0, 1, 5, 1); // 2, 0x800
     led_ADRS_ERR = define_led_slice(p, "ADRS_ERR", 0, 1, 5, 0); // 2, 0x400
     led_RUN = define_led_slice(p, "RUN", 0, 1, 5, 4); // 2, 0x200
@@ -838,7 +839,7 @@ static void register_controls_my()
     led_ADDRESSING_22 = define_led_slice(p, "ADDRESSING_22", 0, 1, 6, 2); // 2, 0x01
 
     //MMRfix
-    leds_MMR0_MODE = define_led_slice(p, "MMR0_MODE", 0, 3, 6, 3);  // todo
+    leds_MMR0_MODE = define_led_slice(p, "MMR0_MODE", 0, 2, 6, 3);  // todo
 
 
 
@@ -850,12 +851,13 @@ static void register_controls_my()
     // 0..7 = user_d, super_d, kernel_d, cons_phy, user_i, super_i, kernel_i, prog_phy
     // see VALMASK_LED_*
     // Should be okay now (MH 04-Jul-2017)
-    leds_ADDR_SELECT = define_led_slice(p, "ADDR_SELECT_FEEDBACK", 0, 8, 7, 0); // todo pang
+    // leds_ADDR_SELECT = define_led_slice(p, "ADDR_SELECT_FEEDBACK", 0, 8, 7, 0); // todo pang
+    leds_DEBUG_OUTPUT = define_led_slice(p, "DEBUG_OUTPUT", 0, 8, 7, 0); // todo pang
 
     // bit encoding in API value: BUG? BELOW ORDER INCORRECT ACC TO JAVA CODE
     //0..3 = data_paths, bus_reg, muaddr, disp_reg
     // see VALMASK_LED_*
-    leds_DATA_SELECT = define_led_slice(p, "DATA_SELECT_FEEDBACK", 0, 4, 8, 0); // todo pang
+    // leds_DATA_SELECT = define_led_slice(p, "DATA_SELECT_FEEDBACK", 0, 4, 8, 0); // todo pang
 
     // TODO: what signals come out? Extend SimH 11/70 with POWER signal, like PDP8I ?
     switch_PANEL_LOCK = define_switch_slice(p, "PANEL_LOCK", 0, 1, 0, 0); // dummy, always 0

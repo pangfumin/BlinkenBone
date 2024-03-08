@@ -30,6 +30,17 @@
 
 #include "blinkenlight_panels.h"
 
+#define BYTE_TO_BINARY_PATTERN "%c%c | %c%c%c | %c%c%c"
+#define BYTE_TO_BINARY(byte)  \
+  ((byte) & 0x80 ? '1' : '0'), \
+  ((byte) & 0x40 ? '1' : '0'), \
+  ((byte) & 0x20 ? '1' : '0'), \
+  ((byte) & 0x10 ? '1' : '0'), \
+  ((byte) & 0x08 ? '1' : '0'), \
+  ((byte) & 0x04 ? '1' : '0'), \
+  ((byte) & 0x02 ? '1' : '0'), \
+  ((byte) & 0x01 ? '1' : '0') 
+
 //#define GPIOPATTERN_UPDATE_PERIOD_US 20000  // 1/50 sec for screen update
 #define GPIOPATTERN_UPDATE_PERIOD_US 50000  // 1/20 sec for screen update
 // in one cycle more than GPIOPATTERN_LED_BRIGHTNESS_LEVELS events from server must be
@@ -50,7 +61,7 @@ extern volatile uint32_t gpio_switchstatus[3] ; // bitfields: 3 rows of up to 12
 
 extern int gpiopattern_ledstatus_phases_readidx ; // read page, used by GPIO mux
 extern int gpiopattern_ledstatus_phases_writeidx ; // writepage page, written from Blinkenlight API
-extern volatile uint32_t gpiopattern_ledstatus_phases[2][GPIOPATTERN_LED_BRIGHTNESS_PHASES][9] ;
+extern volatile uint8_t gpiopattern_ledstatus_phases[2][GPIOPATTERN_LED_BRIGHTNESS_PHASES][9] ;
 
 #endif
 

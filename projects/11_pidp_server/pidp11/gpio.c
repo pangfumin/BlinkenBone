@@ -202,7 +202,7 @@ void *blink(int *terminate)
 			// each phase must be eact same duration, so include switch scanning here
 
 			// the original gpio_ledstatus[8] runs trough all phases
-			volatile uint32_t *gpio_ledstatus =
+			volatile uint8_t *gpio_ledstatus =
 					gpiopattern_ledstatus_phases[gpiopattern_ledstatus_phases_readidx][phase];
 
 			// prepare for lighting LEDs by setting col pins to output
@@ -284,7 +284,7 @@ void *blink1(int *terminate) {
 		// printf("\n blink 1\n");
 		usleep(100 ); //
 
-				unsigned phase;
+		unsigned int phase;
 //		if ((loopcount++ % 500) == 0)	printf("1\n"); // visual heart beat
 
 
@@ -293,15 +293,16 @@ void *blink1(int *terminate) {
 			// each phase must be eact same duration, so include switch scanning here
 
 			// the original gpio_ledstatus[8] runs trough all phases
-			volatile uint32_t *gpio_ledstatus =
+			volatile uint8_t *gpio_ledstatus =
 					gpiopattern_ledstatus_phases[gpiopattern_ledstatus_phases_readidx][phase];
 
-			// printf("\n ----------------- blink 1 ------------------ \n");
-			// for (int i = 0; i < 9; i++) {
-			// 	uint32_t led_data = gpio_ledstatus[i];
-			// 	printf("\n blink1 led_data %d -> %d\n", i , led_data);
+			printf("\n ----------------- blink 1 ------------------ \n");
+			for (int i = 0; i < 9; i++) {
+				uint8_t led_data = gpio_ledstatus[i];
+				// printf("\n blink1 led_data %d -> %d\n", i , led_data);
+				printf("blink1 %d led_data: "BYTE_TO_BINARY_PATTERN"\n", i, BYTE_TO_BINARY(led_data));
 
-			// }
+			}
 
 		}
 
