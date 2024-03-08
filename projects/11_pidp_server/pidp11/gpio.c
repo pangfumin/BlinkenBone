@@ -276,6 +276,41 @@ void *blink(int *terminate)
 	return 0;
 }
 
+
+void *blink1(int *terminate) {
+
+
+	while (*terminate == 0) {
+		// printf("\n blink 1\n");
+		usleep(100 ); //
+
+				unsigned phase;
+//		if ((loopcount++ % 500) == 0)	printf("1\n"); // visual heart beat
+
+
+		// display all phases circular
+		for (phase = 0; phase < GPIOPATTERN_LED_BRIGHTNESS_PHASES; phase++) {
+			// each phase must be eact same duration, so include switch scanning here
+
+			// the original gpio_ledstatus[8] runs trough all phases
+			volatile uint32_t *gpio_ledstatus =
+					gpiopattern_ledstatus_phases[gpiopattern_ledstatus_phases_readidx][phase];
+
+			// printf("\n ----------------- blink 1 ------------------ \n");
+			// for (int i = 0; i < 9; i++) {
+			// 	uint32_t led_data = gpio_ledstatus[i];
+			// 	printf("\n blink1 led_data %d -> %d\n", i , led_data);
+
+			// }
+
+		}
+
+
+
+	}
+	
+
+}
 void short_wait(void) // creates pause required in between clocked GPIO settings changes
 {
 //	int i;

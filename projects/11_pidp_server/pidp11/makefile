@@ -13,7 +13,7 @@ CC_DBG_FLAGS = -ggdb3 -O0
 LDFLAGS = -pthread
 
 	# all other cases: X86
-	OBJDIR=x86
+	OBJDIR=x64
 
 ifeq ($(MAKE_TARGET_ARCH),BEAGLEBONE)
 	#### !!! when cross compiling !!!!
@@ -79,14 +79,14 @@ $(BLINKENLIGHT_API_SOURCES.c) $(BLINKENLIGHT_API_SOURCES.h):
 
 SOURCES.h = \
 	main.h	\
-	gpio.h	\
+	gpio.h \
 	gpiopattern.h	\
 	$(BLINKENLIGHT_SERVER_DIR)/print.h	\
 	$(BLINKENLIGHT_API_DIR)/blinkenlight_panels.h
 
 SOURCES.c = \
 	main.c	\
-	gpio.c	\
+	gpio.c \
 	gpiopattern.c	\
 	$(BLINKENLIGHT_SERVER_DIR)/print.c	\
 	$(BLINKENLIGHT_API_SOURCES.c)

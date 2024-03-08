@@ -171,7 +171,7 @@ typedef struct blinkenlight_control_struct
 	blinkenlight_control_type_t type;
 	uint64_t value; // 64bit: for instance for the LED row of a PDP-10 register (36 bit)
 	uint64_t value_previous; // "old" value before change, for free use by client/server applications
-        uint64_t value_default; // startup value
+	uint64_t value_default; // startup value
 	unsigned radix; // number representation: 8 (octal) or 16 (hex)?
 	unsigned value_bitlen; // relevant lsb's in value
 	unsigned value_bytelen; // len of value in bytes ... for RPC transmissions
