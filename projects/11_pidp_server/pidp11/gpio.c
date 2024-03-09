@@ -304,6 +304,10 @@ void *blink1(int *terminate) {
 
 			}
 
+			
+			gpio_switchstatus[0] = 1;
+			gpio_switchstatus[1] = 3;
+
 		}
 
 

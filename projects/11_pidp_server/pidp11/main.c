@@ -182,13 +182,15 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
 
                 for (i_register_wiring = 0; i_register_wiring < c->blinkenbus_register_wiring_count;
                         i_register_wiring++) {
-                    uint32_t regvalbits; // value of current register
+                    uint64_t regvalbits; // value of current register
                     // for all registers assigned whole or in part to control
                     bbrw = &(c->blinkenbus_register_wiring[i_register_wiring]);
 
                     regvalbits = gpio_switchstatus[bbrw->blinkenbus_register_address];
-                    if (bbrw->blinkenbus_levels_active_low) //  inputs "low active"
+                    if (bbrw->blinkenbus_levels_active_low) {
+                        //  inputs "low active"
                         regvalbits = ~regvalbits;
+                    }
                     regvalbits &= bbrw->blinkenbus_bitmask; // bits of value, unshiftet
                     regvalbits >>= bbrw->blinkenbus_lsb;
                     // OR in the bits of current register

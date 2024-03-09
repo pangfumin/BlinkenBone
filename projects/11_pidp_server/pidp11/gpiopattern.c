@@ -113,7 +113,7 @@ extern int knobValue[2];
  */
 
 // remains here for symmetry cause
-volatile uint32_t gpio_switchstatus[3] =
+volatile uint8_t gpio_switchstatus[3] =
 { 0 }; // bitfields: 3 rows of up to 12 switches
 // volatile uint32_t gpio_ledstatus[8] = { 0 }; // bitfields: 8 ledrows of up to 12 LEDs
 
@@ -125,7 +125,7 @@ volatile uint32_t gpio_switchstatus[3] =
  *
  */
 
-#define LED_REGISTER_COUNTS 9
+#define LED_REGISTER_COUNTS 8
 volatile uint8_t gpiopattern_ledstatus_phases[2][GPIOPATTERN_LED_BRIGHTNESS_PHASES][LED_REGISTER_COUNTS];
 
 #if 0

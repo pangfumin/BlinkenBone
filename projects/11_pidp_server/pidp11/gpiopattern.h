@@ -56,12 +56,12 @@
 
 extern blinkenlight_panel_t *gpiopattern_blinkenlight_panel ;
 
-extern volatile uint32_t gpio_switchstatus[3] ; // bitfields: 3 rows of up to 12 switches
+extern volatile uint8_t gpio_switchstatus[5] ; // bitfields: 3 rows of up to 12 switches
 // extern volatile uint32_t gpio_ledstatus[8] ; // bitfields: 8 ledrows of up to 12 LEDs
 
 extern int gpiopattern_ledstatus_phases_readidx ; // read page, used by GPIO mux
 extern int gpiopattern_ledstatus_phases_writeidx ; // writepage page, written from Blinkenlight API
-extern volatile uint8_t gpiopattern_ledstatus_phases[2][GPIOPATTERN_LED_BRIGHTNESS_PHASES][9] ;
+extern volatile uint8_t gpiopattern_ledstatus_phases[2][GPIOPATTERN_LED_BRIGHTNESS_PHASES][8] ;
 
 #endif
 
