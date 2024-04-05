@@ -66,6 +66,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+
+
 #include <unistd.h>
 #include <fcntl.h> // extra
 
@@ -116,7 +118,8 @@ blinkenlight_control_t *control_raw_ledstatus[6]; //6 not 8 for PiDP11
 // ------------- from realcons_console_pdp11_70.h ----------------------
 blinkenlight_control_t *switch_SR, *switch_LOADADRS, *switch_EXAM, *switch_DEPOSIT, *switch_CONT,
         *switch_HALT, *switch_S_BUS_CYCLE, *switch_START, *switch_DATA_SELECT, *switch_ADDR_SELECT,
-        *switch_LAMPTEST, *switch_PANEL_LOCK, *switch_POWER;
+        *switch_LAMPTEST, *switch_PANEL_LOCK, *switch_POWER,
+        *switch_DEBUG_INPUT;
 
 // output controls on the panel
 blinkenlight_control_t *leds_ADDRESS, *leds_DATA, *led_PARITY_HIGH, *led_PARITY_LOW, *led_PAR_ERR,
@@ -197,11 +200,14 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
 //                    c->value |= (uint64_t) regvalbits << bbrw->control_value_bit_offset;
 					temp_value |= (uint64_t) regvalbits << bbrw->control_value_bit_offset;	// 20181227
                 }
-                if (c->mirrored_bit_order)
+                if (c->mirrored_bit_order) {
 //                    c->value = mirror_bits(c->value, c->value_bitlen);
 					c->value = mirror_bits(temp_value, c->value_bitlen); // individual fixup/logic 20181227
-				else // 20181227
+                }
+				else {
+                    // 20181227
 					c->value = temp_value; //20181227
+                }
 
                 // individual fixup/logic
 
@@ -797,23 +803,27 @@ static void register_controls_my()
      */
 
     //SR consists of 12 and 10 bit subparts
-    switch_SR = define_switch_slice(p, "SR", 0, 12, 0, 0); // 0, 0xfff. bits 0..11
-    switch_SR = define_switch_slice(p, "SR", 12, 10, 1, 0); // 1  0x3ff, bits 12..21
+    switch_SR = define_switch_slice(p, "SR", 0, 8, 0, 0); // 0, 0xfff. bits 0..11
+    switch_SR = define_switch_slice(p, "SR", 8, 8, 1, 0); // 1  0x3ff, bits 12..21
+    switch_SR = define_switch_slice(p, "SR", 16, 6, 2, 0); // 
 
     // LAMP TEST: unlike on DEC panel readable over API, but locally wired function
     // see gpiopattern.value2gpio_ledstatus_value()
-    switch_LAMPTEST = define_switch_slice(p, "LAMPTEST", 0, 1, 2, 0); // 2, 0x01 (or should it be 1,0,0 fur null?)
+    switch_LAMPTEST = define_switch_slice(p, "LAMPTEST", 0, 1, 2, 6);  // todo pang // 2, 0x01 (or should it be 1,0,0 fur null?)
 
-    switch_LOADADRS = define_switch_slice(p, "LOAD_ADRS", 0, 1, 2, 1); // 2, 0x02
-    switch_EXAM = define_switch_slice(p, "EXAM", 0, 1, 2, 2); // 2, 0x04
-    switch_DEPOSIT = define_switch_slice(p, "DEPOSIT", 0, 1, 2, 3); // 2, 0x08
-    switch_CONT = define_switch_slice(p, "CONT", 0, 1, 2, 4); // 2, 0x010
-    switch_HALT = define_switch_slice(p, "HALT", 0, 1, 2, 5); // 2, 0x020
-    switch_S_BUS_CYCLE = define_switch_slice(p, "S_BUS_CYCLE", 0, 1, 2, 6); // 2, 0x040
-    switch_START = define_switch_slice(p, "START", 0, 1, 2, 7); // 2, 0x080
+    switch_LOADADRS = define_switch_slice(p, "LOAD_ADRS", 0, 1, 3, 2); // 2, 0x02
+    switch_EXAM = define_switch_slice(p, "EXAM", 0, 1, 3, 4); // 2, 0x04
+    switch_DEPOSIT = define_switch_slice(p, "DEPOSIT", 0, 1, 3, 5); // 2, 0x08
+    switch_CONT = define_switch_slice(p, "CONT", 0, 1, 3, 0); // 2, 0x010
+    switch_HALT = define_switch_slice(p, "HALT", 0, 1, 3, 6); // 2, 0x020
+    switch_S_BUS_CYCLE = define_switch_slice(p, "S_BUS_CYCLE", 0, 1, 3, 1); // 2, 0x040
+    switch_START = define_switch_slice(p, "START", 0, 1, 3, 3); // 2, 0x080
 
-    switch_ADDR_SELECT = define_switch_slice(p, "ADDR_SELECT", 0, 3, 0, 0);
-    switch_DATA_SELECT = define_switch_slice(p, "DATA_SELECT", 0, 2, 0, 3);
+    
+    switch_DATA_SELECT = define_switch_slice(p, "DATA_SELECT", 0, 2, 4, 0);
+    switch_ADDR_SELECT = define_switch_slice(p, "ADDR_SELECT", 0, 3, 4, 2);
+
+    switch_DEBUG_INPUT = define_switch_slice(p, "DEBUG_INPUT", 0, 8, 5, 0);
 
 
     // // Constant values set in on_blinkenlight_api_panel_get_controlvalues()
@@ -832,6 +842,9 @@ static void register_controls_my()
     led_PAUSE = define_led_slice(p, "PAUSE", 0, 1, 5, 3); // 2, 0x100
     led_MASTER = define_led_slice(p, "MASTER", 0, 1, 5, 2); // 2, 0x80
     led_DATA_SPACE = define_led_slice(p, "DATA_SPACE", 0, 1, 5, 7); // 2, 0x08
+
+    leds_MMR0_MODE = define_led_slice(p, "MMR0_MODE", 0, 2, 5, 5);  // todo
+
     // Problem: MMR0_MODE needs translation to leds.
     // 0 = Kernel, 1= off,  2 = Super, 3 = User
     // the wiring here is ignored; see handcoding in gpiopattern.value2gpio_ledstatus_value()
@@ -841,7 +854,7 @@ static void register_controls_my()
     led_ADDRESSING_22 = define_led_slice(p, "ADDRESSING_22", 0, 1, 6, 2); // 2, 0x01
 
     //MMRfix
-    leds_MMR0_MODE = define_led_slice(p, "MMR0_MODE", 0, 2, 6, 3);  // todo
+    
 
 
 
