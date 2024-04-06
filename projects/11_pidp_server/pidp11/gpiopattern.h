@@ -48,20 +48,28 @@
 
 #define GPIOPATTERN_LED_BRIGHTNESS_LEVELS	32	// brightness levels. Not changeable without code rework
 //#define GPIOPATTERN_LED_BRIGHTNESS_PHASES	64
+// #define GPIOPATTERN_LED_BRIGHTNESS_PHASES	31
 #define GPIOPATTERN_LED_BRIGHTNESS_PHASES	1
 // 32 levels are made with 31 display phases
 
 
+#define SWITCH_REGISTER_COUNTS 6
+#define LED_REGISTER_COUNTS 8
+
+
+
 #ifndef GPIOPATTERN_C_
+
+
 
 extern blinkenlight_panel_t *gpiopattern_blinkenlight_panel ;
 
-extern volatile uint8_t gpio_switchstatus[5] ; // bitfields: 3 rows of up to 12 switches
+extern volatile uint8_t gpio_switchstatus[SWITCH_REGISTER_COUNTS] ; // bitfields: 3 rows of up to 12 switches
 // extern volatile uint32_t gpio_ledstatus[8] ; // bitfields: 8 ledrows of up to 12 LEDs
 
 extern int gpiopattern_ledstatus_phases_readidx ; // read page, used by GPIO mux
 extern int gpiopattern_ledstatus_phases_writeidx ; // writepage page, written from Blinkenlight API
-extern volatile uint8_t gpiopattern_ledstatus_phases[2][GPIOPATTERN_LED_BRIGHTNESS_PHASES][8] ;
+extern volatile uint8_t gpiopattern_ledstatus_phases[2][GPIOPATTERN_LED_BRIGHTNESS_PHASES][LED_REGISTER_COUNTS] ;
 
 #endif
 

@@ -301,7 +301,6 @@ void *blink1(int *terminate) {
 
 	while (*terminate == 0) {
 		// printf("\n blink 1\n");
-		usleep(100 ); //
 
 		unsigned int phase;
 //		if ((loopcount++ % 500) == 0)	printf("1\n"); // visual heart beat
@@ -315,16 +314,17 @@ void *blink1(int *terminate) {
 			volatile uint8_t *gpio_ledstatus =
 					gpiopattern_ledstatus_phases[gpiopattern_ledstatus_phases_readidx][phase];
 
-			printf("\n ----------------- blink 1 ------------------ \n");
+			// printf("\n ----------------- blink %d  ------------------ \n", phase);
 			for (int i = 0; i < 8; i++) {
 				uint8_t led_data = gpio_ledstatus[i];
 				// printf("\n blink1 led_data %d -> %d\n", i , led_data);
-				printf("blink1 %d led_data: "BYTE_TO_BINARY_PATTERN"\n", i, BYTE_TO_BINARY(led_data));
-				rc = modbus_write_register(ctx, 1108 + i, (uint16_t)gpio_ledstatus[7]);
+				// printf("blink1 %d led_data: "BYTE_TO_BINARY_PATTERN"\n", i, BYTE_TO_BINARY(led_data));
+				rc = modbus_write_register(ctx, 1108 + i, (uint16_t)led_data);
 				if (rc == -1) {
 					fprintf(stderr, "%s\n", modbus_strerror(errno));
 					return -1;
     		}
+				usleep(10);
 
 
 			}

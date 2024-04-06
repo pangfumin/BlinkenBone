@@ -114,7 +114,6 @@ extern int knobValue[2];
 
 // remains here for symmetry cause
 
-#define SWITCH_REGISTER_COUNTS 6
 volatile uint8_t gpio_switchstatus[SWITCH_REGISTER_COUNTS] =
 { 0 }; // bitfields: 3 rows of up to 12 switches
 // volatile uint32_t gpio_ledstatus[8] = { 0 }; // bitfields: 8 ledrows of up to 12 LEDs
@@ -127,10 +126,9 @@ volatile uint8_t gpio_switchstatus[SWITCH_REGISTER_COUNTS] =
  *
  */
 
-#define LED_REGISTER_COUNTS 8
 volatile uint8_t gpiopattern_ledstatus_phases[2][GPIOPATTERN_LED_BRIGHTNESS_PHASES][LED_REGISTER_COUNTS];
 
-#if 0
+#if 1
 /*
  * Table for bitvalues for different display phases and a given brigthness level.
  * Generate with "LedPatterns.exe"
@@ -207,7 +205,8 @@ static char brightness_phase_lookup[32][31] =
 		};
 #endif
 
-#if 1
+
+#if 0
 /*
  * Table for bitvalues for different display phases and a given brigthness level.
  * Generated with "LedPatterns.exe"
@@ -468,13 +467,13 @@ static void value2gpio_ledstatus_value(blinkenlight_panel_t *p, blinkenlight_con
 
         uint8_t value = regval | bitfield;
 
-        printf("   i_register_wiring: %d/%d %d %d %d %d %o\n", 
-            i_register_wiring, c->blinkenbus_register_wiring_count,
-            bbrw->control_value_bit_offset,
-            bbrw->blinkenbus_register_address,
-            regval, bitfield, value);
+        // printf("   i_register_wiring: %d/%d %d %d %d %d %o\n", 
+        //     i_register_wiring, c->blinkenbus_register_wiring_count,
+        //     bbrw->control_value_bit_offset,
+        //     bbrw->blinkenbus_register_address,
+        //     regval, bitfield, value);
 
-        printf("    value: "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(value));
+        // printf("    value: "BYTE_TO_BINARY_PATTERN"\n", BYTE_TO_BINARY(value));
 
         gpio_ledstatus[bbrw->blinkenbus_register_address] = value; // write back
     }
@@ -517,8 +516,8 @@ void *gpiopattern_update_leds(int *terminate)
 			unsigned bitidx;
 			unsigned phase;
 			if (c->is_input) {
-                continue;
-            }
+				continue;
+			}
 
             // printf("c: %d ->  %s %d  0x%08x %d \n" ,i,  c->name,  
             //     c->value_bitlen, c->value, c->blinkenbus_register_wiring_count
@@ -527,7 +526,7 @@ void *gpiopattern_update_leds(int *terminate)
 			// fetch  shift
 			// get averaged values
 			assert(c->fmax) ;
-            historybuffer_get_average_vals(c->history, 1000000 / c->fmax, now_us, /*bitmode*/1);
+			historybuffer_get_average_vals(c->history, 1000000 / c->fmax, now_us, /*bitmode*/1);
 			/*
 			 // construct un-averaged value
 			 for (bitidx = 0; bitidx < c->value_bitlen; bitidx++)
@@ -540,29 +539,40 @@ void *gpiopattern_update_leds(int *terminate)
             
 			for (phase = 0; phase < GPIOPATTERN_LED_BRIGHTNESS_PHASES; phase++) {
 				uint64_t value = 0;
-				// for all bits :
-				// for (bitidx = 0; bitidx < c->value_bitlen; bitidx++) {
-				// 	// mount phase bit
-				// 	unsigned bit_brightness = ((unsigned) (c->averaged_value_bits[bitidx])
-				// 			* (GPIOPATTERN_LED_BRIGHTNESS_LEVELS)) / 256; // from 0.. 255 to
-
-				// 	assert(bit_brightness < GPIOPATTERN_LED_BRIGHTNESS_LEVELS);
-				// 	if (brightness_phase_lookup[bit_brightness][phase]) {
-                //         value |= 1 << bitidx;
-                //     }
-                //     // debug
-				// }
-
-                value = c->value;
-
-                printf("%s : %d \t  %d  0x%08x \n" , c->name, i, c->value_bytelen, c->value);
-
-                // mount phase value
+				value = c->value;
+				// printf("%s : %d \t  %d  0x%08x \n" , c->name, i, c->value_bytelen, c->value);
+				// mount phase value
 				volatile uint8_t *gpio_ledstatus = // alias
                     gpiopattern_ledstatus_phases[gpiopattern_ledstatus_phases_writeidx][phase];
 
 				value2gpio_ledstatus_value(p, c, value, gpio_ledstatus); // fill in to gpio
 			}
+
+			// for (phase = 0; phase < GPIOPATTERN_LED_BRIGHTNESS_PHASES; phase++) {
+			// 	unsigned value;
+
+			// 	// mount phase value
+			// 	volatile uint32_t *gpio_ledstatus = // alias
+			// 			gpiopattern_ledstatus_phases[gpiopattern_ledstatus_phases_writeidx][phase];
+			// 	value = 0;
+			// 	// for all bits :
+			// 	for (bitidx = 0; bitidx < c->value_bitlen; bitidx++) {
+			// 		// mount phase bit
+			// 		unsigned bit_brightness = ((unsigned) (c->averaged_value_bits[bitidx])
+			// 				* (GPIOPATTERN_LED_BRIGHTNESS_LEVELS)) / 256; // from 0.. 255 to
+
+			// 		assert(bit_brightness < GPIOPATTERN_LED_BRIGHTNESS_LEVELS);
+			// 		if (brightness_phase_lookup[bit_brightness][phase]) {
+			// 			value |= 1 << bitidx;
+			// 		}
+
+			// 		if ((unsigned) (c->averaged_value_bits[bitidx]) > 0 && (unsigned) (c->averaged_value_bits[bitidx]) < 100) {
+			// 			printf("%s  : %d \t  %d %d \n" , c->name, phase, bit_brightness, (unsigned) (c->averaged_value_bits[bitidx]));
+			// 			abort();
+			// 		}
+			// 	}
+				// value2gpio_ledstatus_value(p, c, value, gpio_ledstatus); // fill in to gpio
+			// }
 		}
 
 		// switch pages of double buffer
