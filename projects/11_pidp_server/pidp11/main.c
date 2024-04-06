@@ -555,7 +555,7 @@ static blinkenlight_control_t *define_switch_slice(blinkenlight_panel_t *p, char
     bbrw->blinkenbus_lsb = bit_offset;
     bbrw->blinkenbus_msb = bbrw->blinkenbus_lsb + bitlen - 1;
     // all switches invers: bit 1 => switch up in "0" position
-    bbrw->blinkenbus_levels_active_low = 1;
+    bbrw->blinkenbus_levels_active_low = 0;
 
     return c;
 }
@@ -919,8 +919,8 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    gpio_mux_thread_start();
-    gpiopattern_start_thread();
+    // gpio_mux_thread_start();
+    gpiopattern_start_thread();  
 
     blinkenlight_api_server();
     // does never end!
