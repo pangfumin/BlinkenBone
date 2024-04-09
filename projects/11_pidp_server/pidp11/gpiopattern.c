@@ -359,21 +359,21 @@ static void value2gpio_ledstatus_value(blinkenlight_panel_t *p, blinkenlight_con
             switch(knobValue[1]) {
 
             	case 0:
-		case 4: mask4 |= REGMASK_LED_BUS_REG ; break ;
-            	case 1:
-		case 5: mask4 |= REGMASK_LED_DATA_PATHS ; break ;
-            	case 2:
-		case 6: mask5 |= REGMASK_LED_UADR; break ;
-            	case 3: 
-		case 7: mask5 |= REGMASK_LED_DISREG; break ;
-            }
-		break;
+							case 4: mask4 |= REGMASK_LED_BUS_REG ; break ;
+												case 1:
+							case 5: mask4 |= REGMASK_LED_DATA_PATHS ; break ;
+												case 2:
+							case 6: mask5 |= REGMASK_LED_UADR; break ;
+												case 3: 
+							case 7: mask5 |= REGMASK_LED_DISREG; break ;
+											}
+							break;
 	
-        case RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST:
-        case RPC_PARAM_VALUE_PANEL_MODE_ALLTEST:
-            mask4 = REGMASK_DATA_ALL4 ; // all ON
-            mask5 = REGMASK_DATA_ALL5 ; // all ON
-            break;
+							case RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST:
+							case RPC_PARAM_VALUE_PANEL_MODE_ALLTEST:
+									mask4 = REGMASK_DATA_ALL4 ; // all ON
+									mask5 = REGMASK_DATA_ALL5 ; // all ON
+									break;
 
 
         case RPC_PARAM_VALUE_PANEL_MODE_POWERLESS:
