@@ -277,13 +277,9 @@ static void value2gpio_ledstatus_value(blinkenlight_panel_t *p, blinkenlight_con
 
     int panel_mode = p->mode ;
 
-    // local LAMPTEST overrides mode set over API
-    if (!switch_LAMPTEST->value)				// prototype has lamptest inverted
-        panel_mode = RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST ;
-
-
-
-
+    // // local LAMPTEST overrides mode set over API
+    // if (!switch_LAMPTEST->value)				// prototype has lamptest inverted
+    //     panel_mode = RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST ;
 
 //-----------------------------------------------------------------------
     if (c == leds_ADDR_SELECT) {
@@ -436,42 +432,44 @@ mask = 0 ;
     }
 #endif // OLD
 	switch (panel_mode) {
-	case RPC_PARAM_VALUE_PANEL_MODE_NORMAL:
-        if (c->mirrored_bit_order)
-{ printf(":");
-            value = mirror_bits(value, c->value_bitlen);
-}
-		break;
-	case RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST:
-	case RPC_PARAM_VALUE_PANEL_MODE_ALLTEST:
-        value = BitmaskFromLen64[c->value_bitlen]; // all '1'
-		break;
-	case RPC_PARAM_VALUE_PANEL_MODE_POWERLESS:
-		// all LEDs off, but do not change control values
-        value = 0;
+		case RPC_PARAM_VALUE_PANEL_MODE_NORMAL:
+		if (c->mirrored_bit_order)
+			{ printf(":");
+				value = mirror_bits(value, c->value_bitlen);
+			}
+			break;
+		case RPC_PARAM_VALUE_PANEL_MODE_LAMPTEST:
+		case RPC_PARAM_VALUE_PANEL_MODE_ALLTEST:
+					value = BitmaskFromLen64[c->value_bitlen]; // all '1'
+			break;
+		case RPC_PARAM_VALUE_PANEL_MODE_POWERLESS:
+			// all LEDs off, but do not change control values
+				value = 0;
 		break;
 	}
 
-    // write value to gpio registers
-    for (i_register_wiring = 0; i_register_wiring < c->blinkenbus_register_wiring_count;
-            i_register_wiring++) {
-        blinkenlight_control_blinkenbus_register_wiring_t *bbrw;
-        unsigned regval; // value of current register
-        unsigned bitfield; // bits moutnend into current register
-        // for all registers assigned whole or in part to control
-        bbrw = &(c->blinkenbus_register_wiring[i_register_wiring]);
+	printf("panel_mode c->value: %d %d\n", panel_mode, c->value);
 
-        // clear out used bits in register
-        regval = gpio_ledstatus[bbrw->blinkenbus_register_address] & ~bbrw->blinkenbus_bitmask;
+	// write value to gpio registers
+	for (i_register_wiring = 0; i_register_wiring < c->blinkenbus_register_wiring_count;
+					i_register_wiring++) {
+			blinkenlight_control_blinkenbus_register_wiring_t *bbrw;
+			unsigned regval; // value of current register
+			unsigned bitfield; // bits moutnend into current register
+			// for all registers assigned whole or in part to control
+			bbrw = &(c->blinkenbus_register_wiring[i_register_wiring]);
 
-        bitfield = (value >> bbrw->control_value_bit_offset); // value shifted to register lsb
-        if (bbrw->blinkenbus_levels_active_low)
-            bitfield = ~bitfield;
-        bitfield &= BitmaskFromLen32[bbrw->blinkenbus_bitmask_len]; // masked to register
-        bitfield <<= bbrw->blinkenbus_lsb;
+			// clear out used bits in register
+			regval = gpio_ledstatus[bbrw->blinkenbus_register_address] & ~bbrw->blinkenbus_bitmask;
 
-        gpio_ledstatus[bbrw->blinkenbus_register_address] = regval | bitfield; // write back
-    }
+			bitfield = (value >> bbrw->control_value_bit_offset); // value shifted to register lsb
+			if (bbrw->blinkenbus_levels_active_low)
+					bitfield = ~bitfield;
+			bitfield &= BitmaskFromLen32[bbrw->blinkenbus_bitmask_len]; // masked to register
+			bitfield <<= bbrw->blinkenbus_lsb;
+
+			gpio_ledstatus[bbrw->blinkenbus_register_address] = regval | bitfield; // write back
+	}
 }
 
 /*
@@ -504,6 +502,7 @@ void *gpiopattern_update_leds(int *terminate)
 
 		// mount values for gpio_registers ordered by register,
 		// else flicker by co-running gpio_mux may occur.
+		printf("--------------------------------------\n");
 		for (i = 0; i < p->controls_count; i++) {
 			blinkenlight_control_t *c = &p->controls[i];
 			unsigned bitidx;
@@ -534,16 +533,42 @@ void *gpiopattern_update_leds(int *terminate)
 						gpiopattern_ledstatus_phases[gpiopattern_ledstatus_phases_writeidx][phase];
 				value = 0;
 				// for all bits :
-				for (bitidx = 0; bitidx < c->value_bitlen; bitidx++) {
-					// mount phase bit
-					unsigned bit_brightness = ((unsigned) (c->averaged_value_bits[bitidx])
-							* (GPIOPATTERN_LED_BRIGHTNESS_LEVELS)) / 256; // from 0.. 255 to
+				// for (bitidx = 0; bitidx < c->value_bitlen; bitidx++) {
+				// 	// mount phase bit
+				// 	unsigned bit_brightness = ((unsigned) (c->averaged_value_bits[bitidx])
+				// 			* (GPIOPATTERN_LED_BRIGHTNESS_LEVELS)) / 256; // from 0.. 255 to
 
-					assert(bit_brightness < GPIOPATTERN_LED_BRIGHTNESS_LEVELS);
-					if (brightness_phase_lookup[bit_brightness][phase])
-						value |= 1 << bitidx;
+				// 	assert(bit_brightness < GPIOPATTERN_LED_BRIGHTNESS_LEVELS);
+				// 	if (brightness_phase_lookup[bit_brightness][phase])
+				// 		value |= 1 << bitidx;
 
+				// }
+
+				value = c->value;
+				// if (c->value)
+				printf("c->value: %s %d %d \n", c->name, c->index, c->value);
+
+				if (c->index == 9 ) {
+					for (int k = 22; k > 0; k -- ) {
+						if ((value >> k) & 1 == 1){
+							printf("1 ");
+						} else {
+							printf("0 ");
+						}
+					}
+					printf("\n");
+				} else if (c->index == 10) {
+					for (int k = 16; k > 0; k -- ) {
+						if ((value >> k) & 1 == 1){
+							printf("1 ");
+						} else {
+							printf("0 ");
+						}
+					}
+					printf("\n");
 				}
+
+
 				value2gpio_ledstatus_value(p, c, value, gpio_ledstatus); // fill in to gpio
 			}
 		}

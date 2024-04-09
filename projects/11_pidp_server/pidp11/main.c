@@ -129,40 +129,48 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
 
     for (i = 0; i < p->controls_count; i++) {
         blinkenlight_control_t *c = &p->controls[i];
+        
         if (c->is_input) {
 
             if (c == switch_POWER)
 			{
-                c->value = ((gpio_switchstatus[1] & 1<<10)==0?0:1); // send "power switch" signal
-				//printf("%" PRIu64 " ",c->value);
-				if ((c->value)==0)
-				{
-					if (pwrDebounce==0)	// do it only once, when power button is triggered
-					{
-						char buffer[255];
-						pwrDebounce=1;	// do it only once, when power button is triggered
+                // c->value = ((gpio_switchstatus[1] & 1<<10) == 0? 0 : 1); // send "power switch" signal
+                c->value = 1;
+				// printf("%" PRIu64 " ",c->value);
+
+				// if ((c->value)==0)
+				// {
+				// 	if (pwrDebounce==0)	// do it only once, when power button is triggered
+				// 	{
+				// 		char buffer[255];
+				// 		pwrDebounce=1;	// do it only once, when power button is triggered
 						
-						if (switch_HALT->value==0)
-						{
-							sprintf(buffer,"/opt/pidp11/bin/rebootsimh.sh");
-							FILE *bootfil = popen(buffer, "r");
-							printf("\r\n--> Rebooting...\r\n");
-							pclose(bootfil);
-						}
-						else
-						{
-							sprintf(buffer,"/opt/pidp11/bin/down.sh");
-							FILE *bootfil = popen(buffer, "r");
-							printf("--> System shutdown - allow 15 seconds before power off\r\n");
-							pclose(bootfil);
-						}
-					}
-				}
-				else
-					pwrDebounce=0;	// power button released
+				// 		if (switch_HALT->value==0)
+				// 		{
+				// 			sprintf(buffer,"/opt/pidp11/bin/rebootsimh.sh");
+				// 			FILE *bootfil = popen(buffer, "r");
+				// 			printf("\r\n--> Rebooting...\r\n");
+				// 			pclose(bootfil);
+				// 		}
+				// 		else
+				// 		{
+				// 			sprintf(buffer,"/opt/pidp11/bin/down.sh");
+				// 			FILE *bootfil = popen(buffer, "r");
+				// 			printf("--> System shutdown - allow 15 seconds before power off\r\n");
+				// 			pclose(bootfil);
+				// 		}
+				// 	}
+				// }
+				// else
+				// 	pwrDebounce=0;	// power button released
+
+                // printf("call switch_POWER %d", c->value);
+
+
 			}
-            else if (c == switch_PANEL_LOCK)
+            else if (c == switch_PANEL_LOCK) {
                 c->value = panel_lock; // send "panel lock" switch as defined by -L
+            }
 
             else {
                 // mount switch value from register bit fields
@@ -202,6 +210,9 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
                     leds_DATA_SELECT->value = 1<<knobValue[1];
                 }
             }
+
+
+            // printf("c-value: %s %d\n",c->name, c->value);
         }
     }
 }

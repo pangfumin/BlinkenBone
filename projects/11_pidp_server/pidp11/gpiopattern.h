@@ -37,7 +37,8 @@
 
 #define GPIOPATTERN_LED_BRIGHTNESS_LEVELS	32	// brightness levels. Not changeable without code rework
 //#define GPIOPATTERN_LED_BRIGHTNESS_PHASES	64
-#define GPIOPATTERN_LED_BRIGHTNESS_PHASES	31
+// #define GPIOPATTERN_LED_BRIGHTNESS_PHASES	31
+#define GPIOPATTERN_LED_BRIGHTNESS_PHASES	1
 // 32 levels are made with 31 display phases
 
 

@@ -24,7 +24,7 @@ ifeq ($(MAKE_TARGET_ARCH),BEAGLEBONE)
 	LDFLAGS += -lrt
 else
 ifeq ($(MAKE_TARGET_ARCH),RPI)
-	CC=arm-linux-gnueabihf-gcc -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) $(OS_CCDEFS) -I.
+	CC=gcc -std=c99 -U__STRICT_ANSI__ $(CC_DBG_FLAGS) $(OS_CCDEFS) -I.
 	OBJDIR=bin-rpi
 	SSHTARGET=pi@raspberrypi
 	LDFLAGS += -lrt
