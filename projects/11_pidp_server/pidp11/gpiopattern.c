@@ -92,6 +92,9 @@
 #include "rpc_blinkenlight_api.h"
 #include "gpiopattern.h"
 
+
+
+
 // pointer into double buffer
 int gpiopattern_ledstatus_phases_readidx = 0; // read page, used by GPIO mux
 int gpiopattern_ledstatus_phases_writeidx = 1; // writepage page, written from Blinkenlight API

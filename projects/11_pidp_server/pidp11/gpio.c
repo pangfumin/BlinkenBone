@@ -402,12 +402,8 @@ void *blink2(int *terminate) {
 
 	while (*terminate == 0) {
 		// printf("\n blink 1\n");
-		usleep(100 ); //
-
 		unsigned int phase;
 //		if ((loopcount++ % 500) == 0)	printf("1\n"); // visual heart beat
-
-
 		// display all phases circular
 		for (phase = 0; phase < GPIOPATTERN_LED_BRIGHTNESS_PHASES; phase++) {
 			// each phase must be eact same duration, so include switch scanning here
@@ -420,14 +416,12 @@ void *blink2(int *terminate) {
 			for (int i = 0; i < 7; i++) {
 				uint8_t led_data = gpio_ledstatus[i];
 				// printf("\n blink1 led_data %d -> %d\n", i , led_data);
-				// printf("blink1 %d led_data: "BYTE_TO_BINARY_PATTERN"\n", i, BYTE_TO_BINARY(led_data));
-				rc = modbus_write_register(ctx, 1108 + i, (uint16_t)gpio_ledstatus[7]);
+				printf("blink1 %d led_data: "BYTE_TO_BINARY_PATTERN"\n", i, BYTE_TO_BINARY(led_data));
+				rc = modbus_write_register(ctx, 1108 + i, (uint16_t)gpio_ledstatus[i]);
 				if (rc == -1) {
 					fprintf(stderr, "%s\n", modbus_strerror(errno));
 					return -1;
     		}
-
-
 			}
 
 		}
@@ -436,15 +430,45 @@ void *blink2(int *terminate) {
     // read register 5 registers (starting at address 1) of slave 1
     
 
-		for (int i = 0; i < 5; i++) {
-			rc = modbus_read_registers(ctx, 1100 + i, 1, tab_reg);
-			if (rc == -1) {
-					fprintf(stderr, "%s\n", modbus_strerror(errno));
-					return -1;
-			}
+		// for (int i = 0; i < 5; i++) {
+		// 	rc = modbus_read_registers(ctx, 1100 + i, 1, tab_reg);
+		// 	if (rc == -1) {
+		// 			fprintf(stderr, "%s\n", modbus_strerror(errno));
+		// 			return -1;
+		// 	}
 
-			gpio_switchstatus[i] = (uint8_t)(tab_reg[0] & 0xFF);
-		} 
+		// 	gpio_switchstatus[i] = (uint8_t)(tab_reg[0] & 0xFF);
+		// } 
+
+		int switchscan;
+		int tmp;
+
+		// read three rows of switches
+		for (int i = 0; i < 5; i++)
+		{
+			// INO_GPIO(rows[i]); //			GPIO_CLR = 1 << rows[i];	// and output 0V to overrule built-in pull-up from column input pin
+			// OUT_GPIO(rows[i]); // turn on one switch row
+			// GPIO_CLR = 1 << rows[i]; // and output 0V to overrule built-in pull-up from column input pin
+
+			nanosleep((struct timespec[]) { { 0, intervl / 100}}, NULL); // probably unnecessary long wait, maybe put above this loop also
+
+			switchscan = 0;
+			for (int j = 0; j < 8; j++) // 12 switches in each row
+			{
+				// tmp = GPIO_READ(cols[j]);
+				// if (tmp != 0)
+					// switchscan += 1 << j;
+					switchscan += 1 << j;
+			}
+			// INP_GPIO(rows[i]); // stop sinking current from this row of switches
+
+			// if (i==2)
+			// 	check_rotary_encoders(switchscan);	// translate raw encoder data to switch position
+			// printf("switchscan %d %d\n", i,  switchscan);
+			gpio_switchstatus[i] = switchscan;
+		}
+
+
 
 		// 
 
