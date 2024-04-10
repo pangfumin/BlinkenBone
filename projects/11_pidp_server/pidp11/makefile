@@ -81,13 +81,22 @@ SOURCES.h = \
 	main.h	\
 	gpio.h	\
 	gpiopattern.h	\
+	modbus/modbus.h	\
+	modbus/modbus-rtu.h	\
+	modbus/modbus-private.h	\
+	modbus/modbus-rtu-private.h	\
+	modbus/modbus-version.h	\
 	$(BLINKENLIGHT_SERVER_DIR)/print.h	\
 	$(BLINKENLIGHT_API_DIR)/blinkenlight_panels.h
+
 
 SOURCES.c = \
 	main.c	\
 	gpio.c	\
 	gpiopattern.c	\
+	modbus/modbus.c	\
+	modbus/modbus-rtu.c	\
+	modbus/modbus-data.c	\
 	$(BLINKENLIGHT_SERVER_DIR)/print.c	\
 	$(BLINKENLIGHT_API_SOURCES.c)
 

@@ -377,6 +377,89 @@ void *blink1(int *terminate)
 	return 0;
 }
 
+
+void *blink2(int *terminate) {
+
+	modbus_t *ctx = NULL;
+	ctx = modbus_new_rtu("/dev/ttyUSB0",115200, 'N', 8, 1);
+	uint16_t tab_reg[32] = {0};
+
+	int rc;
+	int i;
+	modbus_set_slave(ctx, 1);  // define slave address
+
+	modbus_rtu_set_serial_mode(ctx, MODBUS_RTU_RS232);
+	modbus_rtu_set_rts(ctx, MODBUS_RTU_RTS_NONE); // we use auto RTS function by the HAT
+	// printf("debug 0 \n");
+	modbus_set_response_timeout(ctx, 0, 100000000);
+	// printf("debug 1\n");
+	if (modbus_connect(ctx) == -1)
+	{
+			fprintf(stderr, "Connection failed: %s\n", modbus_strerror(errno));   
+			modbus_free(ctx);	
+			return -1;
+	}
+
+	while (*terminate == 0) {
+		// printf("\n blink 1\n");
+		usleep(100 ); //
+
+		unsigned int phase;
+//		if ((loopcount++ % 500) == 0)	printf("1\n"); // visual heart beat
+
+
+		// display all phases circular
+		for (phase = 0; phase < GPIOPATTERN_LED_BRIGHTNESS_PHASES; phase++) {
+			// each phase must be eact same duration, so include switch scanning here
+
+			// the original gpio_ledstatus[8] runs trough all phases
+			volatile uint8_t *gpio_ledstatus =
+					gpiopattern_ledstatus_phases[gpiopattern_ledstatus_phases_readidx][phase];
+
+			printf("\n ----------------- blink 1 ------------------ \n");
+			for (int i = 0; i < 7; i++) {
+				uint8_t led_data = gpio_ledstatus[i];
+				// printf("\n blink1 led_data %d -> %d\n", i , led_data);
+				// printf("blink1 %d led_data: "BYTE_TO_BINARY_PATTERN"\n", i, BYTE_TO_BINARY(led_data));
+				rc = modbus_write_register(ctx, 1108 + i, (uint16_t)gpio_ledstatus[7]);
+				if (rc == -1) {
+					fprintf(stderr, "%s\n", modbus_strerror(errno));
+					return -1;
+    		}
+
+
+			}
+
+		}
+
+    // printf("debug 2\n");
+    // read register 5 registers (starting at address 1) of slave 1
+    
+
+		for (int i = 0; i < 5; i++) {
+			rc = modbus_read_registers(ctx, 1100 + i, 1, tab_reg);
+			if (rc == -1) {
+					fprintf(stderr, "%s\n", modbus_strerror(errno));
+					return -1;
+			}
+
+			gpio_switchstatus[i] = (uint8_t)(tab_reg[0] & 0xFF);
+		} 
+
+		// 
+
+    // printf("debug 3\n");
+    
+    // for (int i=0; i < rc; i++) {
+    //     printf("reg[%d]=%d (0x%X)\n", i, tab_reg[i], tab_reg[i]);
+    // }
+	}
+
+	modbus_close(ctx);
+	modbus_free(ctx);
+	
+
+}
 void short_wait(void) // creates pause required in between clocked GPIO settings changes
 {
 //	int i;

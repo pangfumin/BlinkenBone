@@ -108,7 +108,8 @@ blinkenlight_control_t *control_raw_ledstatus[6]; //6 not 8 for PiDP11
 // ------------- from realcons_console_pdp11_70.h ----------------------
 blinkenlight_control_t *switch_SR, *switch_LOADADRS, *switch_EXAM, *switch_DEPOSIT, *switch_CONT,
         *switch_HALT, *switch_S_BUS_CYCLE, *switch_START, *switch_DATA_SELECT, *switch_ADDR_SELECT,
-        *switch_LAMPTEST, *switch_PANEL_LOCK, *switch_POWER;
+        *switch_LAMPTEST, *switch_PANEL_LOCK, *switch_POWER,
+        *switch_DEBUG_INPUT;
 
 // output controls on the panel
 blinkenlight_control_t *leds_ADDRESS, *leds_DATA, *led_PARITY_HIGH, *led_PARITY_LOW, *led_PAR_ERR,
@@ -192,11 +193,14 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
 //                    c->value |= (uint64_t) regvalbits << bbrw->control_value_bit_offset;
 					temp_value |= (uint64_t) regvalbits << bbrw->control_value_bit_offset;	// 20181227
                 }
-                if (c->mirrored_bit_order)
+                if (c->mirrored_bit_order) {
 //                    c->value = mirror_bits(c->value, c->value_bitlen);
 					c->value = mirror_bits(temp_value, c->value_bitlen); // individual fixup/logic 20181227
-				else // 20181227
+                }
+				else {
+                    // 20181227
 					c->value = temp_value; //20181227
+                }
 
                 // individual fixup/logic
 
