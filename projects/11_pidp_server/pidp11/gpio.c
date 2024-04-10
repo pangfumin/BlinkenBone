@@ -125,30 +125,30 @@ void *blink(int *terminate) {
 						gpiopattern_ledstatus_phases[gpiopattern_ledstatus_phases_readidx][phase];
 			int i = 0;
 			
+			// printf(" ------------------------------ \n");
+			// // light up 6 rows of 12 LEDs each
+			// for (i = 0; i < 7; i++) {
 
-			// light up 6 rows of 12 LEDs each
-			for (i = 0; i < 6; i++) {
-
-				// Toggle columns for this ledrow (which LEDs should be on (CLR = on))
-				// printf("gpio_ledstatus: %d -> [ %"PRIu64" ]", i, gpio_ledstatus[i]);
-				// printf("gpio_ledstatus %" PRIu64 " ",gpio_ledstatus[i]);
+			// 	// Toggle columns for this ledrow (which LEDs should be on (CLR = on))
+			// 	// printf("gpio_ledstatus: %d -> [ %"PRIu64" ]", i, gpio_ledstatus[i]);
+			// 	// printf("gpio_ledstatus %" PRIu64 " ",gpio_ledstatus[i]);
 
 
-				// printf("gpio_ledstatus: %d -> ", i);
-				// for (int k = 0; k < 12; k++) {
-				// 	// if ((gpio_ledstatus[i] & (1 << k)) == 0)
-				// 	// 	GPIO_SET = 1 << cols[k];
-				// 	// else
-				// 	// 	GPIO_CLR = 1 << cols[k];
+			// 	printf("gpio_ledstatus: %d -> ", i);
+			// 	for (int k = 0; k < 8; k++) {
+			// 		// if ((gpio_ledstatus[i] & (1 << k)) == 0)
+			// 		// 	GPIO_SET = 1 << cols[k];
+			// 		// else
+			// 		// 	GPIO_CLR = 1 << cols[k];
 
-				// 	if ((gpio_ledstatus[i] >> k) & 1 == 1){
-				// 		printf("1 ");
-				// 	} else {
-				// 		printf("0 ");
-				// 	}
+			// 		if ((gpio_ledstatus[i] >> k) & 1 == 1){
+			// 			printf("1 ");
+			// 		} else {
+			// 			printf("0 ");
+			// 		}
 
-				// }
-				// printf("\n");
+			// 	}
+			// 	printf("\n");
 
 				// // Toggle this ledrow on
 				// INO_GPIO(ledrows[i]);
@@ -163,52 +163,58 @@ void *blink(int *terminate) {
 	// 			GPIO_CLR = 1 << ledrows[i]; // superstition
 	// //				INP_GPIO(ledrows[i]);
 				usleep(10); // waste of cpu cycles but may help against udn2981 ghosting, not flashes though
-			}
 
-			int switchscan;
-			int tmp;
-
-			// read three rows of switches
-			for (i = 0; i < 3; i++)
-			{
-				// INO_GPIO(rows[i]); //			GPIO_CLR = 1 << rows[i];	// and output 0V to overrule built-in pull-up from column input pin
-				// OUT_GPIO(rows[i]); // turn on one switch row
-				// GPIO_CLR = 1 << rows[i]; // and output 0V to overrule built-in pull-up from column input pin
-
-				nanosleep((struct timespec[]) { { 0, intervl / 100}}, NULL); // probably unnecessary long wait, maybe put above this loop also
-
-				switchscan = 0;
-				for (int j = 0; j < 12; j++) // 12 switches in each row
-				{
-					// tmp = GPIO_READ(cols[j]);
-					// if (tmp != 0)
-						// switchscan += 1 << j;
-						switchscan += 1 << j;
-				}
-				// INP_GPIO(rows[i]); // stop sinking current from this row of switches
-
-				// if (i==2)
-				// 	check_rotary_encoders(switchscan);	// translate raw encoder data to switch position
-				// printf("switchscan %d %d\n", i,  switchscan);
-				gpio_switchstatus[i] = switchscan;
-			}
-
-			gpio_switchstatus[1] = gpio_switchstatus[1] |  1 << 10;
-
-			// for (int i = 0; i < 3; i++) {
-			// 	printf("gpio_switchstatus: %d -> ", i);
-			// 	for (int j = 0; j < 12; j++) {
-			// 		if ((gpio_switchstatus[i] >> j) & 1  == 1){
-			// 			printf("1 ");
-			// 		} else {
-			// 			printf("0 ");
-			// 		}
-			// 	}
-			// 	printf("\n");
-			// }
+			
+			
 
 
 		}
+
+
+
+		int switchscan;
+		int tmp;
+
+		// read three rows of switches
+		for (int i = 0; i < 5; i++)
+		{
+			// INO_GPIO(rows[i]); //			GPIO_CLR = 1 << rows[i];	// and output 0V to overrule built-in pull-up from column input pin
+			// OUT_GPIO(rows[i]); // turn on one switch row
+			// GPIO_CLR = 1 << rows[i]; // and output 0V to overrule built-in pull-up from column input pin
+
+			nanosleep((struct timespec[]) { { 0, intervl / 100}}, NULL); // probably unnecessary long wait, maybe put above this loop also
+
+			switchscan = 0;
+			for (int j = 0; j < 8; j++) // 12 switches in each row
+			{
+				// tmp = GPIO_READ(cols[j]);
+				// if (tmp != 0)
+					// switchscan += 1 << j;
+					switchscan += 1 << j;
+			}
+			// INP_GPIO(rows[i]); // stop sinking current from this row of switches
+
+			// if (i==2)
+			// 	check_rotary_encoders(switchscan);	// translate raw encoder data to switch position
+			// printf("switchscan %d %d\n", i,  switchscan);
+			gpio_switchstatus[i] = switchscan;
+		}
+
+		// gpio_switchstatus[1] = gpio_switchstatus[1] |  1 << 10;
+
+		// for (int i = 0; i < 3; i++) {
+		// 	printf("gpio_switchstatus: %d -> ", i);
+		// 	for (int j = 0; j < 12; j++) {
+		// 		if ((gpio_switchstatus[i] >> j) & 1  == 1){
+		// 			printf("1 ");
+		// 		} else {
+		// 			printf("0 ");
+		// 		}
+		// 	}
+		// 	printf("\n");
+		// }
+
+
 
 	}
 	return 0;
@@ -295,8 +301,7 @@ void *blink1(int *terminate)
 
 	while (*terminate == 0) {
 		unsigned phase;
-//		if ((loopcount++ % 500) == 0)	printf("1\n"); // visual heart beat
-
+//	if ((loopcount++ % 500) == 0)	printf("1\n"); // visual heart beat
 
 		// display all phases circular
 		for (phase = 0; phase < GPIOPATTERN_LED_BRIGHTNESS_PHASES; phase++) {

@@ -165,8 +165,6 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
 				// 	pwrDebounce=0;	// power button released
 
                 // printf("call switch_POWER %d", c->value);
-
-
 			}
             else if (c == switch_PANEL_LOCK) {
                 c->value = panel_lock; // send "panel lock" switch as defined by -L
@@ -204,10 +202,10 @@ static void on_blinkenlight_api_panel_get_controlvalues(blinkenlight_panel_t *p)
 
                 if (c == switch_ADDR_SELECT) {
                     c->value = knobAddrMap[knobValue[0]];
-                    leds_ADDR_SELECT->value = 1<<knobValue[0];
+                    // leds_ADDR_SELECT->value = 1<<knobValue[0];
                 } else if (c == switch_DATA_SELECT) {
                     c->value = knobDataMap[knobValue[1]];
-                    leds_DATA_SELECT->value = 1<<knobValue[1];
+                    // leds_DATA_SELECT->value = 1<<knobValue[1];
                 }
             }
 
@@ -225,19 +223,19 @@ static void on_blinkenlight_api_panel_set_controlvalue(blinkenlight_panel_t *p,
     if (c == leds_MMR0_MODE) {
         // input:  0=K, 1=off, 2=S, 3=U (see src/REALCONS/realcons_console_pdp11_70.c)
         // leds: kernel = reg[2].4, super= reg[2].5 user=reg[2].6
-        switch (c->value) {
-        case 0:
-            c->value = 1 ; // KERNEL;
-            break;
-        case 2:
-            c->value = 2 ; // SUPER;
-            break;
-        case 3:
-            c->value = 4 ; // USER;
-            break;
-        default: // encode any other(s) as "all off"
-            c->value = 0;
-        }
+        // switch (c->value) {
+        // case 0:
+        //     c->value = 1 ; // KERNEL;
+        //     break;
+        // case 2:
+        //     c->value = 2 ; // SUPER;
+        //     break;
+        // case 3:
+        //     c->value = 4 ; // USER;
+        //     break;
+        // default: // encode any other(s) as "all off"
+        //     c->value = 0;
+        // }
     }
 }
 
@@ -676,6 +674,186 @@ static void register_controls()
     blinkenlight_panels_config_fixup(blinkenlight_panel_list);
 }
 
+
+/*
+Control	Signalname	Pin DEC	Berg Decimal	BB
+DISP PAR HI H	J1	A	40	OUT4.6
+DISP PAR LO H	J1	B	39	OUT4.7
+			#N/A	
+DISP D00	J1	X	21	OUT0.0
+DISP D01	J1	Y	20	OUT0.1
+DISP D02	J1	Z	19	OUT0.2
+DISP D03	J1	AA	18	OUT0.3
+DISP D04	J1	BB	17	OUT0.4
+DISP D05	J1	CC	16	OUT0.5
+DISP D06	J1	DD	15	OUT0.6
+DISP D07	J1	EE	14	OUT0.7
+DISP D08	J1	FF	13	OUT1.0
+DISP D09	J1	HH	12	OUT1.1
+DISP D10	J1	JJ	11	OUT1.2
+DISP D11	J1	KK	10	OUT1.3
+DISP D12	J1	LL	9	OUT1.4
+DISP D13	J1	MM	8	OUT1.5
+DISP D14	J1	NN	7	OUT1.6
+DISP D15	J1	PP	6	OUT1.7
+			#N/A	
+VA00	J2	EE	14	OUT2.0
+VA01	J2	W	22	OUT2.1
+VA02	J2	U	24	OUT2.2
+VA03	J2	S	26	OUT2.3
+DISP ADRS04	J2	CC	16	OUT2.4
+DISP ADRS05	J2	Y	20	OUT2.5
+DISP ADRS06	J2	P	28	OUT2.6
+DISP ADRS07	J2	H	34	OUT2.7
+DISP ADRS08	J2	E	36	OUT3.0
+DISP ADRS09	J2	C	38	OUT3.1
+DISP ADRS10	J2	M	30	OUT3.2
+DISP ADRS11	J2	K	32	OUT3.3
+DISP ADRS12	J2	R	27	OUT3.4
+DISP ADRS13	J2	T	25	OUT3.5
+DISP ADRS14	J2	V	23	OUT3.6
+DISP ADRS15	J2	X	21	OUT3.7
+DISP ADRS16	J2	N	29	OUT4.0
+DISP ADRS17	J2	L	31	OUT4.1
+DISP ADRS18	J2	Z	19	OUT4.2
+DISP ADRS19	J2	BB	17	OUT4.3
+DISP ADRS20	J2	DD	15	OUT4.4
+DISP ADRS21	J2	FF	13	OUT4.5
+			#N/A	
+IND ADRS ERR	J2	A	40	OUT5.0
+IND PAR ERR	J2	B	39	OUT5.1
+IND MASTER	J2	D	37	OUT5.2
+IND PAUSE	J2	F	35	OUT5.3
+IND RUN	J2	J	33	OUT5.4
+MMR0 MODE 1	J2	JJ	11	OUT5.5
+MMR0 MODE 0	J2	NN	7	OUT5.6
+IND DATA	J2	SS	4	OUT5.7
+			#N/A	
+IND 16BIT MAPPING	J3	SS	4	OUT6.0
+IND 18BIT MAPPING	J3	TT	3	OUT6.1
+IND 22BIT MAPPING	J3	UU	2	OUT6.2
+			#N/A	
+			#N/A	
+			#N/A	
+SWITCH SR00	J3	A	40	IN2.5
+SWITCH SR01	J3	B	39	IN2.4
+SWITCH SR02	J3	C	38	IN2.3
+SWITCH SR03	J3	D	37	IN2.2
+SWITCH SR04	J3	E	36	IN2.1
+SWITCH SR05	J3	F	35	IN2.0
+SWITCH SR06	J3	H	34	IN1.7
+SWITCH SR07	J3	J	33	IN1.6
+SWITCH SR08	J3	K	32	IN1.5
+SWITCH SR09	J3	L	31	IN1.4
+SWITCH SR10	J3	M	30	IN1.3
+SWITCH SR11	J3	N	29	IN1.2
+SWITCH SR12	J3	P	28	IN1.1
+SWITCH SR13	J3	R	27	IN1.0
+SWITCH SR14	J3	S	26	IN0.7
+SWITCH SR15	J3	T	25	IN0.6
+SWITCH SR16	J3	U	24	IN0.5
+SWITCH SR17	J3	V	23	IN0.4
+SWITCH SR18	J3	W	22	IN0.3
+SWITCH SR19	J3	X	21	IN0.2
+SWITCH SR20	J3	Y	20	IN0.1
+SWITCH SR21	J3	Z	19	IN0.0
+			#N/A	
+			#N/A	
+SWITCH CONT	J3	BB	17	IN3.0
+SWITCH BUS CYC	J3	DD	15	IN3.1
+SWITCH LOADADRS	J3	FF	13	IN3.2
+SWITCH START	J3	JJ	11	IN3.3
+SWITCH EXAM	J3	LL	9	IN3.4
+SWITCH DEP	J3	NN	7	IN3.5
+SWITCH HALT	J3	PP	6	IN3.6
+			#N/A	
+			#N/A	
+			#N/A	
+PNL LOCK H	J2	LL	9	IN4.5
+DISP ADRS SEL2	J2	KK	10	IN4.4
+DISP ADRS SEL1	J2	MM	8	IN4.3
+DISP ADRS SEL0	J2	HH	12	IN4.2
+			#N/A	
+DISP DATA SEL1	J1	TT	3	IN4.1
+DISP DATA SEL0	J1	SS	4	IN4.0
+*/
+
+
+static void register_controls_my()
+{
+    blinkenlight_panel_t *p;
+
+    // one global panel list ...
+    blinkenlight_panel_list = blinkenlight_panels_constructor();
+    // ... with one panel
+    p = blinkenlight_add_panel(blinkenlight_panel_list);
+    strcpy(p->name, "11/70");
+    strcpy(p->info, "PiDP11 system");
+
+    /*
+     * Construct high-level Blinkenlight API controls from
+     * hardware switch- and led-registers
+     */
+
+    //SR consists of 12 and 10 bit subparts
+    switch_SR = define_switch_slice(p, "SR", 0, 8, 0, 0); // 0, 0xfff. bits 0..11
+    switch_SR = define_switch_slice(p, "SR", 8, 8, 1, 0); // 1  0x3ff, bits 12..21
+    switch_SR = define_switch_slice(p, "SR", 16, 6, 2, 0); // 
+
+    // LAMP TEST: unlike on DEC panel readable over API, but locally wired function
+    // see gpiopattern.value2gpio_ledstatus_value()
+    switch_LAMPTEST = define_switch_slice(p, "LAMPTEST", 0, 1, 2, 6);  // todo pang // 2, 0x01 (or should it be 1,0,0 fur null?)
+
+    switch_LOADADRS = define_switch_slice(p, "LOAD_ADRS", 0, 1, 3, 2); // 2, 0x02
+    switch_EXAM = define_switch_slice(p, "EXAM", 0, 1, 3, 4); // 2, 0x04
+    switch_DEPOSIT = define_switch_slice(p, "DEPOSIT", 0, 1, 3, 5); // 2, 0x08
+    switch_CONT = define_switch_slice(p, "CONT", 0, 1, 3, 0); // 2, 0x010
+    switch_HALT = define_switch_slice(p, "HALT", 0, 1, 3, 6); // 2, 0x020
+    switch_S_BUS_CYCLE = define_switch_slice(p, "S_BUS_CYCLE", 0, 1, 3, 1); // 2, 0x040
+    switch_START = define_switch_slice(p, "START", 0, 1, 3, 3); // 2, 0x080
+
+    
+    switch_DATA_SELECT = define_switch_slice(p, "DATA_SELECT", 0, 2, 4, 0);
+    switch_ADDR_SELECT = define_switch_slice(p, "ADDR_SELECT", 0, 3, 4, 2);
+
+    // dummy
+    switch_PANEL_LOCK = define_switch_slice(p, "PANEL_LOCK", 0, 1, 2, 6); 
+    switch_POWER = define_switch_slice(p, "POWER", 0, 1, 2, 7); 
+
+    // switch_DEBUG_INPUT = define_switch_slice(p, "DEBUG_INPUT", 0, 8, 5, 0);
+
+
+    // // Constant values set in on_blinkenlight_api_panel_get_controlvalues()
+    leds_DATA = define_led_slice(p, "DATA", 0, 8, 0, 0); // 3,0xfff, bits 0..11
+    leds_DATA = define_led_slice(p, "DATA", 8, 8, 1, 0); // 4,0xf, bits 12..15
+
+    leds_ADDRESS = define_led_slice(p, "ADDRESS", 0, 8, 2, 0); // 0,0xfff, bits 0..11
+    leds_ADDRESS = define_led_slice(p, "ADDRESS", 8, 8, 3, 0); // 0,0xfff, bits 12..21
+    leds_ADDRESS = define_led_slice(p, "ADDRESS", 16, 6, 4, 0); // 0,0xfff, bits 12..21
+
+    led_PARITY_HIGH = define_led_slice(p, "PARITY_HIGH", 0, 1, 4, 6); // 4, 0x20
+    led_PARITY_LOW = define_led_slice(p, "PARITY_LOW", 0, 1, 4, 7); // 4, 0x10
+    led_PAR_ERR = define_led_slice(p, "PAR_ERR", 0, 1, 5, 1); // 2, 0x800
+    led_ADRS_ERR = define_led_slice(p, "ADRS_ERR", 0, 1, 5, 0); // 2, 0x400
+    led_RUN = define_led_slice(p, "RUN", 0, 1, 5, 4); // 2, 0x200
+    led_PAUSE = define_led_slice(p, "PAUSE", 0, 1, 5, 3); // 2, 0x100
+    led_MASTER = define_led_slice(p, "MASTER", 0, 1, 5, 2); // 2, 0x80
+    led_DATA_SPACE = define_led_slice(p, "DATA_SPACE", 0, 1, 5, 7); // 2, 0x08
+
+    leds_MMR0_MODE = define_led_slice(p, "MMR0_MODE", 0, 2, 5, 5);  // todo
+
+    // Problem: MMR0_MODE needs translation to leds.
+    // 0 = Kernel, 1= off,  2 = Super, 3 = User
+    // the wiring here is ignored; see handcoding in gpiopattern.value2gpio_ledstatus_value()
+
+    led_ADDRESSING_16 = define_led_slice(p, "ADDRESSING_16", 0, 1, 6, 0); // 2, 0x04
+    led_ADDRESSING_18 = define_led_slice(p, "ADDRESSING_18", 0, 1, 6, 1); // 2, 0x02
+    led_ADDRESSING_22 = define_led_slice(p, "ADDRESSING_22", 0, 1, 6, 2); // 2, 0x01
+
+
+    blinkenlight_panels_config_fixup(blinkenlight_panel_list);
+}
+
 /*
  *
  */
@@ -705,7 +883,8 @@ int main(int argc, char *argv[])
     blinkenlight_api_panel_set_mode_evt = on_blinkenlight_api_panel_set_mode;
     blinkenlight_api_get_info_evt = on_blinkenlight_api_get_info;
 
-    register_controls();
+    // register_controls();
+    register_controls_my();
 
     if (opt_test) {
         printf("Dump of register <-> control data struct:\n");
