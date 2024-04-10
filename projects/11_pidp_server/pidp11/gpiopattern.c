@@ -448,7 +448,9 @@ mask = 0 ;
 		break;
 	}
 
-	// printf("panel_mode c->value: %d %d\n", panel_mode, c->value);
+	// if (strcmp(c->name, "ADDRESSING_16") == 0) {
+	// 	printf("panel_mode c->value: %d %d\n", panel_mode, c->value);
+	// }
 
 	// write value to gpio registers
 	for (i_register_wiring = 0; i_register_wiring < c->blinkenbus_register_wiring_count;
@@ -469,6 +471,10 @@ mask = 0 ;
 			bitfield <<= bbrw->blinkenbus_lsb;
 
 			gpio_ledstatus[bbrw->blinkenbus_register_address] = regval | bitfield; // write back
+
+			// if (strcmp(c->name, "ADDRESSING_16") == 0 || strcmp(c->name, "ADDRESSING_18") == 0 || strcmp(c->name, "ADDRESSING_22") == 0) {
+			// 	printf("c->value: %s %d %d %d %d\n", c->name, bbrw->blinkenbus_register_address, regval | bitfield, regval, gpio_ledstatus[bbrw->blinkenbus_register_address]);
+			// }
 	}
 }
 
@@ -593,8 +599,10 @@ void *gpiopattern_update_leds(int *terminate)
 					// printf("gpio_ledstatus %" PRIu64 " ",gpio_ledstatus[i]);
 
 
+					
+					// printf("gpio_ledstatus: %d -> %d \n", i, gpio_ledstatus[i]);
 					printf("gpio_ledstatus: %d -> ", i);
-					for (int k = 8; k > 0; k --) {
+					for (int k = 7; k >= 0; k --) {
 						// if ((gpio_ledstatus[i] & (1 << k)) == 0)
 						// 	GPIO_SET = 1 << cols[k];
 						// else

@@ -840,11 +840,12 @@ static void register_controls_my()
     led_MASTER = define_led_slice(p, "MASTER", 0, 1, 5, 2); // 2, 0x80
     led_DATA_SPACE = define_led_slice(p, "DATA_SPACE", 0, 1, 5, 7); // 2, 0x08
 
-    leds_MMR0_MODE = define_led_slice(p, "MMR0_MODE", 0, 2, 5, 5);  // todo
+    
 
     // Problem: MMR0_MODE needs translation to leds.
     // 0 = Kernel, 1= off,  2 = Super, 3 = User
     // the wiring here is ignored; see handcoding in gpiopattern.value2gpio_ledstatus_value()
+    leds_MMR0_MODE = define_led_slice(p, "MMR0_MODE", 0, 2, 5, 5);  // todo
 
     led_ADDRESSING_16 = define_led_slice(p, "ADDRESSING_16", 0, 1, 6, 0); // 2, 0x04
     led_ADDRESSING_18 = define_led_slice(p, "ADDRESSING_18", 0, 1, 6, 1); // 2, 0x02

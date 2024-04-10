@@ -163,11 +163,6 @@ void *blink(int *terminate) {
 	// 			GPIO_CLR = 1 << ledrows[i]; // superstition
 	// //				INP_GPIO(ledrows[i]);
 				usleep(10); // waste of cpu cycles but may help against udn2981 ghosting, not flashes though
-
-			
-			
-
-
 		}
 
 
